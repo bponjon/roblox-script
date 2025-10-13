@@ -1,4 +1,4 @@
--- MountBingung Mod Menu Final
+-- MountBingung Final v2
 local player = game.Players.LocalPlayer
 
 -- ===== 1. Checkpoints (Urut) =====
@@ -31,17 +31,23 @@ local checkpoints = {
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "MountBingungModMenu"
 
--- ScrollingFrame
-local frame = Instance.new("ScrollingFrame", gui)
-frame.Size = UDim2.new(0,300,0,400)
+-- Main Frame
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,320,0,450)
 frame.Position = UDim2.new(0.05,0,0.1,0)
 frame.BackgroundColor3 = Color3.fromRGB(50,0,50)
-frame.CanvasSize = UDim2.new(0,0,0,1000)
-frame.ScrollBarThickness = 10
 frame.Active = true
 frame.Draggable = true
 
-local uiList = Instance.new("UIListLayout", frame)
+-- ScrollingFrame for checkpoints
+local scrollFrame = Instance.new("ScrollingFrame", frame)
+scrollFrame.Size = UDim2.new(1,0,1,-40)
+scrollFrame.Position = UDim2.new(0,0,0,40)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.CanvasSize = UDim2.new(0,0,0,1000)
+scrollFrame.ScrollBarThickness = 10
+
+local uiList = Instance.new("UIListLayout", scrollFrame)
 uiList.SortOrder = Enum.SortOrder.LayoutOrder
 uiList.Padding = UDim.new(0,5)
 
@@ -86,10 +92,10 @@ end)
 -- ===== 3. Manual Teleport Buttons =====
 for i = 1, #checkpoints do
     local cp = checkpoints[i]
-    local btn = Instance.new("TextButton", frame)
+    local btn = Instance.new("TextButton", scrollFrame)
     btn.Text = cp.name
     btn.Size = UDim2.new(1,0,0,30)
-    btn.BackgroundColor3 = Color3.fromRGB(100,0,100)
+    btn.BackgroundColor3 = Color3.fromRGB(120,0,120)
     btn.TextColor3 = Color3.fromRGB(255,255,255)
     btn.LayoutOrder = i
     btn.MouseButton1Click:Connect(function()
@@ -104,9 +110,9 @@ local autoSummitActive = false
 local autoBtn = Instance.new("TextButton", frame)
 autoBtn.Text = "AutoSummit"
 autoBtn.Size = UDim2.new(1,0,0,30)
+autoBtn.Position = UDim2.new(0,0,0,frame.Size.Y.Offset-30)
 autoBtn.BackgroundColor3 = Color3.fromRGB(0,100,0)
 autoBtn.TextColor3 = Color3.fromRGB(255,255,255)
-autoBtn.LayoutOrder = #checkpoints + 1
 autoBtn.MouseButton1Click:Connect(function()
     autoSummitActive = not autoSummitActive
     autoBtn.BackgroundColor3 = autoSummitActive and Color3.fromRGB(0,255,0) or Color3.fromRGB(0,100,0)
@@ -128,5 +134,5 @@ end)
 
 -- ===== 5. CanvasSize Auto =====
 uiList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    frame.CanvasSize = UDim2.new(0,0,0,uiList.AbsoluteContentSize.Y)
+    scrollFrame.CanvasSize = UDim2.new(0,0,0,uiList.AbsoluteContentSize.Y)
 end)
