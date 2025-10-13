@@ -1,0 +1,136 @@
+-- MountYahayuk KW - Final Full Script
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
+-- Checkpoints
+local Checkpoints = {
+    {Name="Basecamp",CFrame=CFrame.new(-16.8994255,292.997986,-438.799927)},
+    {Name="CP1",CFrame=CFrame.new(18.6971245,342.034637,-18.864109)},
+    {Name="CP2",CFrame=CFrame.new(129.73764,402.06366,5.28063631)},
+    {Name="CP3",CFrame=CFrame.new(135.903488,357.782928,266.350739)},
+    {Name="CP4",CFrame=CFrame.new(227.096115,397.939697,326.06488)},
+    {Name="CP5",CFrame=CFrame.new(861.573914,370.61972,79.1034851)},
+    {Name="Puncak",CFrame=CFrame.new(1338.89172,902.435425,-778.335144)},
+}
+
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MountYahayukGUI"
+ScreenGui.Parent = game.CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0,250,0,400)
+MainFrame.Position = UDim2.new(0.05,0,0.2,0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(48,0,48)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = MainFrame
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0,5)
+
+-- Auto Summit
+local AutoSummit = false
+local StopAuto = false
+
+local AutoSummitToggle = Instance.new("TextButton")
+AutoSummitToggle.Size = UDim2.new(1,-10,0,30)
+AutoSummitToggle.Text = "Auto Summit: OFF"
+AutoSummitToggle.BackgroundColor3 = Color3.fromRGB(60,0,60)
+AutoSummitToggle.TextColor3 = Color3.new(1,1,1)
+AutoSummitToggle.Parent = MainFrame
+
+AutoSummitToggle.MouseButton1Click:Connect(function()
+    AutoSummit = not AutoSummit
+    AutoSummitToggle.Text = "Auto Summit: "..(AutoSummit and "ON" or "OFF")
+    if AutoSummit then
+        StopAuto = false
+        spawn(function()
+            for i, cp in ipairs(Checkpoints) do
+                if StopAuto then break end
+                HumanoidRootPart.CFrame = cp.CFrame
+                if cp.Name ~= "Puncak" then
+                    wait(4)
+                else
+                    wait(10)
+                    Humanoid.Health = 0
+                    wait(1)
+                end
+            end
+            if not StopAuto then
+                HumanoidRootPart.CFrame = Checkpoints[1].CFrame
+            end
+        end)
+    end
+end)
+
+-- Stop Button
+local StopButton = Instance.new("TextButton")
+StopButton.Size = UDim2.new(1,-10,0,30)
+StopButton.Text = "Stop"
+StopButton.BackgroundColor3 = Color3.fromRGB(60,0,60)
+StopButton.TextColor3 = Color3.new(1,1,1)
+StopButton.Parent = MainFrame
+
+StopButton.MouseButton1Click:Connect(function()
+    StopAuto = true
+    AutoSummit = false
+    AutoSummitToggle.Text = "Auto Summit: OFF"
+end)
+
+-- Hide Button
+local HideButton = Instance.new("TextButton")
+HideButton.Size = UDim2.new(1,-10,0,30)
+HideButton.Text = "Hide"
+HideButton.BackgroundColor3 = Color3.fromRGB(60,0,60)
+HideButton.TextColor3 = Color3.new(1,1,1)
+HideButton.Parent = MainFrame
+
+local Logo = Instance.new("ImageButton")
+Logo.Size = UDim2.new(0,50,0,50)
+Logo.Position = UDim2.new(0,0,0.2,0)
+Logo.Image = "rbxassetid://0" -- nanti ganti ID logo
+Logo.Visible = false
+Logo.Parent = ScreenGui
+Logo.Active = true
+Logo.Draggable = true
+
+HideButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    Logo.Visible = true
+end)
+
+Logo.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    Logo.Visible = false
+end)
+
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(1,-10,0,30)
+CloseButton.Text = "Close"
+CloseButton.BackgroundColor3 = Color3.fromRGB(60,0,60)
+CloseButton.TextColor3 = Color3.new(1,1,1)
+CloseButton.Parent = MainFrame
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Manual Summit Buttons
+for i, cp in ipairs(Checkpoints) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,-10,0,25)
+    btn.Text = cp.Name
+    btn.BackgroundColor3 = Color3.fromRGB(40,0,40)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Parent = MainFrame
+    btn.MouseButton1Click:Connect(function()
+        HumanoidRootPart.CFrame = cp.CFrame
+    end)
+end
