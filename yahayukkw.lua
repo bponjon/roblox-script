@@ -1,128 +1,132 @@
--- MountBingung AutoSummit + GUI
--- Basecamp → CP1 → CP2 → CP3 → CP4 → CP5 → Puncak
--- Timer tiap CP: 4 detik, Puncak: 10 detik
--- Stop menghentikan AutoSummit dan mencegah karakter mati otomatis
+-- Final Yahayuk Kw
+-- GUI + AutoSummit + Manual Summit
+-- Warna: Ungu Tua + Hitam, draggable, Hide/Logo
 
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local AutoSummitOn = false
-local StopPressed = false
+local Humanoid = Character:WaitForChild("Humanoid")
+local Root = Character:WaitForChild("HumanoidRootPart")
 
 -- Checkpoints
 local Checkpoints = {
-    {Name="Basecamp", Pos=Vector3.new(-16.8994255, 292.997986, -438.799927)},
-    {Name="CP1", Pos=Vector3.new(18.6971245, 342.034637, -18.864109)},
-    {Name="CP2", Pos=Vector3.new(129.73764, 402.06366, 5.28063631)},
-    {Name="CP3", Pos=Vector3.new(135.903488, 357.782928, 266.350739)},
-    {Name="CP4", Pos=Vector3.new(227.096115, 397.939697, 326.06488)},
-    {Name="CP5", Pos=Vector3.new(861.573914, 370.61972, 79.1034851)},
-    {Name="Puncak", Pos=Vector3.new(1337.34399, 905.997986, -803.872925)}
+    ["Basecamp"] = CFrame.new(-16.8994255, 292.997986, -438.799927),
+    ["CP1"] = CFrame.new(18.6971245, 342.034637, -18.864109),
+    ["CP2"] = CFrame.new(129.73764, 402.06366, 5.28063631),
+    ["CP3"] = CFrame.new(135.903488, 357.782928, 266.350739),
+    ["CP4"] = CFrame.new(227.096115, 397.939697, 326.06488),
+    ["CP5"] = CFrame.new(861.573914, 370.61972, 79.1034851),
+    ["Puncak"] = CFrame.new(1337.34399, 905.997986, -803.872925)
 }
 
--- GUI
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "MountBingungGUI"
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "FinalYahayukKwGUI"
 
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0,300,0,400)
-MainFrame.Position = UDim2.new(0.5,-150,0.5,-200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(64,0,64) -- ungu tua
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 250, 0, 400)
+Frame.Position = UDim2.new(0.05,0,0.2,0)
+Frame.BackgroundColor3 = Color3.fromRGB(64, 0, 64) -- Ungu Tua
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
 
--- Title
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1,0,0,30)
-Title.Position = UDim2.new(0,0,0,0)
-Title.BackgroundColor3 = Color3.fromRGB(0,0,0)
-Title.TextColor3 = Color3.fromRGB(255,255,255)
-Title.Text = "MountBingung"
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 20
+-- Hide/Logo Button
+local HideBtn = Instance.new("TextButton", Frame)
+HideBtn.Size = UDim2.new(0, 30, 0, 30)
+HideBtn.Position = UDim2.new(1, -35, 0, 5)
+HideBtn.Text = "H"
+HideBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+HideBtn.TextColor3 = Color3.fromRGB(255,255,255)
 
--- Hide Button
-local HideButton = Instance.new("TextButton", MainFrame)
-HideButton.Size = UDim2.new(0,30,0,30)
-HideButton.Position = UDim2.new(1,-60,0,0)
-HideButton.Text = "-"
-HideButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
-HideButton.TextColor3 = Color3.fromRGB(255,255,255)
+local LogoBtn = Instance.new("TextButton", ScreenGui)
+LogoBtn.Size = UDim2.new(0,50,0,50)
+LogoBtn.Position = UDim2.new(0.05,0,0.2,0)
+LogoBtn.Text = "🀄" -- Placeholder, bisa ganti nanti
+LogoBtn.BackgroundColor3 = Color3.fromRGB(64,0,64)
+LogoBtn.Visible = false
+LogoBtn.Active = true
+LogoBtn.Draggable = true
 
--- Close Button
-local CloseButton = Instance.new("TextButton", MainFrame)
-CloseButton.Size = UDim2.new(0,30,0,30)
-CloseButton.Position = UDim2.new(1,-30,0,0)
-CloseButton.Text = "X"
-CloseButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
-CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
-
--- AutoSummit Button
-local AutoButton = Instance.new("TextButton", MainFrame)
-AutoButton.Size = UDim2.new(0,100,0,30)
-AutoButton.Position = UDim2.new(0,10,0,40)
-AutoButton.Text = "AutoSummit: OFF"
-AutoButton.BackgroundColor3 = Color3.fromRGB(128,0,128)
-AutoButton.TextColor3 = Color3.fromRGB(255,255,255)
-
--- Stop Button
-local StopButton = Instance.new("TextButton", MainFrame)
-StopButton.Size = UDim2.new(0,60,0,30)
-StopButton.Position = UDim2.new(0,120,0,40)
-StopButton.Text = "Stop"
-StopButton.BackgroundColor3 = Color3.fromRGB(128,0,128)
-StopButton.TextColor3 = Color3.fromRGB(255,255,255)
-
--- Hide/Show Logic
-local Hidden = false
-HideButton.MouseButton1Click:Connect(function()
-    if not Hidden then
-        MainFrame.Visible = false
-        Hidden = true
-    else
-        MainFrame.Visible = true
-        Hidden = false
-    end
+HideBtn.MouseButton1Click:Connect(function()
+    Frame.Visible = false
+    LogoBtn.Visible = true
 end)
 
--- Close Logic
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
+LogoBtn.MouseButton1Click:Connect(function()
+    Frame.Visible = true
+    LogoBtn.Visible = false
 end)
 
--- AutoSummit Logic
-AutoButton.MouseButton1Click:Connect(function()
-    AutoSummitOn = not AutoSummitOn
-    if AutoSummitOn then
-        AutoButton.Text = "AutoSummit: ON"
-        StopPressed = false
-        coroutine.wrap(function()
-            while AutoSummitOn and not StopPressed do
-                for i, cp in ipairs(Checkpoints) do
-                    if StopPressed then break end
-                    HumanoidRootPart.CFrame = CFrame.new(cp.Pos)
-                    if cp.Name ~= "Puncak" then
-                        wait(4) -- timer tiap CP
-                    else
-                        wait(10) -- tunggu di puncak
-                        if not StopPressed then
-                            LocalPlayer.Character:BreakJoints() -- mati otomatis
-                        end
+-- AutoSummit Variables
+local AutoSummitActive = false
+local StopSummit = false
+
+-- Buttons
+local AutoBtn = Instance.new("TextButton", Frame)
+AutoBtn.Size = UDim2.new(1, -10, 0, 50)
+AutoBtn.Position = UDim2.new(0,5,0,50)
+AutoBtn.Text = "Auto Summit"
+AutoBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+AutoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+
+local StopBtn = Instance.new("TextButton", Frame)
+StopBtn.Size = UDim2.new(1, -10, 0, 50)
+StopBtn.Position = UDim2.new(0,5,0,110)
+StopBtn.Text = "Stop"
+StopBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+StopBtn.TextColor3 = Color3.fromRGB(255,255,255)
+
+-- Manual Summit Dropdown
+local ManualDropdown = Instance.new("Frame", Frame)
+ManualDropdown.Size = UDim2.new(1, -10, 0, 250)
+ManualDropdown.Position = UDim2.new(0,5,0,170)
+ManualDropdown.BackgroundTransparency = 1
+
+for i, name in pairs({"Basecamp","CP1","CP2","CP3","CP4","CP5","Puncak"}) do
+    local btn = Instance.new("TextButton", ManualDropdown)
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.Position = UDim2.new(0,0,0,(i-1)*35)
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.MouseButton1Click:Connect(function()
+        Root.CFrame = Checkpoints[name]
+    end)
+end
+
+-- AutoSummit Function
+local function AutoSummit()
+    AutoSummitActive = true
+    StopSummit = false
+    spawn(function()
+        while AutoSummitActive and not StopSummit do
+            -- Teleport Basecamp -> CP1 -> ... -> Puncak
+            for _, name in ipairs({"Basecamp","CP1","CP2","CP3","CP4","CP5","Puncak"}) do
+                if StopSummit then break end
+                Root.CFrame = Checkpoints[name]
+                if name ~= "Puncak" then
+                    wait(4)
+                else
+                    wait(10) -- Waktu di puncak sebelum mati
+                    -- Mati otomatis karakter di puncak
+                    if not StopSummit then
+                        Humanoid.Health = 0
                     end
                 end
             end
-        end)()
-    else
-        AutoButton.Text = "AutoSummit: OFF"
+        end
+        AutoSummitActive = false
+    end)
+end
+
+AutoBtn.MouseButton1Click:Connect(function()
+    if not AutoSummitActive then
+        AutoSummit()
     end
 end)
 
--- Stop Logic
-StopButton.MouseButton1Click:Connect(function()
-    StopPressed = true
-    AutoSummitOn = false
-    AutoButton.Text = "AutoSummit: OFF"
+StopBtn.MouseButton1Click:Connect(function()
+    StopSummit = true
 end)
