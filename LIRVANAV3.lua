@@ -13,10 +13,10 @@ local checkpoints = {
     {name="Checkpoint 7", pos=Vector3.new(600.679, 678.149, -683.300)},
     {name="Checkpoint 8", pos=Vector3.new(624.076, 624.700, -1026.100)},
     {name="Checkpoint 9", pos=Vector3.new(972.346, 672.700, -951.703)},
-    {name="Checkpoint 10", pos=Vector3.new(1166.363, 692.700, -664.891)},
-    {name="Checkpoint 11", pos=Vector3.new(1188.901, 694.149, -658.720)},
-    {name="Checkpoint 12", pos=Vector3.new(1188.400, 718.149, -329.772)},
-    {name="Checkpoint 13", pos=Vector3.new(769.958, 1000.500, 216.734)}
+    {name="Checkpoint 10",pos=Vector3.new(881.710, 710.149, -681.707)},
+    {name="Checkpoint 11",pos=Vector3.new(1188.901, 694.149, -658.720)},
+    {name="Checkpoint 12",pos=Vector3.new(1188.400, 718.149, -329.772)},
+    {name="Checkpoint 13",pos=Vector3.new(769.958, 1000.500, 216.734)}
 }
 
 -- ===== GUI Setup =====
