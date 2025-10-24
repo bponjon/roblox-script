@@ -5,10 +5,10 @@
 -- CONFIG
 local CP_DATA = {
     {name="Basecamp", pos=Vector3.new(-16.8994255,292.997986,-438.799927)},
-    {name="Checkpoint 1", pos=Vector3.new(18.6971245,342.034637,-18.864109)},
-    {name="Checkpoint 2", pos=Vector3.new(129.73764,402.06366,5.28063631)},
-    {name="Checkpoint 3", pos=Vector3.new(135.903488,357.782928,266.350739)},
-    {name="Checkpoint 4", pos=Vector3.new(227.096115,397.939697,326.06488)},
+    {name="Checkpoint 1", pos=Vector3.new(18.029, 343.186, -31.423)},
+    {name="Checkpoint 2", pos=Vector3.new(123.831, 403.215, -6.046)},
+    {name="Checkpoint 3", pos=Vector3.new(135.316, 359.058, 277.262)},
+    {name="Checkpoint 4", pos=Vector3.new(233.800, 399.091, 318.996)},
     {name="Checkpoint 5", pos=Vector3.new(861.573914,370.61972,79.1034851)},
     {name="Puncak", pos=Vector3.new(1338.89172,902.435425,-778.335144)}
 }
