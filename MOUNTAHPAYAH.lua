@@ -3,6 +3,7 @@ local player = game.Players.LocalPlayer
 
 -- ===== Checkpoints =====
 local checkpoints = {
+	{name="Basecamp", pos=Vector3.new(-405.208, 46.021, -540.538)}, 
     {name="Checkpoint 1", pos=Vector3.new(-397.862, 46.386, -225.315)},
     {name="Checkpoint 2", pos=Vector3.new(446.973, 310.386, -454.457)},
     {name="Checkpoint 3", pos=Vector3.new(389.741, 415.219, -38.504)},
@@ -13,7 +14,7 @@ local checkpoints = {
     {name="Checkpoint 8", pos=Vector3.new(-1539.058, 682.267, -643.505)},
     {name="Checkpoint 9", pos=Vector3.new(-1581.844, 650.396, 448.762)},
     {name="Checkpoint 10", pos=Vector3.new(-2566.289, 662.396, 450.378)},
-    {name="Puncak", pos=Vector3.new(-2888.094, 846.021, 10.089)}
+    {name="Puncak", pos=Vector3.new(-2921.433, 844.065, 18.757)}
 }
 
 -- ===== GUI Setup =====
