@@ -1,9 +1,10 @@
--- BynzzBponjon Final
+-- BynzzBponjon Final GUI & Fitur
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+local RunService = game:GetService("RunService")
 
--- =================== Checkpoints ===================
+-- =================== Positions ===================
 local checkpoints = {
     {name="Basecamp", pos=Vector3.new(-883.288, 43.358, 933.698)},
     {name="CP1", pos=Vector3.new(-473.240, 49.167, 624.194)},
@@ -30,11 +31,11 @@ local checkpoints = {
 
 -- =================== State ===================
 local autoSummitActive = false
-local autoDeathActive = false
-local serverHopActive = false
-local delaySeconds = 10
-local speed = 1
 local currentIndex = 1
+local delaySeconds = 5
+local speed = 1
+local autoDeath = false
+local serverHop = false
 
 -- =================== Notifications ===================
 local function showNotification(text)
@@ -65,129 +66,130 @@ local function createGui()
     screen.ResetOnSpawn = false
 
     local mainFrame = Instance.new("Frame", screen)
-    mainFrame.Size = UDim2.new(0,500,0,350)
+    mainFrame.Size = UDim2.new(0,500,0,300)
     mainFrame.Position = UDim2.new(0.1,0,0.1,0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+    mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
 
     -- Header
     local header = Instance.new("Frame", mainFrame)
     header.Size = UDim2.new(1,0,0,30)
-    header.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    header.BackgroundColor3 = Color3.fromRGB(50,50,50)
 
-    local headerLabel = Instance.new("TextLabel", header)
-    headerLabel.Size = UDim2.new(0.7,0,1,0)
-    headerLabel.Position = UDim2.new(0,10,0,0)
-    headerLabel.Text = "BynzzBponjon"
-    headerLabel.TextColor3 = Color3.new(1,1,1)
-    headerLabel.BackgroundTransparency = 1
-    headerLabel.Font = Enum.Font.SourceSansBold
-    headerLabel.TextSize = 18
-    headerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    local title = Instance.new("TextLabel", header)
+    title.Size = UDim2.new(0.6,0,1,0)
+    title.Position = UDim2.new(0,10,0,0)
+    title.BackgroundTransparency = 1
+    title.Text = "BynzzBponjon"
+    title.TextColor3 = Color3.new(1,1,1)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 18
+    title.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Hide / Close Buttons
     local hideBtn = Instance.new("TextButton", header)
-    hideBtn.Size = UDim2.new(0.15,0,1,0)
-    hideBtn.Position = UDim2.new(0.7,0,0,0)
+    hideBtn.Size = UDim2.new(0.2,0,1,0)
+    hideBtn.Position = UDim2.new(0.6,0,0,0)
     hideBtn.Text = "Hide"
-    hideBtn.BackgroundColor3 = Color3.fromRGB(180,180,180)
-    hideBtn.TextColor3 = Color3.new(0,0,0)
+    hideBtn.TextColor3 = Color3.new(1,1,1)
+    hideBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
 
     local closeBtn = Instance.new("TextButton", header)
-    closeBtn.Size = UDim2.new(0.15,0,1,0)
-    closeBtn.Position = UDim2.new(0.85,0,0,0)
+    closeBtn.Size = UDim2.new(0.2,0,1,0)
+    closeBtn.Position = UDim2.new(0.8,0,0,0)
     closeBtn.Text = "X"
-    closeBtn.BackgroundColor3 = Color3.fromRGB(200,0,50)
     closeBtn.TextColor3 = Color3.new(1,1,1)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(200,0,50)
 
-    closeBtn.MouseButton1Click:Connect(function()
-        mainFrame:Destroy()
-    end)
+    closeBtn.MouseButton1Click:Connect(function() mainFrame:Destroy() end)
 
+    -- Panels
     local leftPanel = Instance.new("Frame", mainFrame)
     leftPanel.Size = UDim2.new(0,120,1,-30)
     leftPanel.Position = UDim2.new(0,0,0,30)
-    leftPanel.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    leftPanel.BackgroundColor3 = Color3.fromRGB(15,15,15)
 
     local rightPanel = Instance.new("Frame", mainFrame)
-    rightPanel.Size = UDim2.new(0,380,1,-30)
+    rightPanel.Size = UDim2.new(1,-120,1,-30)
     rightPanel.Position = UDim2.new(0,120,0,30)
-    rightPanel.BackgroundColor3 = Color3.fromRGB(10,10,10)
+    rightPanel.BackgroundColor3 = Color3.fromRGB(20,20,20)
 
-    -- Menu
-    local menus = {"Auto","Server","Setting","Info","Auto Death"}
-    local menuBtns = {}
-    for i, m in ipairs(menus) do
+    -- Menu Buttons
+    local menuItems = {"Auto","Server","Setting","Info","Auto Death"}
+    local menuButtons = {}
+    for i,name in ipairs(menuItems) do
         local btn = Instance.new("TextButton", leftPanel)
-        btn.Size = UDim2.new(1,0,0,50)
-        btn.Position = UDim2.new(0,0,0,(i-1)*50)
-        btn.Text = m
-        btn.Font = Enum.Font.SourceSansBold
-        btn.TextSize = 18
-        btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+        btn.Size = UDim2.new(1,0,0,40)
+        btn.Position = UDim2.new(0,0,0,(i-1)*45)
+        btn.Text = name
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 16
         btn.TextColor3 = Color3.new(1,1,1)
-        menuBtns[m] = btn
+        btn.BackgroundColor3 = Color3.fromRGB(25,25,25)
+        menuButtons[name] = btn
     end
 
-    -- Right Panel Update Function
-    local function clearRightPanel()
-        for _,c in pairs(rightPanel:GetChildren()) do
-            if not c:IsA("UIListLayout") then
-                c:Destroy()
-            end
+    -- Right panel content holder
+    local function clearRight()
+        for _,v in pairs(rightPanel:GetChildren()) do
+            if v:IsA("GuiObject") then v:Destroy() end
         end
     end
 
-    -- Auto Summit
+    -- ================= Right Panel Contents =================
     local function showAuto()
-        clearRightPanel()
+        clearRight()
         local startBtn = Instance.new("TextButton", rightPanel)
-        startBtn.Size = UDim2.new(0.8,0,0,40)
-        startBtn.Position = UDim2.new(0.1,0,0,20)
-        startBtn.Text = "Start Auto Summit"
-        startBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        startBtn.Size = UDim2.new(0.4,0,0,40)
+        startBtn.Position = UDim2.new(0.05,0,0,10)
+        startBtn.Text = "Start"
+        startBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
         startBtn.TextColor3 = Color3.new(1,1,1)
-        startBtn.Font = Enum.Font.SourceSans
-        startBtn.TextSize = 16
+        local stopBtn = Instance.new("TextButton", rightPanel)
+        stopBtn.Size = UDim2.new(0.4,0,0,40)
+        stopBtn.Position = UDim2.new(0.55,0,0,10)
+        stopBtn.Text = "Stop"
+        stopBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+        stopBtn.TextColor3 = Color3.new(1,1,1)
+
         startBtn.MouseButton1Click:Connect(function()
-            if not autoSummitActive then
-                autoSummitActive = true
-                showNotification("Auto Summit Started")
-                spawn(function()
-                    while autoSummitActive and currentIndex<=#checkpoints do
-                        local cp = checkpoints[currentIndex]
-                        if player.Character and player.Character.PrimaryPart then
-                            player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-                        end
-                        task.wait(delaySeconds)
-                        if currentIndex<#checkpoints then
-                            currentIndex = currentIndex + 1
-                        else
-                            autoSummitActive = false
-                            showNotification("Auto Summit Completed")
-                        end
+            if autoSummitActive then return end
+            autoSummitActive = true
+            showNotification("Auto Summit Started")
+            spawn(function()
+                while autoSummitActive and currentIndex<=#checkpoints do
+                    local cp = checkpoints[currentIndex]
+                    if player.Character and player.Character.PrimaryPart then
+                        player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
                     end
-                end)
-            else
+                    task.wait(delaySeconds/speed)
+                    currentIndex = currentIndex + 1
+                end
+                autoSummitActive = false
+                currentIndex = 1
+                showNotification("Auto Summit Finished")
+            end)
+        end)
+
+        stopBtn.MouseButton1Click:Connect(function()
+            if autoSummitActive then
                 autoSummitActive = false
                 showNotification("Auto Summit Stopped")
+                currentIndex = 1
             end
         end)
     end
 
-    -- CP Manual
     local function showCPManual()
-        clearRightPanel()
+        clearRight()
         for i,cp in ipairs(checkpoints) do
             local btn = Instance.new("TextButton", rightPanel)
-            btn.Size = UDim2.new(0.8,0,0,30)
-            btn.Position = UDim2.new(0.1,0,0,(i-1)*35)
+            btn.Size = UDim2.new(1,-20,0,30)
+            btn.Position = UDim2.new(0,10,0,(i-1)*35)
             btn.Text = cp.name
             btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
             btn.TextColor3 = Color3.new(1,1,1)
-            btn.Font = Enum.Font.SourceSans
-            btn.TextSize = 14
             btn.MouseButton1Click:Connect(function()
                 if player.Character and player.Character.PrimaryPart then
                     player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
@@ -196,109 +198,114 @@ local function createGui()
         end
     end
 
-    menuBtns["Auto"].MouseButton1Click:Connect(showAuto)
-    menuBtns["Auto Death"].MouseButton1Click:Connect(function()
-        clearRightPanel()
-        local toggleBtn = Instance.new("TextButton", rightPanel)
-        toggleBtn.Size = UDim2.new(0.8,0,0,40)
-        toggleBtn.Position = UDim2.new(0.1,0,0,20)
-        toggleBtn.Text = "Toggle Auto Death"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-        toggleBtn.TextColor3 = Color3.new(1,1,1)
-        toggleBtn.Font = Enum.Font.SourceSans
-        toggleBtn.TextSize = 16
-        toggleBtn.MouseButton1Click:Connect(function()
-            autoDeathActive = not autoDeathActive
-            showNotification("Auto Death "..(autoDeathActive and "Enabled" or "Disabled"))
+    local function showServer()
+        clearRight()
+        local serverBtn = Instance.new("TextButton", rightPanel)
+        serverBtn.Size = UDim2.new(0.5,0,0,40)
+        serverBtn.Position = UDim2.new(0.25,0,0,10)
+        serverBtn.Text = serverHop and "ON" or "OFF"
+        serverBtn.BackgroundColor3 = serverHop and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+        serverBtn.TextColor3 = Color3.new(1,1,1)
+        serverBtn.MouseButton1Click:Connect(function()
+            serverHop = not serverHop
+            serverBtn.Text = serverHop and "ON" or "OFF"
+            serverBtn.BackgroundColor3 = serverHop and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
         end)
-    end)
-    menuBtns["Server"].MouseButton1Click:Connect(function()
-        clearRightPanel()
-        local toggleBtn = Instance.new("TextButton", rightPanel)
-        toggleBtn.Size = UDim2.new(0.8,0,0,40)
-        toggleBtn.Position = UDim2.new(0.1,0,0,20)
-        toggleBtn.Text = "Toggle Server Hop"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-        toggleBtn.TextColor3 = Color3.new(1,1,1)
-        toggleBtn.Font = Enum.Font.SourceSans
-        toggleBtn.TextSize = 16
-        toggleBtn.MouseButton1Click:Connect(function()
-            serverHopActive = not serverHopActive
-            showNotification("Server Hop "..(serverHopActive and "Enabled" or "Disabled"))
-        end)
-    end)
-    menuBtns["Setting"].MouseButton1Click:Connect(function()
-        clearRightPanel()
+    end
+
+    local function showSetting()
+        clearRight()
+        -- Delay
         local delayLabel = Instance.new("TextLabel", rightPanel)
-        delayLabel.Size = UDim2.new(0.8,0,0,30)
-        delayLabel.Position = UDim2.new(0.1,0,0,20)
-        delayLabel.Text = "Delay (s):"
+        delayLabel.Size = UDim2.new(0.4,0,0,30)
+        delayLabel.Position = UDim2.new(0.05,0,0,10)
+        delayLabel.Text = "Delay:"
         delayLabel.TextColor3 = Color3.new(1,1,1)
         delayLabel.BackgroundTransparency = 1
-        delayLabel.Font = Enum.Font.SourceSans
-        delayLabel.TextSize = 16
-
         local delayBox = Instance.new("TextBox", rightPanel)
-        delayBox.Size = UDim2.new(0.8,0,0,30)
-        delayBox.Position = UDim2.new(0.1,0,0,60)
+        delayBox.Size = UDim2.new(0.5,0,0,30)
+        delayBox.Position = UDim2.new(0.5,0,0,10)
         delayBox.Text = tostring(delaySeconds)
         delayBox.TextColor3 = Color3.new(1,1,1)
-        delayBox.BackgroundColor3 = Color3.fromRGB(30,30,30)
-        delayBox.Font = Enum.Font.SourceSans
-        delayBox.TextSize = 16
-        delayBox.ClearTextOnFocus = false
+        delayBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
         delayBox.FocusLost:Connect(function()
             local val = tonumber(delayBox.Text)
             if val and val>0 then delaySeconds = val end
         end)
-
+        -- Speed
         local speedLabel = Instance.new("TextLabel", rightPanel)
-        speedLabel.Size = UDim2.new(0.8,0,0,30)
-        speedLabel.Position = UDim2.new(0.1,0,0,100)
+        speedLabel.Size = UDim2.new(0.4,0,0,30)
+        speedLabel.Position = UDim2.new(0.05,0,0,50)
         speedLabel.Text = "Speed:"
         speedLabel.TextColor3 = Color3.new(1,1,1)
         speedLabel.BackgroundTransparency = 1
-        speedLabel.Font = Enum.Font.SourceSans
-        speedLabel.TextSize = 16
-
         local speedBox = Instance.new("TextBox", rightPanel)
-        speedBox.Size = UDim2.new(0.8,0,0,30)
-        speedBox.Position = UDim2.new(0.1,0,0,130)
+        speedBox.Size = UDim2.new(0.5,0,0,30)
+        speedBox.Position = UDim2.new(0.5,0,0,50)
         speedBox.Text = tostring(speed)
         speedBox.TextColor3 = Color3.new(1,1,1)
-        speedBox.BackgroundColor3 = Color3.fromRGB(30,30,30)
-        speedBox.Font = Enum.Font.SourceSans
-        speedBox.TextSize = 16
-        speedBox.ClearTextOnFocus = false
+        speedBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
         speedBox.FocusLost:Connect(function()
             local val = tonumber(speedBox.Text)
             if val and val>0 then speed = val end
         end)
-    end)
-    menuBtns["Info"].MouseButton1Click:Connect(function()
-        clearRightPanel()
-        local infoLabel = Instance.new("TextLabel", rightPanel)
-        infoLabel.Size = UDim2.new(0.9,0,0.9,0)
-        infoLabel.Position = UDim2.new(0.05,0,0.05,0)
-        infoLabel.Text = "BynzzBponjon Info\nVersion 1.0"
-        infoLabel.TextColor3 = Color3.new(1,1,1)
-        infoLabel.BackgroundTransparency = 1
-        infoLabel.Font = Enum.Font.SourceSans
-        infoLabel.TextSize = 16
-    end)
+    end
 
-    -- Hide Button Logic
+    local function showInfo()
+        clearRight()
+        local info = Instance.new("TextLabel", rightPanel)
+        info.Size = UDim2.new(1,0,1,0)
+        info.Position = UDim2.new(0,0,0,0)
+        info.Text = "BynzzBponjon Script Info\nVersion: Final\nBypass Summit v1.0"
+        info.TextColor3 = Color3.new(1,1,1)
+        info.BackgroundTransparency = 1
+        info.TextScaled = true
+    end
+
+    local function showAutoDeath()
+        clearRight()
+        local adBtn = Instance.new("TextButton", rightPanel)
+        adBtn.Size = UDim2.new(0.5,0,0,40)
+        adBtn.Position = UDim2.new(0.25,0,0,10)
+        adBtn.Text = autoDeath and "ON" or "OFF"
+        adBtn.BackgroundColor3 = autoDeath and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+        adBtn.TextColor3 = Color3.new(1,1,1)
+        adBtn.MouseButton1Click:Connect(function()
+            autoDeath = not autoDeath
+            adBtn.Text = autoDeath and "ON" or "OFF"
+            adBtn.BackgroundColor3 = autoDeath and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+        end)
+    end
+
+    -- Menu button clicks
+    menuButtons["Auto"].MouseButton1Click:Connect(showAuto)
+    menuButtons["Server"].MouseButton1Click:Connect(showServer)
+    menuButtons["Setting"].MouseButton1Click:Connect(showSetting)
+    menuButtons["Info"].MouseButton1Click:Connect(showInfo)
+    menuButtons["Auto Death"].MouseButton1Click:Connect(showAutoDeath)
+    menuButtons["Auto"].MouseButton1Click:Connect(showAuto)
+
+    -- CP Manual (sub-menu di Auto)
+    local cpBtn = Instance.new("TextButton", leftPanel)
+    cpBtn.Size = UDim2.new(1,0,0,40)
+    cpBtn.Position = UDim2.new(0,0,0,225)
+    cpBtn.Text = "CP Manual"
+    cpBtn.Font = Enum.Font.GothamBold
+    cpBtn.TextSize = 16
+    cpBtn.TextColor3 = Color3.new(1,1,1)
+    cpBtn.BackgroundColor3 = Color3.fromRGB(25,25,25)
+    cpBtn.MouseButton1Click:Connect(showCPManual)
+
+    -- Hide functionality
     local hidden = false
     hideBtn.MouseButton1Click:Connect(function()
         hidden = not hidden
-        for _,c in pairs(mainFrame:GetChildren()) do
-            if c ~= header then
-                c.Visible = not hidden
+        for _,v in pairs(mainFrame:GetChildren()) do
+            if v ~= header then
+                v.Visible = not hidden
             end
         end
     end)
-
-    return screen
 end
 
 createGui()
