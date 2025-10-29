@@ -1,106 +1,106 @@
--- GUI Cek Script
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local PlayerGui = player:WaitForChild("PlayerGui")
+-- Gui Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BynzzBponjon"
+ScreenGui.Parent = game.CoreGui
 
--- ScreenGui
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CekGUI"
-screenGui.Parent = PlayerGui
+-- Main Frame (Draggable)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 470, 0, 400)
+MainFrame.Position = UDim2.new(0, 50, 0, 100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+MainFrame.Parent = ScreenGui
 
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 400, 0, 350)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -175)
-mainFrame.BackgroundColor3 = Color3.new(0,0,0)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
+-- Draggable
+MainFrame.Active = true
+MainFrame.Draggable = true
 
--- UIListLayout
-local layout = Instance.new("UIListLayout")
-layout.Parent = mainFrame
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0,5)
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1,0,0,30)
+Header.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Header.Parent = MainFrame
 
--- Function create button
-local function createButton(text)
+local HeaderLabel = Instance.new("TextLabel")
+HeaderLabel.Size = UDim2.new(0.8,0,1,0)
+HeaderLabel.Position = UDim2.new(0,10,0,0)
+HeaderLabel.BackgroundTransparency = 1
+HeaderLabel.Text = "BynzzBponjon"
+HeaderLabel.TextColor3 = Color3.fromRGB(255,255,255)
+HeaderLabel.Font = Enum.Font.SourceSansBold
+HeaderLabel.TextSize = 18
+HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
+HeaderLabel.Parent = Header
+
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0.2, -10, 1, -4)
+CloseButton.Position = UDim2.new(0.8, 0, 0, 2)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200,0,50)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 18
+CloseButton.Parent = Header
+
+CloseButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
+-- Panel Kiri (Menu)
+local LeftPanel = Instance.new("Frame")
+LeftPanel.Name = "LeftPanel"
+LeftPanel.Size = UDim2.new(0, 120, 1, -30) -- Tinggi minus header
+LeftPanel.Position = UDim2.new(0, 0, 0, 30)
+LeftPanel.BackgroundColor3 = Color3.fromRGB(0,0,0)
+LeftPanel.Parent = MainFrame
+
+-- Teks Menu
+local function createMenuText(name, yPos)
+    local TextLabel = Instance.new("TextLabel")
+    TextLabel.Size = UDim2.new(1, 0, 0, 50)
+    TextLabel.Position = UDim2.new(0, 0, 0, yPos)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = name
+    TextLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    TextLabel.Font = Enum.Font.SourceSansBold
+    TextLabel.TextSize = 18
+    TextLabel.Parent = LeftPanel
+end
+
+createMenuText("Auto", 0)
+createMenuText("Server", 50)
+createMenuText("Setting", 100)
+createMenuText("Info", 150)
+
+-- Panel Kanan (Fitur)
+local RightPanel = Instance.new("Frame")
+RightPanel.Name = "RightPanel"
+RightPanel.Size = UDim2.new(0, 330, 1, -30) -- Lebih lebar, tinggi minus header
+RightPanel.Position = UDim2.new(0, 120, 0, 30)
+RightPanel.BackgroundColor3 = Color3.fromRGB(10,10,10)
+RightPanel.Parent = MainFrame
+
+-- Contoh Tombol Fitur
+local function createFeatureButton(name, yPos)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.Size = UDim2.new(1, -20, 0, 40)
+    btn.Position = UDim2.new(0, 10, 0, yPos)
     btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Text = text
-    btn.TextScaled = true
-    btn.Parent = mainFrame
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 16
+    btn.Parent = RightPanel
 
-    btn.MouseEnter:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(50,0,0)
+    btn.MouseButton1Click:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(200,0,100) -- Highlight saat aktif
+        print(name.." button clicked!")
     end)
-    btn.MouseLeave:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    end)
-    return btn
 end
 
--- Buttons
-local autoSummitBtn = createButton("Auto Summit")
-local cpManualBtn = createButton("CP Manual")
-local serverHopBtn = createButton("Server Hop")
-local settingBtn = createButton("Setting")
-local infoBtn = createButton("Info")
-
--- CP Manual Scroll
-local cpFrame = Instance.new("ScrollingFrame")
-cpFrame.Size = UDim2.new(1, -10, 0, 150)
-cpFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-cpFrame.CanvasSize = UDim2.new(0,0,0,600)
-cpFrame.ScrollBarThickness = 6
-cpFrame.Visible = false
-cpFrame.Parent = mainFrame
-
-cpManualBtn.MouseButton1Click:Connect(function()
-    cpFrame.Visible = not cpFrame.Visible
-end)
-
--- CP Buttons
-for i=1,20 do
-    local cpBtn = Instance.new("TextButton")
-    cpBtn.Size = UDim2.new(1, -10, 0, 25)
-    cpBtn.Position = UDim2.new(0, 0, 0, (i-1)*30)
-    cpBtn.Text = "Checkpoint "..i
-    cpBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    cpBtn.TextColor3 = Color3.new(1,1,1)
-    cpBtn.Parent = cpFrame
-end
-
--- Delay Box
-local delayBox = Instance.new("TextBox")
-delayBox.Size = UDim2.new(1, -10, 0, 40)
-delayBox.PlaceholderText = "Delay (detik)"
-delayBox.TextColor3 = Color3.new(1,1,1)
-delayBox.BackgroundColor3 = Color3.fromRGB(30,30,30)
-delayBox.Parent = mainFrame
-
--- Auto Death Toggle
-local autoDeathBtn = createButton("Auto Death: OFF")
-local autoDeath = false
-autoDeathBtn.MouseButton1Click:Connect(function()
-    autoDeath = not autoDeath
-    autoDeathBtn.Text = "Auto Death: "..(autoDeath and "ON" or "OFF")
-end)
-
--- Notification Example
-local function notify(text)
-    local notif = Instance.new("TextLabel")
-    notif.Size = UDim2.new(0, 300, 0, 50)
-    notif.Position = UDim2.new(0.5, -150, 0, 50)
-    notif.BackgroundColor3 = Color3.fromRGB(255,0,0)
-    notif.TextColor3 = Color3.new(1,1,1)
-    notif.TextScaled = true
-    notif.Text = text
-    notif.Parent = screenGui
-    game:GetService("Debris"):AddItem(notif, 3)
-end
-
-autoSummitBtn.MouseButton1Click:Connect(function()
-    notify("Auto Summit Start (Cek GUI)")
-end)
+-- Contoh tombol di panel kanan
+createFeatureButton("CP Manual", 0)
+createFeatureButton("Auto Summit", 50)
+createFeatureButton("Auto Death", 100)
+createFeatureButton("Delay Setting", 150)
