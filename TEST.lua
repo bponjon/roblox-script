@@ -1,165 +1,125 @@
--- ScreenGui
+-- Gui Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AutoSummitGUI"
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "BynzzBponjon"
+ScreenGui.Parent = game.CoreGui
 
 -- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 350, 0, 400)
-MainFrame.Position = UDim2.new(0.3,0,0.3,0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 470, 0, 400)
+MainFrame.Position = UDim2.new(0, 50, 0, 100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
--- Top Bar
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1,0,0,30)
-TopBar.Position = UDim2.new(0,0,0,0)
-TopBar.BackgroundColor3 = Color3.fromRGB(50,50,50)
-TopBar.Parent = MainFrame
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1,0,0,30)
+Header.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Header.Parent = MainFrame
 
--- Title
-local Title = Instance.new("TextLabel")
-Title.Text = "Auto Summit"
-Title.Size = UDim2.new(0.6,0,1,0)
-Title.Position = UDim2.new(0,5,0,0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.new(1,1,1)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 18
-Title.Parent = TopBar
+local HeaderLabel = Instance.new("TextLabel")
+HeaderLabel.Size = UDim2.new(0.8,0,1,0)
+HeaderLabel.Position = UDim2.new(0,10,0,0)
+HeaderLabel.BackgroundTransparency = 1
+HeaderLabel.Text = "BynzzBponjon"
+HeaderLabel.TextColor3 = Color3.fromRGB(255,255,255)
+HeaderLabel.Font = Enum.Font.SourceSansBold
+HeaderLabel.TextSize = 18
+HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
+HeaderLabel.Parent = Header
 
 -- Close Button
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Text = "X"
-CloseBtn.Size = UDim2.new(0,30,1,0)
-CloseBtn.Position = UDim2.new(0.9,0,0,0)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
-CloseBtn.TextColor3 = Color3.new(1,1,1)
-CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.TextSize = 18
-CloseBtn.Parent = TopBar
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0.1, -5, 1, -4)
+CloseButton.Position = UDim2.new(0.9, 0, 0, 2)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200,0,50)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 18
+CloseButton.Parent = Header
 
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
+CloseButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
 end)
 
--- Hide Button
-local HideBtn = Instance.new("TextButton")
-HideBtn.Text = "_"
-HideBtn.Size = UDim2.new(0,30,1,0)
-HideBtn.Position = UDim2.new(0.85,0,0,0)
-HideBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
-HideBtn.TextColor3 = Color3.new(1,1,1)
-HideBtn.Font = Enum.Font.SourceSansBold
-HideBtn.TextSize = 18
-HideBtn.Parent = TopBar
+-- Hide/Show Button
+local HideButton = Instance.new("TextButton")
+HideButton.Size = UDim2.new(0.1, -5, 1, -4)
+HideButton.Position = UDim2.new(0.8, 0, 0, 2)
+HideButton.BackgroundColor3 = Color3.fromRGB(100,100,100)
+HideButton.Text = "_"
+HideButton.TextColor3 = Color3.fromRGB(255,255,255)
+HideButton.Font = Enum.Font.SourceSansBold
+HideButton.TextSize = 18
+HideButton.Parent = Header
 
-HideBtn.MouseButton1Click:Connect(function()
-    for i,v in pairs(MainFrame:GetChildren()) do
-        if v ~= TopBar then
-            v.Visible = not v.Visible
-        end
-    end
+local hidden = false
+HideButton.MouseButton1Click:Connect(function()
+    hidden = not hidden
+    MainFrame.Size = hidden and UDim2.new(0, 200, 0, 40) or UDim2.new(0, 470, 0, 400)
+    LeftPanel.Visible = not hidden
+    RightPanel.Visible = not hidden
 end)
 
--- Feature List Frame
-local FeatureFrame = Instance.new("ScrollingFrame")
-FeatureFrame.Size = UDim2.new(1,0,1,-30)
-FeatureFrame.Position = UDim2.new(0,0,0,30)
-FeatureFrame.BackgroundTransparency = 1
-FeatureFrame.ScrollBarThickness = 6
-FeatureFrame.Parent = MainFrame
+-- Panel Kiri
+local LeftPanel = Instance.new("Frame")
+LeftPanel.Size = UDim2.new(0, 120, 1, -30)
+LeftPanel.Position = UDim2.new(0, 0, 0, 30)
+LeftPanel.BackgroundColor3 = Color3.fromRGB(0,0,0)
+LeftPanel.Parent = MainFrame
 
--- Sample Features
-local features = {
-    {name="Auto Summit", type="toggle", value=false},
-    {name="CP Manual", type="button"},
-    {name="Auto Death", type="toggle", value=false},
-    {name="Server Hop", type="toggle", value=false},
-    {name="Settings", type="slider", min=1, max=100, value=10}, -- contoh delay
-    {name="Info", type="button"}
-}
-
-local function createFeature(f,i)
-    local fFrame = Instance.new("Frame")
-    fFrame.Size = UDim2.new(1,0,0,35)
-    fFrame.Position = UDim2.new(0,0,0, (i-1)*40)
-    fFrame.BackgroundTransparency = 1
-    fFrame.Parent = FeatureFrame
-
-    local fName = Instance.new("TextLabel")
-    fName.Text = f.name
-    fName.Size = UDim2.new(0.5,0,1,0)
-    fName.BackgroundTransparency = 1
-    fName.TextColor3 = Color3.new(1,1,1)
-    fName.Font = Enum.Font.SourceSansBold
-    fName.TextSize = 16
-    fName.TextXAlignment = Enum.TextXAlignment.Left
-    fName.Parent = fFrame
-
-    if f.type=="toggle" then
-        local toggle = Instance.new("TextButton")
-        toggle.Text = "OFF"
-        toggle.Size = UDim2.new(0.4,0,0.7,0)
-        toggle.Position = UDim2.new(0.55,0,0.15,0)
-        toggle.BackgroundColor3 = Color3.fromRGB(100,100,100)
-        toggle.TextColor3 = Color3.new(1,1,1)
-        toggle.Font = Enum.Font.SourceSansBold
-        toggle.TextSize = 14
-        toggle.Parent = fFrame
-
-        toggle.MouseButton1Click:Connect(function()
-            f.value = not f.value
-            toggle.Text = f.value and "ON" or "OFF"
-            toggle.BackgroundColor3 = f.value and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
-        end)
-    elseif f.type=="button" then
-        local btn = Instance.new("TextButton")
-        btn.Text = "Open"
-        btn.Size = UDim2.new(0.4,0,0.7,0)
-        btn.Position = UDim2.new(0.55,0,0.15,0)
-        btn.BackgroundColor3 = Color3.fromRGB(100,100,100)
-        btn.TextColor3 = Color3.new(1,1,1)
-        btn.Font = Enum.Font.SourceSansBold
-        btn.TextSize = 14
-        btn.Parent = fFrame
-        -- placeholder function
-        btn.MouseButton1Click:Connect(function()
-            print(f.name.." clicked")
-        end)
-    elseif f.type=="slider" then
-        local slider = Instance.new("TextBox")
-        slider.Text = tostring(f.value)
-        slider.Size = UDim2.new(0.4,0,0.7,0)
-        slider.Position = UDim2.new(0.55,0,0.15,0)
-        slider.BackgroundColor3 = Color3.fromRGB(80,80,80)
-        slider.TextColor3 = Color3.new(1,1,1)
-        slider.Font = Enum.Font.SourceSansBold
-        slider.TextSize = 14
-        slider.Parent = fFrame
-
-        slider.FocusLost:Connect(function(enter)
-            local val = tonumber(slider.Text)
-            if val then
-                if val<f.min then val=f.min end
-                if val>f.max then val=f.max end
-                f.value = val
-                slider.Text = tostring(f.value)
-            else
-                slider.Text = tostring(f.value)
-            end
-        end)
-    end
+local function createMenuText(name, yPos)
+    local TextLabel = Instance.new("TextLabel")
+    TextLabel.Size = UDim2.new(1, 0, 0, 50)
+    TextLabel.Position = UDim2.new(0, 0, 0, yPos)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = name
+    TextLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    TextLabel.Font = Enum.Font.SourceSansBold
+    TextLabel.TextSize = 18
+    TextLabel.Parent = LeftPanel
 end
 
-for i,f in ipairs(features) do
-    createFeature(f,i)
+createMenuText("Auto", 0)
+createMenuText("Server", 50)
+createMenuText("Setting", 100)
+createMenuText("Info", 150)
+
+-- Panel Kanan
+local RightPanel = Instance.new("Frame")
+RightPanel.Size = UDim2.new(0, 330, 1, -30)
+RightPanel.Position = UDim2.new(0, 120, 0, 30)
+RightPanel.BackgroundColor3 = Color3.fromRGB(10,10,10)
+RightPanel.Parent = MainFrame
+
+local function createFeatureButton(name, yPos)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 40)
+    btn.Position = UDim2.new(0, 10, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 16
+    btn.Parent = RightPanel
+
+    btn.MouseButton1Click:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(200,0,100)
+        print(name.." button clicked!")
+    end)
 end
+
+-- Tombol fitur
+createFeatureButton("CP Manual", 0)
+createFeatureButton("Auto Summit", 50)
+createFeatureButton("Auto Death", 100)
+createFeatureButton("Server Hop On/Off", 150)
+createFeatureButton("Delay Setting", 200)
+createFeatureButton("Speed Setting", 250)
+createFeatureButton("Info Panel", 300)
 
 -- Checkpoints
 local checkpoints = {
@@ -186,4 +146,4 @@ local checkpoints = {
     Vector3.new(-1534.938, 933.116, -2176.096)
 }
 
-print("GUI & Checkpoints loaded!")
+print("Checkpoint count:", #checkpoints)
