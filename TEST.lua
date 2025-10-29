@@ -1,65 +1,142 @@
--- GUI Script: BynzzBponjon local Players = game:GetService("Players") local player = Players.LocalPlayer local PlayerGui = player:WaitForChild("PlayerGui")
+-- BynzzBponjon GUI v1
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- Main GUI local ScreenGui = Instance.new("ScreenGui") ScreenGui.Name = "BynzzBponjonGUI" ScreenGui.Parent = PlayerGui
+-- Main Screen GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "BynzzBponjonGUI"
+screenGui.Parent = playerGui
 
--- Main Frame local MainFrame = Instance.new("Frame") MainFrame.Name = "MainFrame" MainFrame.Size = UDim2.new(0, 350, 0, 400) MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0) MainFrame.BackgroundColor3 = Color3.fromRGB(0,0,0) MainFrame.BorderSizePixel = 0 MainFrame.Active = true MainFrame.Draggable = true MainFrame.Parent = ScreenGui
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
 
--- Top bar with name & hide/close buttons local TopBar = Instance.new("Frame") TopBar.Size = UDim2.new(1,0,0,30) TopBar.BackgroundColor3 = Color3.fromRGB(20,20,20) TopBar.Parent = MainFrame
+-- Top Bar (Name + Close + Hide)
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1,0,0,30)
+topBar.BackgroundColor3 = Color3.fromRGB(20,20,20)
+topBar.Parent = mainFrame
 
-local Title = Instance.new("TextLabel") Title.Text = "BynzzBponjon" Title.Size = UDim2.new(0.6,0,1,0) Title.BackgroundTransparency = 1 Title.TextColor3 = Color3.fromRGB(255,255,255) Title.TextScaled = true Title.Font = Enum.Font.SourceSansBold Title.Parent = TopBar
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(0.5,0,1,0)
+titleLabel.Position = UDim2.new(0,5,0,0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "BynzzBponjon"
+titleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 18
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = topBar
 
-local HideButton = Instance.new("TextButton") HideButton.Text = "Hide" HideButton.Size = UDim2.new(0.2,0,1,0) HideButton.Position = UDim2.new(0.6,0,0,0) HideButton.BackgroundColor3 = Color3.fromRGB(255,0,0) HideButton.TextColor3 = Color3.fromRGB(255,255,255) HideButton.Font = Enum.Font.SourceSansBold HideButton.TextScaled = true HideButton.Parent = TopBar
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0,50,1,0)
+closeButton.Position = UDim2.new(1,-55,0,0)
+closeButton.BackgroundColor3 = Color3.fromRGB(180,0,0)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255,255,255)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 18
+closeButton.Parent = topBar
 
-local CloseButton = Instance.new("TextButton") CloseButton.Text = "X" CloseButton.Size = UDim2.new(0.2,0,1,0) CloseButton.Position = UDim2.new(0.8,0,0,0) CloseButton.BackgroundColor3 = Color3.fromRGB(255,0,0) CloseButton.TextColor3 = Color3.fromRGB(255,255,255) CloseButton.Font = Enum.Font.SourceSansBold CloseButton.TextScaled = true CloseButton.Parent = TopBar
+local hideButton = Instance.new("TextButton")
+hideButton.Size = UDim2.new(0,50,1,0)
+hideButton.Position = UDim2.new(1,-110,0,0)
+hideButton.BackgroundColor3 = Color3.fromRGB(100,100,100)
+hideButton.Text = "_"
+hideButton.TextColor3 = Color3.fromRGB(255,255,255)
+hideButton.Font = Enum.Font.SourceSansBold
+hideButton.TextSize = 18
+hideButton.Parent = topBar
 
--- Panels local FeaturePanel = Instance.new("Frame") FeaturePanel.Size = UDim2.new(0.4,0,1,-30) FeaturePanel.Position = UDim2.new(0,0,0,30) FeaturePanel.BackgroundColor3 = Color3.fromRGB(30,30,30) FeaturePanel.Parent = MainFrame
+-- Left Panel (Feature Names)
+local leftPanel = Instance.new("Frame")
+leftPanel.Size = UDim2.new(0,120,1,-30)
+leftPanel.Position = UDim2.new(0,0,0,30)
+leftPanel.BackgroundColor3 = Color3.fromRGB(25,25,25)
+leftPanel.Parent = mainFrame
 
-local ActionPanel = Instance.new("Frame") ActionPanel.Size = UDim2.new(0.6,0,1,-30) ActionPanel.Position = UDim2.new(0.4,0,0,30) ActionPanel.BackgroundColor3 = Color3.fromRGB(40,40,40) ActionPanel.Parent = MainFrame
+-- Right Panel (Feature Buttons)
+local rightPanel = Instance.new("Frame")
+rightPanel.Size = UDim2.new(1,-120,1,-30)
+rightPanel.Position = UDim2.new(0,120,0,30)
+rightPanel.BackgroundColor3 = Color3.fromRGB(15,15,15)
+rightPanel.Parent = mainFrame
 
--- Example Features local features = {"Auto Summit","Server Hop","Settings","Info"}
-
-for i, feat in ipairs(features) do local btn = Instance.new("TextButton") btn.Text = feat btn.Size = UDim2.new(1,0,0,50) btn.Position = UDim2.new(0,0,0,(i-1)*50) btn.BackgroundColor3 = Color3.fromRGB(50,50,50) btn.TextColor3 = Color3.fromRGB(255,255,255) btn.Font = Enum.Font.SourceSansBold btn.TextScaled = true btn.Parent = FeaturePanel
-
-local subPanel = Instance.new("Frame")
-subPanel.Size = UDim2.new(1,0,1,0)
-subPanel.Position = UDim2.new(0,0,0,0)
-subPanel.BackgroundColor3 = Color3.fromRGB(60,60,60)
-subPanel.Visible = false
-subPanel.Parent = ActionPanel
-
-local subBtn1 = Instance.new("TextButton")
-subBtn1.Text = feat.." Sub 1"
-subBtn1.Size = UDim2.new(1,0,0,50)
-subBtn1.Position = UDim2.new(0,0,0,0)
-subBtn1.BackgroundColor3 = Color3.fromRGB(80,80,80)
-subBtn1.TextColor3 = Color3.fromRGB(255,255,255)
-subBtn1.Font = Enum.Font.SourceSansBold
-subBtn1.TextScaled = true
-subBtn1.Parent = subPanel
-
-local subBtn2 = Instance.new("TextButton")
-subBtn2.Text = feat.." Sub 2"
-subBtn2.Size = UDim2.new(1,0,0,50)
-subBtn2.Position = UDim2.new(0,0,0,50)
-subBtn2.BackgroundColor3 = Color3.fromRGB(80,80,80)
-subBtn2.TextColor3 = Color3.fromRGB(255,255,255)
-subBtn2.Font = Enum.Font.SourceSansBold
-subBtn2.TextScaled = true
-subBtn2.Parent = subPanel
-
-btn.MouseButton1Click:Connect(function()
-    -- Toggle subpanel visibility
-    subPanel.Visible = not subPanel.Visible
-    -- Hide others
-    for _, other in ipairs(ActionPanel:GetChildren()) do
-        if other:IsA("Frame") and other ~= subPanel then
-            other.Visible = false
-        end
-    end
-end)
-
+-- Notification function
+local function notify(msg)
+    local notif = Instance.new("TextLabel")
+    notif.Size = UDim2.new(0,250,0,40)
+    notif.Position = UDim2.new(0.5,-125,0.1,0)
+    notif.BackgroundColor3 = Color3.fromRGB(255,0,0)
+    notif.TextColor3 = Color3.fromRGB(255,255,255)
+    notif.Font = Enum.Font.SourceSansBold
+    notif.TextSize = 16
+    notif.Text = msg
+    notif.Parent = screenGui
+    task.delay(3,function() notif:Destroy() end)
 end
 
--- Close & Hide logic CloseButton.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+-- Example Features
+local features = {
+    {Name="Auto Summit", SubFeatures={"CP Manual", "Auto Summit"}, Active=false},
+    {Name="Auto Death", SubFeatures={}, Active=false}
+}
 
-local hidden = false HideButton.MouseButton1Click:Connect(function() hidden = not hidden if hidden then MainFrame.Size = UDim2.new(0, 350, 0, 30) for _, child in ipairs(MainFrame:GetChildren()) do if child ~= TopBar then child.Visible = false end end else MainFrame.Size = UDim2.new(0, 350, 0, 400) for _, child in ipairs(MainFrame:GetChildren()) do if child ~= TopBar then child.Visible = true end end end end)
+for i, feature in ipairs(features) do
+    -- Left Label
+    local label = Instance.new("TextButton")
+    label.Size = UDim2.new(1,0,0,40)
+    label.Position = UDim2.new(0,0,0,(i-1)*45)
+    label.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    label.TextColor3 = Color3.fromRGB(255,255,255)
+    label.Text = feature.Name
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 16
+    label.Parent = leftPanel
+
+    -- Right buttons container
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1,0,0,#feature.SubFeatures*40)
+    container.Position = UDim2.new(0,0,0,0)
+    container.BackgroundTransparency = 1
+    container.Visible = false
+    container.Parent = rightPanel
+
+    for j, sub in ipairs(feature.SubFeatures) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0,180,0,35)
+        btn.Position = UDim2.new(0,10,0,(j-1)*40)
+        btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Text = sub
+        btn.Font = Enum.Font.SourceSansBold
+        btn.TextSize = 14
+        btn.Parent = container
+
+        btn.MouseButton1Click:Connect(function()
+            notify(sub.." toggled!")
+            -- TODO: tambahkan fungsi sub fitur disini
+        end)
+    end
+
+    label.MouseButton1Click:Connect(function()
+        container.Visible = not container.Visible
+    end)
+end
+
+-- Close & Hide functionality
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+hideButton.MouseButton1Click:Connect(function()
+    mainFrame.Size = UDim2.new(0,400,0,30)
+    leftPanel.Visible = false
+    rightPanel.Visible = false
+end)
