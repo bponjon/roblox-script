@@ -1,90 +1,115 @@
--- BynzzBponjon GUI
+-- BynzzBponjon GUI v1.0
+-- Konsep: hitam-putih, tombol merah aktif, compact, scrollable checkpoint
+
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- ScreenGui
+-- Main Screen GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BynzzBponjon"
+ScreenGui.Name = "BynzzBponjonGUI"
+ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
--- Main Frame
+-- Background Frame
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 200, 0, 50)
-MainFrame.Position = UDim2.new(0.5, -100, 0.1, 0)
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Text = "BynzzBponjon"
+Title.Size = UDim2.new(1,0,0,50)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 24
+Title.Parent = MainFrame
+
 -- Auto Summit Button
-local AutoSummitBtn = Instance.new("TextButton")
-AutoSummitBtn.Size = UDim2.new(1, 0, 1, 0)
-AutoSummitBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-AutoSummitBtn.TextColor3 = Color3.fromRGB(255,255,255)
-AutoSummitBtn.Text = "Auto Summit"
-AutoSummitBtn.Parent = MainFrame
+local AutoButton = Instance.new("TextButton")
+AutoButton.Name = "AutoSummit"
+AutoButton.Size = UDim2.new(0.9,0,0,40)
+AutoButton.Position = UDim2.new(0.05,0,0,60)
+AutoButton.Text = "Auto Summit"
+AutoButton.BackgroundColor3 = Color3.fromRGB(255,0,0)
+AutoButton.TextColor3 = Color3.fromRGB(255,255,255)
+AutoButton.Font = Enum.Font.SourceSansBold
+AutoButton.TextSize = 20
+AutoButton.Parent = MainFrame
 
--- Sub Menu Frame
-local SubMenu = Instance.new("Frame")
-SubMenu.Size = UDim2.new(1, 0, 0, 120)
-SubMenu.Position = UDim2.new(0, 0, 1, 5)
-SubMenu.BackgroundColor3 = Color3.fromRGB(25,25,25)
-SubMenu.Visible = false
-SubMenu.Parent = MainFrame
+-- CP Manual Scroll Frame
+local CPFrame = Instance.new("ScrollingFrame")
+CPFrame.Name = "CPFrame"
+CPFrame.Size = UDim2.new(0.9,0,0,200)
+CPFrame.Position = UDim2.new(0.05,0,0,110)
+CPFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+CPFrame.BorderSizePixel = 0
+CPFrame.CanvasSize = UDim2.new(0,0,0,0)
+CPFrame.ScrollBarThickness = 6
+CPFrame.Parent = MainFrame
 
--- Scrolling Frame
-local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1,0,1,0)
-ScrollFrame.CanvasSize = UDim2.new(0,0,0,200)
-ScrollFrame.ScrollBarThickness = 6
-ScrollFrame.BackgroundTransparency = 1
-ScrollFrame.Parent = SubMenu
+-- UIListLayout for CP Buttons
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Parent = CPFrame
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ListLayout.Padding = UDim.new(0,5)
 
--- Function to create buttons in submenu
-local function createButton(name)
+-- Function to add CP buttons
+local function addCPButton(name)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 30)
-    btn.Position = UDim2.new(0,5,0, (#ScrollFrame:GetChildren()-1)*35)
-    btn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Size = UDim2.new(1,0,0,30)
     btn.Text = name
-    btn.Parent = ScrollFrame
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 18
+    btn.Parent = CPFrame
+    CPFrame.CanvasSize = UDim2.new(0,0,0,ListLayout.AbsoluteContentSize.Y)
+    return btn
+end
 
-    btn.MouseButton1Click:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(255,0,0)
-        wait(0.2)
-        btn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-        -- Tambahkan logic fitur di sini
+-- Example CP buttons
+for i=1,19 do
+    addCPButton("Checkpoint "..i)
+end
+
+-- Notification Frame
+local Notification = Instance.new("TextLabel")
+Notification.Size = UDim2.new(0,300,0,50)
+Notification.Position = UDim2.new(0.5,-150,0,50)
+Notification.BackgroundColor3 = Color3.fromRGB(255,0,0)
+Notification.TextColor3 = Color3.fromRGB(255,255,255)
+Notification.Font = Enum.Font.SourceSansBold
+Notification.TextSize = 20
+Notification.Text = ""
+Notification.Visible = false
+Notification.Parent = ScreenGui
+
+-- Function to show notification
+local function showNotification(msg, duration)
+    Notification.Text = msg
+    Notification.Visible = true
+    task.delay(duration or 3, function()
+        Notification.Visible = false
     end)
 end
 
-createButton("CP Manual")
-createButton("Server Hop")
-createButton("Auto Death")
-
--- Toggle submenu
-AutoSummitBtn.MouseButton1Click:Connect(function()
-    SubMenu.Visible = not SubMenu.Visible
+-- Example: Click Auto Summit
+AutoButton.MouseButton1Click:Connect(function()
+    showNotification("Auto Summit Started!",2)
 end)
 
--- Notification Function
-local function showNotification(msg)
-    local notif = Instance.new("Frame")
-    notif.Size = UDim2.new(0,200,0,50)
-    notif.Position = UDim2.new(0.5,-100,0.05,0)
-    notif.BackgroundColor3 = Color3.fromRGB(255,0,0)
-    notif.Parent = ScreenGui
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1,0,1,0)
-    label.BackgroundTransparency = 1
-    label.Text = msg
-    label.TextColor3 = Color3.fromRGB(255,255,255)
-    label.Parent = notif
-
-    task.delay(3, function()
-        notif:Destroy()
-    end)
+-- Example: Click CP buttons
+for _,btn in pairs(CPFrame:GetChildren()) do
+    if btn:IsA("TextButton") then
+        btn.MouseButton1Click:Connect(function()
+            showNotification(btn.Text.." Selected!",2)
+        end)
+    end
 end
-
--- Contoh penggunaan notif
--- showNotification("Auto Summit Dimulai!")
