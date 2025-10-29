@@ -20,7 +20,7 @@ Header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 Header.Parent = MainFrame
 
 local HeaderLabel = Instance.new("TextLabel")
-HeaderLabel.Size = UDim2.new(0.8,0,1,0)
+HeaderLabel.Size = UDim2.new(0.6,0,1,0)
 HeaderLabel.Position = UDim2.new(0,10,0,0)
 HeaderLabel.BackgroundTransparency = 1
 HeaderLabel.Text = "BynzzBponjon"
@@ -30,6 +30,7 @@ HeaderLabel.TextSize = 18
 HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
 HeaderLabel.Parent = Header
 
+-- Close Button
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size = UDim2.new(0.2, -10, 1, -4)
 CloseButton.Position = UDim2.new(0.8, 0, 0, 2)
@@ -42,6 +43,21 @@ CloseButton.Parent = Header
 
 CloseButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
+end)
+
+-- Hide/Show Button
+local HideButton = Instance.new("TextButton")
+HideButton.Size = UDim2.new(0.2, -10, 1, -4)
+HideButton.Position = UDim2.new(0.6, 0, 0, 2)
+HideButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+HideButton.Text = "_"
+HideButton.TextColor3 = Color3.fromRGB(255,255,255)
+HideButton.Font = Enum.Font.SourceSansBold
+HideButton.TextSize = 18
+HideButton.Parent = Header
+
+HideButton.MouseButton1Click:Connect(function()
+    MainFrame.Size = MainFrame.Size == UDim2.new(0,470,0,30) and UDim2.new(0,470,0,400) or UDim2.new(0,470,0,30)
 end)
 
 -- Panel Kiri (Menu)
@@ -93,6 +109,14 @@ local function createFeatureButton(name, yPos)
         active = not active
         btn.BackgroundColor3 = active and Color3.fromRGB(200,0,100) or Color3.fromRGB(30,30,30)
         print(name.." toggled "..tostring(active))
+        -- Contoh logic tiap fitur bisa diisi di sini
+        if name == "Auto Death" then
+            -- aktif/nonaktif auto death
+        elseif name == "Auto Summit" then
+            -- jalankan auto summit
+        elseif name == "CP Manual" then
+            -- aktifkan cp manual
+        end
     end)
 end
 
