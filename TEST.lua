@@ -3,17 +3,15 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BynzzBponjon"
 ScreenGui.Parent = game.CoreGui
 
--- Main Frame (Draggable)
+-- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 470, 0, 400)
 MainFrame.Position = UDim2.new(0, 50, 0, 100)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-MainFrame.Parent = ScreenGui
-
--- Draggable
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
 -- Header
 local Header = Instance.new("Frame")
@@ -32,7 +30,6 @@ HeaderLabel.TextSize = 18
 HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
 HeaderLabel.Parent = Header
 
--- Close Button
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size = UDim2.new(0.2, -10, 1, -4)
 CloseButton.Position = UDim2.new(0.8, 0, 0, 2)
@@ -50,16 +47,16 @@ end)
 -- Panel Kiri (Menu)
 local LeftPanel = Instance.new("Frame")
 LeftPanel.Name = "LeftPanel"
-LeftPanel.Size = UDim2.new(0, 120, 1, -30) -- Tinggi minus header
+LeftPanel.Size = UDim2.new(0, 120, 1, -30)
 LeftPanel.Position = UDim2.new(0, 0, 0, 30)
 LeftPanel.BackgroundColor3 = Color3.fromRGB(0,0,0)
 LeftPanel.Parent = MainFrame
 
--- Teks Menu
-local function createMenuText(name, yPos)
+local menuItems = {"Auto","Server","Setting","Info"}
+for i, name in ipairs(menuItems) do
     local TextLabel = Instance.new("TextLabel")
-    TextLabel.Size = UDim2.new(1, 0, 0, 50)
-    TextLabel.Position = UDim2.new(0, 0, 0, yPos)
+    TextLabel.Size = UDim2.new(1,0,0,50)
+    TextLabel.Position = UDim2.new(0,0,0,(i-1)*50)
     TextLabel.BackgroundTransparency = 1
     TextLabel.Text = name
     TextLabel.TextColor3 = Color3.fromRGB(255,255,255)
@@ -68,24 +65,21 @@ local function createMenuText(name, yPos)
     TextLabel.Parent = LeftPanel
 end
 
-createMenuText("Auto", 0)
-createMenuText("Server", 50)
-createMenuText("Setting", 100)
-createMenuText("Info", 150)
-
 -- Panel Kanan (Fitur)
-local RightPanel = Instance.new("Frame")
+local RightPanel = Instance.new("ScrollingFrame")
 RightPanel.Name = "RightPanel"
-RightPanel.Size = UDim2.new(0, 330, 1, -30) -- Lebih lebar, tinggi minus header
+RightPanel.Size = UDim2.new(0, 330, 1, -30)
 RightPanel.Position = UDim2.new(0, 120, 0, 30)
 RightPanel.BackgroundColor3 = Color3.fromRGB(10,10,10)
+RightPanel.CanvasSize = UDim2.new(0,0,0,500)
+RightPanel.ScrollBarThickness = 6
 RightPanel.Parent = MainFrame
 
--- Contoh Tombol Fitur
+-- Fungsi buat tombol fitur
 local function createFeatureButton(name, yPos)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -20, 0, 40)
-    btn.Position = UDim2.new(0, 10, 0, yPos)
+    btn.Position = UDim2.new(0,10,0,yPos)
     btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(255,255,255)
@@ -93,14 +87,17 @@ local function createFeatureButton(name, yPos)
     btn.TextSize = 16
     btn.Parent = RightPanel
 
+    -- Toggle warna pas aktif
+    local active = false
     btn.MouseButton1Click:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(200,0,100) -- Highlight saat aktif
-        print(name.." button clicked!")
+        active = not active
+        btn.BackgroundColor3 = active and Color3.fromRGB(200,0,100) or Color3.fromRGB(30,30,30)
+        print(name.." toggled "..tostring(active))
     end)
 end
 
--- Contoh tombol di panel kanan
-createFeatureButton("CP Manual", 0)
-createFeatureButton("Auto Summit", 50)
-createFeatureButton("Auto Death", 100)
-createFeatureButton("Delay Setting", 150)
+-- List semua fitur
+local features = {"CP Manual","Auto Summit","Auto Death","Delay Setting","Extra Feature 1","Extra Feature 2","Extra Feature 3"}
+for i, feat in ipairs(features) do
+    createFeatureButton(feat, (i-1)*50)
+end
