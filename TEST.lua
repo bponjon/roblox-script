@@ -14,4 +14,52 @@ local CloseButton = Instance.new("TextButton") CloseButton.Text = "X" CloseButto
 
 -- Panels local FeaturePanel = Instance.new("Frame") FeaturePanel.Size = UDim2.new(0.4,0,1,-30) FeaturePanel.Position = UDim2.new(0,0,0,30) FeaturePanel.BackgroundColor3 = Color3.fromRGB(30,30,30) FeaturePanel.Parent = MainFrame
 
-local ActionPanel = Instance.new("Frame") ActionPanel.Size = UDim2.new(0.6,0,1,-30) ActionPanel.Position = UDim2.new(0
+local ActionPanel = Instance.new("Frame") ActionPanel.Size = UDim2.new(0.6,0,1,-30) ActionPanel.Position = UDim2.new(0.4,0,0,30) ActionPanel.BackgroundColor3 = Color3.fromRGB(40,40,40) ActionPanel.Parent = MainFrame
+
+-- Example Features local features = {"Auto Summit","Server Hop","Settings","Info"}
+
+for i, feat in ipairs(features) do local btn = Instance.new("TextButton") btn.Text = feat btn.Size = UDim2.new(1,0,0,50) btn.Position = UDim2.new(0,0,0,(i-1)*50) btn.BackgroundColor3 = Color3.fromRGB(50,50,50) btn.TextColor3 = Color3.fromRGB(255,255,255) btn.Font = Enum.Font.SourceSansBold btn.TextScaled = true btn.Parent = FeaturePanel
+
+local subPanel = Instance.new("Frame")
+subPanel.Size = UDim2.new(1,0,1,0)
+subPanel.Position = UDim2.new(0,0,0,0)
+subPanel.BackgroundColor3 = Color3.fromRGB(60,60,60)
+subPanel.Visible = false
+subPanel.Parent = ActionPanel
+
+local subBtn1 = Instance.new("TextButton")
+subBtn1.Text = feat.." Sub 1"
+subBtn1.Size = UDim2.new(1,0,0,50)
+subBtn1.Position = UDim2.new(0,0,0,0)
+subBtn1.BackgroundColor3 = Color3.fromRGB(80,80,80)
+subBtn1.TextColor3 = Color3.fromRGB(255,255,255)
+subBtn1.Font = Enum.Font.SourceSansBold
+subBtn1.TextScaled = true
+subBtn1.Parent = subPanel
+
+local subBtn2 = Instance.new("TextButton")
+subBtn2.Text = feat.." Sub 2"
+subBtn2.Size = UDim2.new(1,0,0,50)
+subBtn2.Position = UDim2.new(0,0,0,50)
+subBtn2.BackgroundColor3 = Color3.fromRGB(80,80,80)
+subBtn2.TextColor3 = Color3.fromRGB(255,255,255)
+subBtn2.Font = Enum.Font.SourceSansBold
+subBtn2.TextScaled = true
+subBtn2.Parent = subPanel
+
+btn.MouseButton1Click:Connect(function()
+    -- Toggle subpanel visibility
+    subPanel.Visible = not subPanel.Visible
+    -- Hide others
+    for _, other in ipairs(ActionPanel:GetChildren()) do
+        if other:IsA("Frame") and other ~= subPanel then
+            other.Visible = false
+        end
+    end
+end)
+
+end
+
+-- Close & Hide logic CloseButton.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
+local hidden = false HideButton.MouseButton1Click:Connect(function() hidden = not hidden if hidden then MainFrame.Size = UDim2.new(0, 350, 0, 30) for _, child in ipairs(MainFrame:GetChildren()) do if child ~= TopBar then child.Visible = false end end else MainFrame.Size = UDim2.new(0, 350, 0, 400) for _, child in ipairs(MainFrame:GetChildren()) do if child ~= TopBar then child.Visible = true end end end end)
