@@ -1,6 +1,4 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V12 (Final Fix Auto Repeat) //--
--- Logika Auto Repeat diperkuat agar variabel autoSummit tetap aktif saat menunggu respawn.
-
+--// BYNZZBPONJON //--
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -85,7 +83,7 @@ player.CharacterAdded:Connect(function(char)
         humanoid.WalkSpeed = walkSpeed
     end
 
-    if isWaitingForRespawn and autoRepeat and autoDeath and not autoSummit then
+    if isWaitingForRespawn and autoRepeat and autoDeath then
         isWaitingForRespawn = false
         
         char:WaitForChild("Humanoid")
@@ -102,6 +100,11 @@ end)
 local function startAuto()
     if autoSummit then 
         return 
+    end
+    
+    -- BARIS PENTING BARU: Force reset CP index jika Auto Repeat & Auto Death aktif
+    if autoRepeat and autoDeath then
+        currentCpIndex = 1 
     end
     
     -- JIKA AUTOREPEAT/AUTODEATH AKTIF, BIARKAN autoSummit TRUE HINGGA LOOP SELESAI
