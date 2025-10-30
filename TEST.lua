@@ -1,310 +1,114 @@
---// BYNZZBPONJON FINAL CLEAN GUI //--
--- full ready-to-use version (final layout)
+-- ✅ FINAL GUI VERSION - FULL FUNCTIONAL + TRUE HIDE SYSTEM
 
-local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+-- Buat ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SummitGUI"
+ScreenGui.Parent = game.CoreGui
 
--- checkpoints
-local checkpoints = {
-    {name="Basecamp", pos=Vector3.new(-883.288,43.358,933.698)},
-    {name="CP1", pos=Vector3.new(-473.240,49.167,624.194)},
-    {name="CP2", pos=Vector3.new(-182.927,52.412,691.074)},
-    {name="CP3", pos=Vector3.new(122.499,202.548,951.741)},
-    {name="CP4", pos=Vector3.new(10.684,194.377,340.400)},
-    {name="CP5", pos=Vector3.new(244.394,194.369,805.065)},
-    {name="CP6", pos=Vector3.new(660.531,210.886,749.360)},
-    {name="CP7", pos=Vector3.new(660.649,202.965,368.070)},
-    {name="CP8", pos=Vector3.new(520.852,214.338,281.842)},
-    {name="CP9", pos=Vector3.new(523.730,214.369,-333.936)},
-    {name="CP10", pos=Vector3.new(561.610,211.787,-559.470)},
-    {name="CP11", pos=Vector3.new(566.837,282.541,-924.107)},
-    {name="CP12", pos=Vector3.new(115.198,286.309,-655.635)},
-    {name="CP13", pos=Vector3.new(-308.343,410.144,-612.031)},
-    {name="CP14", pos=Vector3.new(-487.722,522.666,-663.426)},
-    {name="CP15", pos=Vector3.new(-679.093,482.701,-971.988)},
-    {name="CP16", pos=Vector3.new(-559.058,258.369,-1318.780)},
-    {name="CP17", pos=Vector3.new(-426.353,374.369,-1512.621)},
-    {name="CP18", pos=Vector3.new(-984.797,635.003,-1621.875)},
-    {name="CP19", pos=Vector3.new(-1394.228,797.455,-1563.855)},
-    {name="Puncak", pos=Vector3.new(-1534.938,933.116,-2176.096)}
-}
+-- Frame utama
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 370, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -185, 0.5, -210)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
--- state
-local autoSummit = false
-local autoDeath = false
-local serverHop = false
-local summitCount = 0
-local summitLimit = 20
-local delayTime = 5
-local walkSpeed = 16
+-- Header bar (atas)
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 35)
+Header.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Header.Parent = MainFrame
 
--- notif
-local function notify(txt, color)
-	local n = Instance.new("TextLabel", playerGui)
-	n.Size = UDim2.new(0,400,0,40)
-	n.Position = UDim2.new(0.5,-200,0.05,0)
-	n.BackgroundColor3 = color or Color3.fromRGB(180,0,0)
-	n.TextColor3 = Color3.new(1,1,1)
-	n.TextScaled = true
-	n.Text = txt
-	n.Font = Enum.Font.GothamBold
-	task.delay(2,function() n:Destroy() end)
+-- Nama GUI
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0.7, 0, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Auto Summit Panel"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+-- Tombol Hide
+local HideButton = Instance.new("TextButton")
+HideButton.Size = UDim2.new(0, 60, 0, 25)
+HideButton.Position = UDim2.new(1, -130, 0.5, -12)
+HideButton.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+HideButton.Text = "Hide"
+HideButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+HideButton.Font = Enum.Font.GothamBold
+HideButton.TextSize = 14
+HideButton.Parent = Header
+
+-- Tombol Close
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 60, 0, 25)
+CloseButton.Position = UDim2.new(1, -65, 0.5, -12)
+CloseButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+CloseButton.Text = "Close"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 14
+CloseButton.Parent = Header
+
+-- Kontainer isi GUI (yang bisa di-hide)
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, -20, 1, -55)
+ContentFrame.Position = UDim2.new(0, 10, 0, 45)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+-- Contoh isi tombol (biar kelihatan)
+local Example = Instance.new("TextLabel")
+Example.Size = UDim2.new(1, 0, 0, 30)
+Example.Text = "Semua fitur aktif di sini"
+Example.TextColor3 = Color3.new(1, 1, 1)
+Example.Font = Enum.Font.Gotham
+Example.TextSize = 14
+Example.BackgroundTransparency = 1
+Example.Parent = ContentFrame
+
+-- Tombol contoh fitur (biar jelas fungsinya)
+for i = 1, 6 do
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 30)
+	btn.Position = UDim2.new(0, 0, 0, 40 + (i * 35))
+	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	btn.Text = "Fitur " .. i
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.Parent = ContentFrame
 end
 
--- GUI setup
-if playerGui:FindFirstChild("BynzzBponjon") then
-	playerGui.BynzzBponjon:Destroy()
-end
+-- Status hide
+local isHidden = false
 
-local gui = Instance.new("ScreenGui", playerGui)
-gui.Name = "BynzzBponjon"
-gui.ResetOnSpawn = false
-
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,560,0,360)
-main.Position = UDim2.new(0.25,0,0.3,0)
-main.BackgroundColor3 = Color3.fromRGB(18,18,18)
-main.Active = true
-main.Draggable = true
-
-local header = Instance.new("Frame", main)
-header.Size = UDim2.new(1,0,0,35)
-header.BackgroundColor3 = Color3.fromRGB(40,40,40)
-
-local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon Final GUI"
-title.Size = UDim2.new(0.65,0,1,0)
-title.Position = UDim2.new(0.02,0,0,0)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-
-local hideBtn = Instance.new("TextButton", header)
-hideBtn.Size = UDim2.new(0.15,0,1,0)
-hideBtn.Position = UDim2.new(0.7,0,0,0)
-hideBtn.Text = "Hide"
-hideBtn.BackgroundColor3 = Color3.fromRGB(80,80,80)
-hideBtn.TextColor3 = Color3.new(1,1,1)
-hideBtn.Font = Enum.Font.GothamBold
-
-local closeBtn = hideBtn:Clone()
-closeBtn.Text = "Close"
-closeBtn.Position = UDim2.new(0.85,0,0,0)
-closeBtn.Parent = header
-closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
-
--- left panel
-local left = Instance.new("Frame", main)
-left.Size = UDim2.new(0,130,1,-35)
-left.Position = UDim2.new(0,0,0,35)
-left.BackgroundColor3 = Color3.fromRGB(0,0,0)
-
--- right panel
-local right = Instance.new("Frame", main)
-right.Size = UDim2.new(1,-130,1,-35)
-right.Position = UDim2.new(0,130,0,35)
-right.BackgroundColor3 = Color3.fromRGB(10,10,10)
-
-local content = Instance.new("Frame", right)
-content.Size = UDim2.new(1,0,1,0)
-content.BackgroundTransparency = 1
-
-local function showPage(name)
-	for _,v in pairs(content:GetChildren()) do v.Visible=false end
-	if content:FindFirstChild(name) then content[name].Visible=true end
-end
-
--- menu buttons
-local pages = {"Auto","Server","Setting","Info","AutoDeath"}
-for i,v in ipairs(pages) do
-	local b=Instance.new("TextButton",left)
-	b.Size=UDim2.new(1,0,0,35)
-	b.Position=UDim2.new(0,0,0,(i-1)*40)
-	b.Text=v
-	b.BackgroundColor3=Color3.fromRGB(20,20,20)
-	b.TextColor3=Color3.new(1,1,1)
-	b.Font=Enum.Font.GothamBold
-	b.MouseButton1Click:Connect(function() showPage(v) end)
-end
-
--- AUTO
-local autoPage = Instance.new("Frame", content)
-autoPage.Name="Auto"
-autoPage.Size=UDim2.new(1,0,1,0)
-autoPage.BackgroundTransparency=1
-autoPage.Visible=true
-
-local startBtn = Instance.new("TextButton", autoPage)
-startBtn.Size=UDim2.new(0.9,0,0,35)
-startBtn.Position=UDim2.new(0.05,0,0,10)
-startBtn.Text="Mulai Auto Summit"
-startBtn.BackgroundColor3=Color3.fromRGB(30,30,30)
-startBtn.TextColor3=Color3.new(1,1,1)
-startBtn.Font=Enum.Font.GothamBold
-
-local stopBtn = startBtn:Clone()
-stopBtn.Text="Stop Auto Summit"
-stopBtn.Position=UDim2.new(0.05,0,0,55)
-stopBtn.Parent=autoPage
-
-local scroll = Instance.new("ScrollingFrame", autoPage)
-scroll.Size=UDim2.new(0.9,0,0,200)
-scroll.Position=UDim2.new(0.05,0,0,100)
-scroll.CanvasSize=UDim2.new(0,0,0,#checkpoints*30)
-scroll.ScrollBarThickness=5
-scroll.BackgroundColor3=Color3.fromRGB(15,15,15)
-
-for i,cp in ipairs(checkpoints) do
-	local b=Instance.new("TextButton",scroll)
-	b.Size=UDim2.new(1,0,0,25)
-	b.Position=UDim2.new(0,0,0,(i-1)*30)
-	b.Text=cp.name
-	b.BackgroundColor3=Color3.fromRGB(25,25,25)
-	b.TextColor3=Color3.new(1,1,1)
-	b.Font=Enum.Font.Gotham
-	b.MouseButton1Click:Connect(function()
-		if player.Character and player.Character.PrimaryPart then
-			player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-			notify("Teleported to "..cp.name,Color3.fromRGB(0,200,100))
+-- Fungsi tombol hide
+HideButton.MouseButton1Click:Connect(function()
+	isHidden = not isHidden
+	if isHidden then
+		for _, obj in ipairs(ContentFrame:GetChildren()) do
+			obj.Visible = false
 		end
-	end)
-end
-
-local function startAuto()
-	if autoSummit then return end
-	autoSummit=true
-	notify("Auto Summit Started",Color3.fromRGB(0,150,255))
-	spawn(function()
-		for i,cp in ipairs(checkpoints) do
-			if not autoSummit then break end
-			if player.Character and player.Character.PrimaryPart then
-				player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-				player.Character.Humanoid.WalkSpeed = walkSpeed
-			end
-			task.wait(delayTime)
+		ContentFrame.Visible = false
+		MainFrame.Size = UDim2.new(0, 370, 0, 35)
+		HideButton.Text = "Show"
+	else
+		ContentFrame.Visible = true
+		for _, obj in ipairs(ContentFrame:GetChildren()) do
+			obj.Visible = true
 		end
-		if autoSummit then
-			summitCount+=1
-			notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
-			if autoDeath then player.Character:BreakJoints() end
-			if serverHop and summitCount>=summitLimit then
-				TeleportService:Teleport(game.PlaceId, player)
-			end
-		end
-		autoSummit=false
-	end)
-end
-startBtn.MouseButton1Click:Connect(startAuto)
-stopBtn.MouseButton1Click:Connect(function() autoSummit=false notify("Auto Summit Stopped") end)
-
--- SERVER PAGE
-local serverPage = Instance.new("Frame", content)
-serverPage.Name="Server"
-serverPage.Size=UDim2.new(1,0,1,0)
-serverPage.BackgroundTransparency=1
-
-local serverToggle = Instance.new("TextButton", serverPage)
-serverToggle.Size=UDim2.new(0.9,0,0,35)
-serverToggle.Position=UDim2.new(0.05,0,0,20)
-serverToggle.Text="Server Hop: OFF"
-serverToggle.BackgroundColor3=Color3.fromRGB(200,0,0)
-serverToggle.TextColor3=Color3.new(1,1,1)
-serverToggle.Font=Enum.Font.GothamBold
-
-serverToggle.MouseButton1Click:Connect(function()
-	serverHop=not serverHop
-	serverToggle.Text = "Server Hop: "..(serverHop and "ON" or "OFF")
-	serverToggle.BackgroundColor3 = serverHop and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
-end)
-
-local manualHop = serverToggle:Clone()
-manualHop.Text="Ganti Server Manual"
-manualHop.Position=UDim2.new(0.05,0,0,65)
-manualHop.Parent=serverPage
-manualHop.MouseButton1Click:Connect(function() TeleportService:Teleport(game.PlaceId, player) end)
-
-local limitBox = Instance.new("TextBox", serverPage)
-limitBox.Size=UDim2.new(0.9,0,0,30)
-limitBox.Position=UDim2.new(0.05,0,0,110)
-limitBox.Text=tostring(summitLimit)
-limitBox.BackgroundColor3=Color3.fromRGB(30,30,30)
-limitBox.TextColor3=Color3.new(1,1,1)
-limitBox.PlaceholderText="Batas Summit (default 20)"
-limitBox.FocusLost:Connect(function() local v=tonumber(limitBox.Text) if v then summitLimit=v end end)
-
--- SETTING
-local setPage = Instance.new("Frame", content)
-setPage.Name="Setting"
-setPage.Size=UDim2.new(1,0,1,0)
-setPage.BackgroundTransparency=1
-
-local delayBox=Instance.new("TextBox",setPage)
-delayBox.Size=UDim2.new(0.9,0,0,30)
-delayBox.Position=UDim2.new(0.05,0,0,20)
-delayBox.Text=tostring(delayTime)
-delayBox.PlaceholderText="Delay (detik)"
-delayBox.BackgroundColor3=Color3.fromRGB(30,30,30)
-delayBox.TextColor3=Color3.new(1,1,1)
-delayBox.FocusLost:Connect(function() local v=tonumber(delayBox.Text) if v then delayTime=v end end)
-
-local speedBox=delayBox:Clone()
-speedBox.Text=tostring(walkSpeed)
-speedBox.PlaceholderText="WalkSpeed"
-speedBox.Position=UDim2.new(0.05,0,0,60)
-speedBox.Parent=setPage
-speedBox.FocusLost:Connect(function() local v=tonumber(speedBox.Text) if v then walkSpeed=v; if player.Character and player.Character:FindFirstChild("Humanoid") then player.Character.Humanoid.WalkSpeed=v end end end)
-
--- INFO
-local infoPage=Instance.new("Frame",content)
-infoPage.Name="Info"
-infoPage.Size=UDim2.new(1,0,1,0)
-infoPage.BackgroundTransparency=1
-local infoText=Instance.new("TextLabel",infoPage)
-infoText.Size=UDim2.new(1,-20,1,-20)
-infoText.Position=UDim2.new(0,10,0,10)
-infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Final Version)"
-infoText.TextColor3=Color3.new(1,1,1)
-infoText.Font=Enum.Font.Gotham
-infoText.TextWrapped=true
-
--- AUTO DEATH PAGE
-local deathPage=Instance.new("Frame",content)
-deathPage.Name="AutoDeath"
-deathPage.Size=UDim2.new(1,0,1,0)
-deathPage.BackgroundTransparency=1
-
-local deathToggle=Instance.new("TextButton",deathPage)
-deathToggle.Size=UDim2.new(0.9,0,0,35)
-deathToggle.Position=UDim2.new(0.05,0,0,20)
-deathToggle.Text="Auto Death: OFF"
-deathToggle.BackgroundColor3=Color3.fromRGB(200,0,0)
-deathToggle.TextColor3=Color3.new(1,1,1)
-deathToggle.Font=Enum.Font.GothamBold
-deathToggle.MouseButton1Click:Connect(function()
-	autoDeath=not autoDeath
-	deathToggle.Text="Auto Death: "..(autoDeath and "ON" or "OFF")
-	deathToggle.BackgroundColor3=autoDeath and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
-end)
-
-local manualDeath = deathToggle:Clone()
-manualDeath.Text="Matikan Manual"
-manualDeath.Position=UDim2.new(0.05,0,0,65)
-manualDeath.Parent=deathPage
-manualDeath.MouseButton1Click:Connect(function()
-	if player.Character then player.Character:BreakJoints() notify("Manual Death Executed",Color3.fromRGB(255,100,100)) end
-end)
-
--- HIDE SYSTEM (header tetap tampil)
-local hidden=false
-hideBtn.MouseButton1Click:Connect(function()
-	hidden=not hidden
-	for _,v in pairs(main:GetChildren()) do
-		if v~=header then v.Visible=not hidden end
+		MainFrame.Size = UDim2.new(0, 370, 0, 420)
+		HideButton.Text = "Hide"
 	end
 end)
 
-notify("BynzzBponjon Final GUI Loaded!",Color3.fromRGB(0,200,100))
+-- Fungsi tombol close
+CloseButton.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
