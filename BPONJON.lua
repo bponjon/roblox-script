@@ -33,6 +33,7 @@ local checkpoints = {
 local autoSummit, autoDeath, serverHop, autoRepeat = false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 local currentCpIndex = 1 
+local isWaitingForRespawn = false -- VAR BARU UNTUK MENCEGAH PANGGILAN GANDA
 
 -- notif function
 local function notify(txt, color)
@@ -72,6 +73,27 @@ local function findNearestCheckpoint()
     end
 
     return nearestIndex
+end
+
+-- FUNGSI BARU: Menangani Auto Repeat dengan CharacterAdded
+local function handleAutoRepeat()
+    if not autoRepeat or not autoDeath or autoSummit or isWaitingForRespawn then return end
+    
+    if currentCpIndex == 1 then 
+        isWaitingForRespawn = true
+        
+        local charConn
+        charConn = player.CharacterAdded:Connect(function(newChar)
+            if isWaitingForRespawn then -- Pastikan koneksi ini hanya bekerja jika kita menunggu respawn
+                charConn:Disconnect()
+                task.wait(1) -- Beri waktu untuk Humanoid & Basecamp termuat
+                
+                notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
+                isWaitingForRespawn = false
+                startAuto() 
+            end
+        end)
+    end
 end
 
 -- INISIALISASI CURRENT CP INDEX SAAT SCRIPT DI-EXECUTE
@@ -166,7 +188,7 @@ for i,v in ipairs(pages) do
     b.MouseButton1Click:Connect(function() showPage(v) end)
 end
 
--- AUTO PAGE (Tidak diubah)
+-- AUTO PAGE
 local autoPage=Instance.new("Frame",content)
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
@@ -285,10 +307,10 @@ local function startAuto()
                 TeleportService:Teleport(game.PlaceId, player)
             end
             
-            -- LOGIKA AUTO REPEAT
-            if autoRepeat then
-                task.wait(delayTime) 
-                startAuto()
+            -- Panggil fungsi penangan respawn yang baru
+            if autoRepeat and autoDeath then 
+                handleAutoRepeat()
+                -- Karena handleAutoRepeat akan memulai startAuto() lagi, kita tidak set autoSummit=false
                 return 
             end
         end
@@ -297,25 +319,29 @@ local function startAuto()
     end)
 end
 startBtn.MouseButton1Click:Connect(startAuto)
-stopBtn.MouseButton1Click:Connect(function() autoSummit=false notify("Auto Summit Stopped") end)
+stopBtn.MouseButton1Click:Connect(function() 
+    autoSummit=false 
+    isWaitingForRespawn = false -- Reset state jika dihentikan manual
+    notify("Auto Summit Stopped") 
+end)
 
--- SERVER PAGE (UI Dibuat Lebih Rapi)
+-- SERVER PAGE
 local serverPage=Instance.new("Frame",content)
 serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
 
-local yPos = 10 -- Posisi Y awal
+local yPos = 10 
 
 local function createSeparator(parent, y)
     local sep = Instance.new("Frame", parent)
     sep.Size = UDim2.new(0.9, 0, 0, 2)
     sep.Position = UDim2.new(0.05, 0, 0, y)
-    sep.BackgroundColor3 = Color3.fromRGB(40, 40, 40) -- Garis tipis abu-abu
+    sep.BackgroundColor3 = Color3.fromRGB(40, 40, 40) 
     return sep
 end
 
--- KELOMPOK 1: AUTO REPEAT & AUTO DEATH
+-- KELOMPOK 1: AUTO LOOP CONTROL
 local group1Header = Instance.new("TextLabel", serverPage)
 group1Header.Size = UDim2.new(0.9, 0, 0, 20)
 group1Header.Position = UDim2.new(0.05, 0, 0, yPos)
@@ -342,7 +368,7 @@ repeatToggle.MouseButton1Click:Connect(function()
 end)
 yPos = yPos + 40
 
--- 2. AUTO DEATH TOGGLE
+-- 2. AUTO DEATH TOGGLE 
 local deathToggle=repeatToggle:Clone()
 deathToggle.Position=UDim2.new(0.05,0,0,yPos)
 deathToggle.Text="Auto Death: OFF"
