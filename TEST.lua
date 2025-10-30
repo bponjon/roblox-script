@@ -1,4 +1,4 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE //--
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED //--
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -52,11 +52,26 @@ if playerGui:FindFirstChild("BynzzBponjon") then
     playerGui.BynzzBponjon:Destroy()
 end
 
--- GUI utama
+-- GUI utama (ScreenGui)
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "BynzzBponjon"
 gui.ResetOnSpawn = false
 
+-- IMPLEMENTASI PERBAIKAN HIDE/SHOW: Ikon Minimalis
+local minimizedBtn = Instance.new("TextButton", gui)
+minimizedBtn.Name = "ShowIcon"
+minimizedBtn.Size = UDim2.new(0, 50, 0, 50) 
+minimizedBtn.Position = UDim2.new(0.25, 0, 0.25, -60)
+minimizedBtn.Text = "BP" -- Inisial Ikon
+minimizedBtn.BackgroundColor3 = Color3.fromRGB(40,40,40) -- Warna sesuai tema gelap
+minimizedBtn.TextColor3 = Color3.new(1, 1, 1)
+minimizedBtn.Font = Enum.Font.GothamBold
+minimizedBtn.TextScaled = true
+minimizedBtn.Visible = false
+minimizedBtn.ZIndex = 2
+
+
+-- GUI utama (Main Frame)
 local main = Instance.new("Frame", gui)
 main.Size = UDim2.new(0,520,0,400)
 main.Position = UDim2.new(0.25,0,0.25,0)
@@ -179,7 +194,7 @@ local function startAuto()
             if not autoSummit then break end
             if player.Character and player.Character.PrimaryPart then
                 player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-                player.Character.Humanoid.WalkSpeed=walkSpeed
+                -- WALK SPEED TIDAK LAGI DIATUR DI SINI, TAPI DI CHARACTERADDED UNTUK STABILITAS
             end
             task.wait(delayTime)
         end
@@ -202,6 +217,7 @@ local serverPage=Instance.new("Frame",content)
 serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
+
 local serverToggle=Instance.new("TextButton",serverPage)
 serverToggle.Size=UDim2.new(0.9,0,0,35)
 serverToggle.Position=UDim2.new(0.05,0,0,20)
@@ -220,7 +236,7 @@ local manualHop=serverToggle:Clone()
 manualHop.Text="Ganti Server Manual"
 manualHop.Position=UDim2.new(0.05,0,0,70)
 manualHop.Parent=serverPage
-manualHop.MouseButton1Click:Click(function()
+manualHop.MouseButton1Click:Connect(function()
     TeleportService:Teleport(game.PlaceId, player)
 end)
 
@@ -243,6 +259,7 @@ local setPage=Instance.new("Frame",content)
 setPage.Name="Setting"
 setPage.Size=UDim2.new(1,0,1,0)
 setPage.BackgroundTransparency=1
+
 local delayBox=Instance.new("TextBox",setPage)
 delayBox.Size=UDim2.new(0.9,0,0,30)
 delayBox.Position=UDim2.new(0.05,0,0,20)
@@ -268,6 +285,10 @@ speedBox.FocusLost:Connect(function()
     local v=tonumber(speedBox.Text)
     if v then
         walkSpeed=v
+        -- Terapkan WalkSpeed segera saat diubah
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = walkSpeed
+        end
     end
 end)
 
@@ -290,6 +311,7 @@ local deathPage=Instance.new("Frame",content)
 deathPage.Name="AutoDeath"
 deathPage.Size=UDim2.new(1,0,1,0)
 deathPage.BackgroundTransparency=1
+
 local deathToggle=Instance.new("TextButton",deathPage)
 deathToggle.Size=UDim2.new(0.9,0,0,35)
 deathToggle.Position=UDim2.new(0.05,0,0,20)
@@ -315,16 +337,49 @@ manualDeath.MouseButton1Click:Connect(function()
     end
 end)
 
--- Sistem Hide/Show dengan delay dan wait
-local hidden=false
-hideBtn.MouseButton1Click:Connect(function()
-    hidden=not hidden
-    -- Menyembunyikan panel kiri dan kanan, tetapi header tetap muncul
-    for _,v in pairs({left, right, content}) do
-        v.Visible = not hidden
+--- IMPLEMENTASI PERBAIKAN WALK SPEED (Memastikan WalkSpeed selalu diterapkan pada karakter)
+local function setWalkSpeed(char)
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = walkSpeed
     end
-    task.wait(0.3)
-    hideBtn.Text = hidden and "Show" or "Hide"
+end
+
+-- Terapkan WalkSpeed segera pada karakter saat ini
+if player.Character then
+    player.Character:WaitForChild("Humanoid")
+    setWalkSpeed(player.Character)
+end
+
+-- Terapkan WalkSpeed setiap kali karakter respawn/dimuat
+player.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid") -- Pastikan Humanoid sudah ada
+    setWalkSpeed(char)
 end)
+--- END PERBAIKAN WALK SPEED
+
+--- IMPLEMENTASI PERBAIKAN HIDE/SHOW LOGIC (Menampilkan ikon kecil saat di-hide)
+local hidden=false
+local function toggleGui()
+    hidden=not hidden
+    
+    if hidden then
+        main.Visible = false          -- Sembunyikan GUI utama
+        minimizedBtn.Visible = true   -- Tampilkan ikon kecil
+        hideBtn.Text = "Show"         -- Ubah teks tombol di header
+    else
+        main.Visible = true           -- Tampilkan GUI utama
+        minimizedBtn.Visible = false  -- Sembunyikan ikon kecil
+        hideBtn.Text = "Hide"         -- Ubah teks tombol di header
+    end
+end
+
+-- Koneksi Tombol Hide di dalam GUI utama
+hideBtn.MouseButton1Click:Connect(toggleGui)
+
+-- Koneksi Tombol Minimalis/Ikon untuk memunculkan kembali GUI
+minimizedBtn.MouseButton1Click:Connect(toggleGui)
+--- END PERBAIKAN HIDE/SHOW LOGIC
+
 
 notify("BynzzBponjon GUI Loaded ✅",Color3.fromRGB(0,200,100))
