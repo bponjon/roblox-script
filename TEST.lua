@@ -34,7 +34,7 @@ local checkpoints = {
 local autoSummit, autoDeath, serverHop = false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 
--- notif
+-- notif function
 local function notify(txt, color)
     local n = Instance.new("TextLabel", playerGui)
     n.Size = UDim2.new(0,400,0,35)
@@ -47,7 +47,7 @@ local function notify(txt, color)
     game:GetService("Debris"):AddItem(n,2)
 end
 
--- hapus GUI lama jika ada
+-- hapus GUI lama
 if playerGui:FindFirstChild("BynzzBponjon") then
     playerGui.BynzzBponjon:Destroy()
 end
@@ -187,7 +187,7 @@ local function startAuto()
             summitCount+=1
             notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
             if autoDeath then player.Character:BreakJoints() end
-            if serverHop and summitCount>=(summitLimit or 20) then
+            if serverHop and (summitCount>=(summitLimit or 20)) then
                 TeleportService:Teleport(game.PlaceId, player)
             end
         end
