@@ -202,7 +202,6 @@ local serverPage=Instance.new("Frame",content)
 serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
-
 local serverToggle=Instance.new("TextButton",serverPage)
 serverToggle.Size=UDim2.new(0.9,0,0,35)
 serverToggle.Position=UDim2.new(0.05,0,0,20)
@@ -221,7 +220,7 @@ local manualHop=serverToggle:Clone()
 manualHop.Text="Ganti Server Manual"
 manualHop.Position=UDim2.new(0.05,0,0,70)
 manualHop.Parent=serverPage
-manualHop.MouseButton1Click:Connect(function()
+manualHop.MouseButton1Click:Click(function()
     TeleportService:Teleport(game.PlaceId, player)
 end)
 
@@ -244,7 +243,6 @@ local setPage=Instance.new("Frame",content)
 setPage.Name="Setting"
 setPage.Size=UDim2.new(1,0,1,0)
 setPage.BackgroundTransparency=1
-
 local delayBox=Instance.new("TextBox",setPage)
 delayBox.Size=UDim2.new(0.9,0,0,30)
 delayBox.Position=UDim2.new(0.05,0,0,20)
@@ -292,7 +290,6 @@ local deathPage=Instance.new("Frame",content)
 deathPage.Name="AutoDeath"
 deathPage.Size=UDim2.new(1,0,1,0)
 deathPage.BackgroundTransparency=1
-
 local deathToggle=Instance.new("TextButton",deathPage)
 deathToggle.Size=UDim2.new(0.9,0,0,35)
 deathToggle.Position=UDim2.new(0.05,0,0,20)
@@ -322,10 +319,9 @@ end)
 local hidden=false
 hideBtn.MouseButton1Click:Connect(function()
     hidden=not hidden
-    for _,v in pairs(main:GetChildren()) do
-        if v ~= header then
-            v.Visible = not hidden
-        end
+    -- Menyembunyikan panel kiri dan kanan, tetapi header tetap muncul
+    for _,v in pairs({left, right, content}) do
+        v.Visible = not hidden
     end
     task.wait(0.3)
     hideBtn.Text = hidden and "Show" or "Hide"
