@@ -1,4 +1,4 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED //--
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V2 //--
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -56,20 +56,6 @@ end
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "BynzzBponjon"
 gui.ResetOnSpawn = false
-
--- IMPLEMENTASI PERBAIKAN HIDE/SHOW: Ikon Minimalis
-local minimizedBtn = Instance.new("TextButton", gui)
-minimizedBtn.Name = "ShowIcon"
-minimizedBtn.Size = UDim2.new(0, 50, 0, 50) 
-minimizedBtn.Position = UDim2.new(0.25, 0, 0.25, -60)
-minimizedBtn.Text = "BP" -- Inisial Ikon
-minimizedBtn.BackgroundColor3 = Color3.fromRGB(40,40,40) -- Warna sesuai tema gelap
-minimizedBtn.TextColor3 = Color3.new(1, 1, 1)
-minimizedBtn.Font = Enum.Font.GothamBold
-minimizedBtn.TextScaled = true
-minimizedBtn.Visible = false
-minimizedBtn.ZIndex = 2
-
 
 -- GUI utama (Main Frame)
 local main = Instance.new("Frame", gui)
@@ -194,7 +180,7 @@ local function startAuto()
             if not autoSummit then break end
             if player.Character and player.Character.PrimaryPart then
                 player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-                -- WALK SPEED TIDAK LAGI DIATUR DI SINI, TAPI DI CHARACTERADDED UNTUK STABILITAS
+                -- WalkSpeed dihandle oleh CharacterAdded
             end
             task.wait(delayTime)
         end
@@ -337,7 +323,7 @@ manualDeath.MouseButton1Click:Connect(function()
     end
 end)
 
---- IMPLEMENTASI PERBAIKAN WALK SPEED (Memastikan WalkSpeed selalu diterapkan pada karakter)
+--- IMPLEMENTASI PERBAIKAN WALK SPEED
 local function setWalkSpeed(char)
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if humanoid then
@@ -358,27 +344,34 @@ player.CharacterAdded:Connect(function(char)
 end)
 --- END PERBAIKAN WALK SPEED
 
---- IMPLEMENTASI PERBAIKAN HIDE/SHOW LOGIC (Menampilkan ikon kecil saat di-hide)
-local hidden=false
-local function toggleGui()
-    hidden=not hidden
+--- IMPLEMENTASI PERBAIKAN HIDE/SHOW LOGIC (Header Bar)
+local isHiddenMode = false
+local originalMainSize = main.Size -- Simpan ukuran asli main frame
+local headerHeight = header.Size.Y.Offset -- Tinggi header (30)
+
+local function toggleGuiDisplay()
+    isHiddenMode = not isHiddenMode
     
-    if hidden then
-        main.Visible = false          -- Sembunyikan GUI utama
-        minimizedBtn.Visible = true   -- Tampilkan ikon kecil
-        hideBtn.Text = "Show"         -- Ubah teks tombol di header
+    if isHiddenMode then
+        -- Mode minimalis (hanya header: Title, Hide, Close)
+        main.Size = UDim2.new(originalMainSize.X.Scale, originalMainSize.X.Offset, 0, headerHeight) -- Ubah tinggi main frame
+        left.Visible = false
+        right.Visible = false
+        hideBtn.Text = "Show"
     else
-        main.Visible = true           -- Tampilkan GUI utama
-        minimizedBtn.Visible = false  -- Sembunyikan ikon kecil
-        hideBtn.Text = "Hide"         -- Ubah teks tombol di header
+        -- Mode normal (GUI penuh)
+        main.Size = originalMainSize -- Kembalikan ke ukuran asli
+        left.Visible = true
+        right.Visible = true
+        hideBtn.Text = "Hide"
     end
+    -- Pastikan Draggable tetap aktif untuk main frame
+    main.Active = true
+    main.Draggable = true
 end
 
 -- Koneksi Tombol Hide di dalam GUI utama
-hideBtn.MouseButton1Click:Connect(toggleGui)
-
--- Koneksi Tombol Minimalis/Ikon untuk memunculkan kembali GUI
-minimizedBtn.MouseButton1Click:Connect(toggleGui)
+hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 --- END PERBAIKAN HIDE/SHOW LOGIC
 
 
