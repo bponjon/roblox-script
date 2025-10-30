@@ -1,6 +1,5 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V11 (Fix CP Jump & Auto Repeat) //--
--- Mencegah lompatan CP acak di akhir jalur.
--- Memperbaiki logika Auto Repeat menggunakan koneksi CharacterAdded yang lebih andal.
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V12 (Final Fix Auto Repeat) //--
+-- Logika Auto Repeat diperkuat agar variabel autoSummit tetap aktif saat menunggu respawn.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -36,7 +35,7 @@ local checkpoints = {
 local autoSummit, autoDeath, serverHop, autoRepeat = false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 local currentCpIndex = 1 
-local isWaitingForRespawn = false -- Digunakan untuk Auto Repeat
+local isWaitingForRespawn = false 
 
 -- notif function
 local function notify(txt, color)
@@ -78,13 +77,35 @@ local function findNearestCheckpoint()
     return nearestIndex
 end
 
--- FUNGSI BARU: Menangani Auto Repeat (Koneksi dipasang di luar startAuto)
+-- LOGIKA STABIL AUTO REPEAT (Menggunakan CharacterAdded)
+player.CharacterAdded:Connect(function(char)
+    -- Pastikan WalkSpeed disetel setiap kali respawn
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = walkSpeed
+    end
+
+    if isWaitingForRespawn and autoRepeat and autoDeath and not autoSummit then
+        isWaitingForRespawn = false
+        
+        char:WaitForChild("Humanoid")
+        -- Menggunakan task.delay untuk memberi debounce yang pasti setelah respawn
+        task.delay(1.5, function() 
+            notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
+            startAuto()
+        end)
+    end
+end)
+
+
+-- fungsi auto summit
 local function startAuto()
     if autoSummit then 
         return 
     end
     
-    autoSummit=true
+    -- JIKA AUTOREPEAT/AUTODEATH AKTIF, BIARKAN autoSummit TRUE HINGGA LOOP SELESAI
+    autoSummit=true 
     
     local startIndex = currentCpIndex 
     if startIndex > #checkpoints then startIndex = 1 end
@@ -104,8 +125,8 @@ local function startAuto()
                 break 
             end
             
-            -- LOGIKA PERBAIKAN ROLLBACK (Nonaktifkan di CP terakhir)
-            if i < #checkpoints - 1 then -- Hanya jalankan rollback jika bukan 2 CP terakhir
+            -- LOGIKA PERBAIKAN ROLLBACK (Nonaktifkan di 2 CP terakhir)
+            if i < #checkpoints - 1 then 
                 local nearestCpIndex = findNearestCheckpoint()
                 
                 if nearestCpIndex < i then
@@ -148,7 +169,7 @@ local function startAuto()
                 if player.Character then
                     player.Character:BreakJoints() 
                 end
-                -- script akan melanjutkan di CharacterAdded event (di bawah)
+                -- autoSummit TETAP TRUE, script akan melanjutkan di CharacterAdded event
                 return 
             elseif autoDeath then
                  -- Jika hanya Auto Death, matikan tanpa mengulang
@@ -159,29 +180,10 @@ local function startAuto()
             end
         end
         
-        autoSummit=false
+        -- Jika tidak ada auto repeat/server hop, barulah matikan autoSummit
+        autoSummit=false 
     end)
 end
-
--- LOGIKA STABIL AUTO REPEAT (Menggunakan CharacterAdded)
-player.CharacterAdded:Connect(function(char)
-    if isWaitingForRespawn and autoRepeat and autoDeath then
-        isWaitingForRespawn = false
-        
-        char:WaitForChild("Humanoid")
-        -- Beri waktu karakter termuat sempurna di basecamp
-        task.wait(1.5) 
-        
-        notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
-        startAuto()
-    end
-    
-    -- Pastikan WalkSpeed disetel setiap kali respawn
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.WalkSpeed = walkSpeed
-    end
-end)
 
 
 -- INISIALISASI CURRENT CP INDEX SAAT SCRIPT DI-EXECUTE
