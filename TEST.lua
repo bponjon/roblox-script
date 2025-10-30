@@ -188,7 +188,7 @@ local function startAuto()
             summitCount+=1
             notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
             if autoDeath then player.Character:BreakJoints() end
-            if serverHop and summitCount>=summitLimit then
+            if serverHop and summitCount>=(summitLimit or 20) then
                 TeleportService:Teleport(game.PlaceId, player)
             end
         end
@@ -298,7 +298,7 @@ manualDeath.MouseButton1Click:Connect(function()
     if player.Character then player.Character:BreakJoints() notify("Manual Death Triggered",Color3.fromRGB(255,50,50)) end
 end)
 
--- Sistem Hide/Show
+-- Sistem Hide/Show dengan delay dan wait
 local hidden=false
 hideBtn.MouseButton1Click:Connect(function()
     hidden=not hidden
@@ -307,7 +307,10 @@ hideBtn.MouseButton1Click:Connect(function()
             v.Visible = not hidden
         end
     end
-    hideBtn.Text = hidden and "Show" or "Hide" -- toggle teks tombol
+    -- Tambahkan delay agar efeknya terasa halus
+    task.wait(0.3)
+    -- Ubah teks tombol sesuai status
+    hideBtn.Text = hidden and "Show" or "Hide"
 end)
 
 notify("BynzzBponjon GUI Loaded ✅",Color3.fromRGB(0,200,100))
