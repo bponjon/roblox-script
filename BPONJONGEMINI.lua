@@ -16,8 +16,8 @@ local checkpoints = {
 -- variabel
 local autoSummit, autoDeath, serverHop, autoRepeat = false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
-local currentCpIndex = 1 
-local isWaitingForRespawn = false 
+local currentCpIndex = 1 -- Hanya digunakan saat autoSummit dihentikan manual
+local summitThread = nil -- Menyimpan referensi thread auto summit
 
 -- notif function
 local function notify(txt, color)
@@ -32,139 +32,131 @@ local function notify(txt, color)
     game:GetService("Debris"):AddItem(n,2)
 end
 
--- FUNGSI: Cari Checkpoint terdekat (Disederhanakan untuk 2 CP)
-local function findNearestCheckpoint()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local rootPart = character:WaitForChild("HumanoidRootPart")
-    local playerPos = rootPart.Position
+-- FUNGSI: Server Hop
+local HttpService = game:GetService("HttpService")
+local function doServerHop()
+    local servers = {}
+    local ok, raw = pcall(function() return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100") end)
     
-    local basecampPos = checkpoints[1].pos
-    local puncakPos = checkpoints[#checkpoints].pos
+    if not ok or not raw then notify("Server Hop Gagal: Gagal Ambil Data", Color3.fromRGB(200, 50, 50)) return end
     
-    local distToBasecamp = (basecampPos - playerPos).Magnitude
-    local distToPuncak = (puncakPos - playerPos).Magnitude
+    local ok2, dec = pcall(function() return HttpService:JSONDecode(raw) end)
+    if not ok2 or type(dec) ~= "table" or not dec.data then notify("Server Hop Gagal: Data Invalid", Color3.fromRGB(200, 50, 50)) return end
     
-    if distToBasecamp < distToPuncak then
-        return 1 -- Basecamp
-    else
-        return #checkpoints -- Puncak
+    for _,v in pairs(dec.data) do
+        if v.playing and v.maxPlayers and v.playing < v.maxPlayers then table.insert(servers,v.id) end
     end
+    
+    if #servers > 0 then 
+        local selectedServer = servers[math.random(1,#servers)]
+        notify("Server Hop: Melompat ke server baru...", Color3.fromRGB(0, 100, 200))
+        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, selectedServer, player) end) 
+    else
+        notify("Server Hop Gagal: Tidak ada server kosong.", Color3.fromRGB(200, 50, 50))
+    end
+    autoSummit = false
 end
 
--- LOGIKA STABIL AUTO REPEAT (Menggunakan CharacterAdded)
+-- **********************************
+-- ***** FUNGSI UTAMA AUTO SUMMIT ****
+-- **********************************
+local function startAuto()
+    if autoSummit then 
+        return 
+    end
+    
+    autoSummit = true
+    notify("Auto Summit Started (Loop 2 CP)",Color3.fromRGB(0,150,255))
+    
+    -- Menggunakan thread terpisah untuk loop
+    summitThread = task.spawn(function()
+        
+        while autoSummit do
+            
+            -- Cek Server Hop DULU sebelum loop dimulai (diperbarui)
+            if serverHop and (summitCount >= (summitLimit or 20)) then
+                doServerHop()
+                break -- Keluar dari while loop
+            end
+            
+            -- LINGKARAN TELEPORT
+            
+            -- 1. Teleport ke Basecamp
+            local cp1 = checkpoints[1]
+            if player.Character and player.Character.PrimaryPart then
+                player.Character:SetPrimaryPartCFrame(CFrame.new(cp1.pos))
+            end
+            task.wait(delayTime)
+            
+            -- 2. Cek apakah di tengah delay tombol Stop ditekan
+            if not autoSummit then break end 
+            
+            -- 3. Teleport ke Puncak
+            local cp2 = checkpoints[2]
+            if player.Character and player.Character.PrimaryPart then
+                player.Character:SetPrimaryPartCFrame(CFrame.new(cp2.pos))
+            end
+            task.wait(delayTime)
+            
+            summitCount = summitCount + 1
+            notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
+            
+            -- 4. LOGIKA AUTO REPEAT (Menggunakan logika script Anda)
+            if autoDeath then
+                
+                -- PENGAMAN: Matikan AutoSummit jika AutoRepeat tidak aktif (hanya sekali jalan)
+                if not autoRepeat then
+                    task.wait(0.5)
+                    if player.Character then pcall(function() player.Character:BreakJoints() end) end
+                    autoSummit = false
+                    break -- Keluar dari while loop
+                end
+                
+                -- Jika Auto Repeat ON, panggil Auto Death dan TUNGGU RESPawn
+                if player.Character then 
+                    pcall(function() player.Character:BreakJoints() end) 
+                end
+                
+                -- Jeda loop sampai karakter muncul kembali
+                player.CharacterAdded:Wait()
+                
+                -- Beri waktu karakter termuat sempurna di basecamp
+                task.wait(1.5) 
+                
+                notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
+            else
+                -- Jika Auto Death OFF, AutoSummit selesai setelah 1 kali (Basecamp -> Puncak)
+                autoSummit = false
+                break -- Keluar dari while loop
+            end
+        end
+        
+        summitThread = nil -- Reset thread setelah selesai/dihentikan
+        if not autoSummit then
+            notify("Auto Summit Finished/Stopped.", Color3.fromRGB(255,165,0))
+        end
+    end)
+end
+
+-- FUNGSI STOP
+local function stopAuto()
+    if summitThread then
+        task.cancel(summitThread) -- Hentikan thread
+        summitThread = nil
+    end
+    autoSummit = false 
+    notify("Auto Summit Stopped", Color3.fromRGB(255, 50, 50))
+end
+
+
+-- INISIALISASI
 player.CharacterAdded:Connect(function(char)
     -- Pastikan WalkSpeed disetel setiap kali respawn
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if humanoid then
         humanoid.WalkSpeed = walkSpeed
     end
-
-    if isWaitingForRespawn and autoRepeat and autoDeath and not autoSummit then
-        isWaitingForRespawn = false
-        
-        char:WaitForChild("Humanoid")
-        -- Menggunakan task.delay untuk memberi debounce yang pasti setelah respawn
-        task.delay(1.5, function() 
-            notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
-            startAuto()
-        end)
-    end
 end)
-
-
--- fungsi auto summit
-local function startAuto()
-    if autoSummit then 
-        return 
-    end
-    
-    -- BARIS PENTING DARI V13: Force reset CP index jika Auto Repeat & Auto Death aktif
-    if autoRepeat and autoDeath then
-        currentCpIndex = 1 
-    end
-    
-    -- JIKA AUTOREPEAT/AUTODEATH AKTIF, BIARKAN autoSummit TRUE HINGGA LOOP SELESAI
-    autoSummit=true 
-    
-    local startIndex = currentCpIndex 
-    if startIndex > #checkpoints then startIndex = 1 end
-    
-    notify("Auto Summit Started (Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name..")",Color3.fromRGB(0,150,255))
-    
-    task.spawn(function()
-        local isComplete = true
-        
-        for i = startIndex, #checkpoints do
-            local cp = checkpoints[i]
-            
-            if not autoSummit then 
-                currentCpIndex = i + 1 
-                notify("Auto Summit berhenti. Disimpan di CP #"..currentCpIndex, Color3.fromRGB(255,165,0))
-                isComplete = false
-                break 
-            end
-            
-            -- Hapus logika rollback, karena hanya ada 2 CP
-            
-            if player.Character and player.Character.PrimaryPart then
-                player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-            end
-            
-            currentCpIndex = i + 1 
-            
-            task.wait(delayTime)
-        end
-        
-        -- Setelah loop selesai (mencapai puncak)
-        if isComplete then
-            summitCount+=1
-            notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
-            
-            currentCpIndex = 1
-            
-            -- Cek Server Hop DULU
-            if serverHop and (summitCount>=(summitLimit or 20)) then
-                TeleportService:Teleport(game.PlaceId, player)
-                autoSummit=false
-                return
-            end
-            
-            -- Auto Death & Auto Repeat
-            if autoDeath and autoRepeat then 
-                -- Set status menunggu respawn sebelum memicu kematian
-                isWaitingForRespawn = true
-                task.wait(0.5)
-                if player.Character then
-                    player.Character:BreakJoints() 
-                end
-                -- autoSummit TETAP TRUE, script akan melanjutkan di CharacterAdded event
-                return 
-            elseif autoDeath then
-                 -- Jika hanya Auto Death, matikan tanpa mengulang
-                task.wait(0.5)
-                if player.Character then
-                    player.Character:BreakJoints() 
-                end
-            end
-        end
-        
-        -- Jika tidak ada auto repeat/server hop, barulah matikan autoSummit
-        autoSummit=false 
-    end)
-end
-
-
--- INISIALISASI CURRENT CP INDEX SAAT SCRIPT DI-EXECUTE
-do
-    local nearestCp = findNearestCheckpoint()
-    
-    if nearestCp < #checkpoints then
-        currentCpIndex = nearestCp + 1
-    else
-        currentCpIndex = 1
-    end
-end
--- END INISIALISASI
 
 
 -- hapus GUI lama
@@ -190,7 +182,7 @@ header.Size = UDim2.new(1,0,0,30)
 header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI"
+title.Text = "BynzzBponjon GUI (V15)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -210,7 +202,10 @@ local closeBtn = hideBtn:Clone()
 closeBtn.Text = "Close"
 closeBtn.Position = UDim2.new(0.8,0,0,0)
 closeBtn.Parent = header
-closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
+closeBtn.MouseButton1Click:Connect(function() 
+    stopAuto() -- Pastikan loop dihentikan sebelum GUI ditutup
+    gui:Destroy() 
+end)
 
 -- panel kiri
 local left = Instance.new("Frame", main)
@@ -266,7 +261,7 @@ stopBtn.Text="Stop Auto Summit"
 stopBtn.Position=UDim2.new(0.05,0,0,55)
 stopBtn.Parent=autoPage
 
--- Reset Checkpoint Button
+-- Reset Checkpoint Button (Tetap ada meskipun tidak terpakai di 2 CP loop)
 local resetBtn=startBtn:Clone()
 resetBtn.Text="Reset CP Index (Mulai dari Awal)"
 resetBtn.Position=UDim2.new(0.05,0,0,100)
@@ -303,11 +298,7 @@ for i,cp in ipairs(checkpoints) do
 end
 
 startBtn.MouseButton1Click:Connect(startAuto)
-stopBtn.MouseButton1Click:Connect(function() 
-    autoSummit=false 
-    isWaitingForRespawn = false 
-    notify("Auto Summit Stopped") 
-end)
+stopBtn.MouseButton1Click:Connect(stopAuto)
 
 -- SERVER PAGE (Estetika V10)
 local serverPage=Instance.new("Frame",content)
@@ -444,7 +435,7 @@ manualHop.Position=UDim2.new(0.05,0,0,yPos)
 manualHop.BackgroundColor3=Color3.fromRGB(80,80,80)
 manualHop.Parent=serverPage
 manualHop.MouseButton1Click:Connect(function()
-    TeleportService:Teleport(game.PlaceId, player)
+    doServerHop()
 end)
 
 -- SETTING PAGE (Tidak diubah)
@@ -525,6 +516,4 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 --- END PERBAIKAN HIDE/SHOW LOGIC
 
 
--- Notifikasi akhir menampilkan CP awal yang terdeteksi
-local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI Loaded. Auto Summit akan dimulai dari: "..startCpName.." (#"..currentCpIndex..")",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V15) Loaded. Basecamp dan Puncak Siap.",Color3.fromRGB(0,200,100))
