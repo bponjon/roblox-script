@@ -1,5 +1,4 @@
 --// BYNZZBPONJON //--
-
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -31,9 +30,9 @@ local checkpoints = {
 }
 
 -- variabel
-local autoSummit, autoDeath, serverHop = false, false, false
+local autoSummit, autoDeath, serverHop, autoRepeat = false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
-local currentCpIndex = 1 -- Melacak CP terakhir untuk fitur Lanjut
+local currentCpIndex = 1 
 
 -- notif function
 local function notify(txt, color)
@@ -48,7 +47,7 @@ local function notify(txt, color)
     game:GetService("Debris"):AddItem(n,2)
 end
 
--- FUNGSI BARU: Cari Checkpoint terdekat
+-- FUNGSI: Cari Checkpoint terdekat
 local function findNearestCheckpoint()
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -58,7 +57,6 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
-        -- Kita hanya peduli dengan sumbu X dan Z, bukan Y (tinggi)
         local cpPosXZ = Vector3.new(cp.pos.X, 0, cp.pos.Z)
         local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
         local distance = (playerPosXZ - cpPosXZ).Magnitude
@@ -69,7 +67,6 @@ local function findNearestCheckpoint()
         end
     end
     
-    -- Jika pemain terlalu jauh, asumsikan Basecamp (Index 1)
     if minDistance > 300 then 
         return 1
     end
@@ -79,14 +76,11 @@ end
 
 -- INISIALISASI CURRENT CP INDEX SAAT SCRIPT DI-EXECUTE
 do
-    -- Dapatkan index CP terdekat dari posisi saat ini
     local nearestCp = findNearestCheckpoint()
     
     if nearestCp < #checkpoints then
-        -- Atur ke CP SELANJUTNYA 
         currentCpIndex = nearestCp + 1
     else
-        -- Jika terdekat adalah Puncak, mulai dari Basecamp
         currentCpIndex = 1
     end
 end
@@ -160,7 +154,7 @@ local function showPage(name)
 end
 
 -- tombol menu
-local pages = {"Auto","Server","Setting","Info","AutoDeath"}
+local pages = {"Auto","Setting","Info","Server"}
 for i,v in ipairs(pages) do
     local b=Instance.new("TextButton",left)
     b.Size=UDim2.new(0.9,0,0,35)
@@ -168,11 +162,11 @@ for i,v in ipairs(pages) do
     b.Text=v
     b.BackgroundColor3=Color3.fromRGB(25,25,25)
     b.TextColor3=Color3.new(1,1,1)
-    b.Font=Enum.Font.GothamBold
+    b.Font = Enum.Font.GothamBold
     b.MouseButton1Click:Connect(function() showPage(v) end)
 end
 
--- AUTO PAGE
+-- AUTO PAGE (Tidak diubah)
 local autoPage=Instance.new("Frame",content)
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
@@ -204,7 +198,6 @@ resetBtn.MouseButton1Click:Connect(function()
     notify("Checkpoint Index Reset ke Basecamp (CP #1)", Color3.fromRGB(255,100,0))
 end)
 
-
 -- scroll CP manual
 local scroll=Instance.new("ScrollingFrame",autoPage)
 scroll.Size=UDim2.new(0.9,0,0,180)
@@ -231,7 +224,11 @@ end
 
 -- fungsi auto summit
 local function startAuto()
-    if autoSummit then return end
+    if autoSummit then 
+        if autoRepeat then return end 
+        return 
+    end
+    
     autoSummit=true
     
     local startIndex = currentCpIndex 
@@ -240,29 +237,28 @@ local function startAuto()
     notify("Auto Summit Started (Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name..")",Color3.fromRGB(0,150,255))
     
     task.spawn(function()
+        local isComplete = true
+        
         for i = startIndex, #checkpoints do
             local cp = checkpoints[i]
             
             if not autoSummit then 
                 currentCpIndex = i + 1 
                 notify("Auto Summit berhenti. Disimpan di CP #"..currentCpIndex, Color3.fromRGB(255,165,0))
+                isComplete = false
                 break 
             end
             
-            -- *** LOGIKA VERIFIKASI ROLLBACK BARU DI SINI ***
-            -- Cek apakah ada CP yang terlewat antara Basecamp dan CP saat ini (i)
+            -- LOGIKA VERIFIKASI ROLLBACK
             local nearestCpIndex = findNearestCheckpoint()
             
             if nearestCpIndex < i then
-                -- Ada CP yang terlewat! Kita harus kembali ke CP yang terlewat (nearestCpIndex + 1)
                 local rollbackIndex = nearestCpIndex + 1
                 notify("CP Terlewat Terdeteksi! Kembali ke CP #"..rollbackIndex..": "..checkpoints[rollbackIndex].name, Color3.fromRGB(255, 100, 0))
                 
-                -- Setel ulang loop ke rollbackIndex
                 i = rollbackIndex 
                 cp = checkpoints[i]
             end
-            -- *** AKHIR LOGIKA VERIFIKASI ROLLBACK ***
             
             if player.Character and player.Character.PrimaryPart then
                 player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
@@ -274,15 +270,26 @@ local function startAuto()
         end
         
         -- Setelah loop selesai (mencapai puncak)
-        if autoSummit then
+        if isComplete then
             summitCount+=1
             notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
             
             currentCpIndex = 1
             
-            if autoDeath then player.Character:BreakJoints() end
+            if autoDeath then 
+                task.wait(0.5)
+                player.Character:BreakJoints() 
+            end
+            
             if serverHop and (summitCount>=(summitLimit or 20)) then
                 TeleportService:Teleport(game.PlaceId, player)
+            end
+            
+            -- LOGIKA AUTO REPEAT
+            if autoRepeat then
+                task.wait(delayTime) 
+                startAuto()
+                return 
             end
         end
         
@@ -292,49 +299,145 @@ end
 startBtn.MouseButton1Click:Connect(startAuto)
 stopBtn.MouseButton1Click:Connect(function() autoSummit=false notify("Auto Summit Stopped") end)
 
--- SERVER PAGE
+-- SERVER PAGE (UI Dibuat Lebih Rapi)
 local serverPage=Instance.new("Frame",content)
 serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
 
-local serverToggle=Instance.new("TextButton",serverPage)
-serverToggle.Size=UDim2.new(0.9,0,0,35)
-serverToggle.Position=UDim2.new(0.05,0,0,20)
+local yPos = 10 -- Posisi Y awal
+
+local function createSeparator(parent, y)
+    local sep = Instance.new("Frame", parent)
+    sep.Size = UDim2.new(0.9, 0, 0, 2)
+    sep.Position = UDim2.new(0.05, 0, 0, y)
+    sep.BackgroundColor3 = Color3.fromRGB(40, 40, 40) -- Garis tipis abu-abu
+    return sep
+end
+
+-- KELOMPOK 1: AUTO REPEAT & AUTO DEATH
+local group1Header = Instance.new("TextLabel", serverPage)
+group1Header.Size = UDim2.new(0.9, 0, 0, 20)
+group1Header.Position = UDim2.new(0.05, 0, 0, yPos)
+group1Header.Text = "AUTO LOOP CONTROL"
+group1Header.TextColor3 = Color3.fromRGB(200, 200, 200)
+group1Header.BackgroundTransparency = 1
+group1Header.Font = Enum.Font.GothamBold
+yPos = yPos + 25
+
+-- 1. TOGGLE AUTO REPEAT
+local repeatToggle=Instance.new("TextButton",serverPage)
+repeatToggle.Size=UDim2.new(0.9,0,0,35)
+repeatToggle.Position=UDim2.new(0.05,0,0,yPos)
+repeatToggle.Text="Auto Repeat: OFF"
+repeatToggle.BackgroundColor3=Color3.fromRGB(200,0,0)
+repeatToggle.TextColor3=Color3.new(1,1,1)
+repeatToggle.Font=Enum.Font.GothamBold
+
+repeatToggle.MouseButton1Click:Connect(function()
+    autoRepeat=not autoRepeat
+    repeatToggle.Text="Auto Repeat: "..(autoRepeat and "ON" or "OFF")
+    repeatToggle.BackgroundColor3=autoRepeat and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+    notify("Auto Repeat: "..(autoRepeat and "Aktif" or "Nonaktif"), autoRepeat and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0))
+end)
+yPos = yPos + 40
+
+-- 2. AUTO DEATH TOGGLE
+local deathToggle=repeatToggle:Clone()
+deathToggle.Position=UDim2.new(0.05,0,0,yPos)
+deathToggle.Text="Auto Death: OFF"
+deathToggle.Parent = serverPage
+
+deathToggle.MouseButton1Click:Connect(function()
+    autoDeath=not autoDeath
+    deathToggle.Text="Auto Death: "..(autoDeath and "ON" or "OFF")
+    deathToggle.BackgroundColor3=autoDeath and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+end)
+yPos = yPos + 40
+
+-- Garis Pemisah 1
+createSeparator(serverPage, yPos)
+yPos = yPos + 10 
+
+-- KELOMPOK 2: SERVER HOP
+local group2Header = Instance.new("TextLabel", serverPage)
+group2Header.Size = UDim2.new(0.9, 0, 0, 20)
+group2Header.Position = UDim2.new(0.05, 0, 0, yPos)
+group2Header.Text = "SERVER HOP CONTROL"
+group2Header.TextColor3 = Color3.fromRGB(200, 200, 200)
+group2Header.BackgroundTransparency = 1
+group2Header.Font = Enum.Font.GothamBold
+yPos = yPos + 25
+
+-- 3. Server Hop Toggle
+local serverToggle=repeatToggle:Clone()
+serverToggle.Position=UDim2.new(0.05,0,0,yPos)
 serverToggle.Text="Server Hop: OFF"
-serverToggle.BackgroundColor3=Color3.fromRGB(200,0,0)
-serverToggle.TextColor3=Color3.new(1,1,1)
-serverToggle.Font=Enum.Font.GothamBold
+serverToggle.Parent = serverPage
 
 serverToggle.MouseButton1Click:Connect(function()
     serverHop=not serverHop
     serverToggle.Text="Server Hop: "..(serverHop and "ON" or "OFF")
     serverToggle.BackgroundColor3=serverHop and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
 end)
+yPos = yPos + 40
 
-local manualHop=serverToggle:Clone()
-manualHop.Text="Ganti Server Manual"
-manualHop.Position=UDim2.new(0.05,0,0,70)
-manualHop.Parent=serverPage
-manualHop.MouseButton1Click:Connect(function()
-    TeleportService:Teleport(game.PlaceId, player)
-end)
-
+-- 4. Summit Limit Box
 local limitBox=Instance.new("TextBox",serverPage)
 limitBox.Size=UDim2.new(0.9,0,0,30)
-limitBox.Position=UDim2.new(0.05,0,0,120)
+limitBox.Position=UDim2.new(0.05,0,0,yPos)
 limitBox.Text=tostring(summitLimit)
 limitBox.PlaceholderText="Batas Summit (default 20)"
 limitBox.BackgroundColor3=Color3.fromRGB(30,30,30)
 limitBox.TextColor3=Color3.new(1,1,1)
+limitBox.Font=Enum.Font.Gotham
 limitBox.FocusLost:Connect(function()
     local v=tonumber(limitBox.Text)
     if v then
         summitLimit=v
     end
 end)
+yPos = yPos + 35
 
--- SETTING PAGE
+-- Garis Pemisah 2
+createSeparator(serverPage, yPos)
+yPos = yPos + 10 
+
+-- KELOMPOK 3: MANUAL ACTION
+local group3Header = Instance.new("TextLabel", serverPage)
+group3Header.Size = UDim2.new(0.9, 0, 0, 20)
+group3Header.Position = UDim2.new(0.05, 0, 0, yPos)
+group3Header.Text = "MANUAL ACTIONS"
+group3Header.TextColor3 = Color3.fromRGB(200, 200, 200)
+group3Header.BackgroundTransparency = 1
+group3Header.Font = Enum.Font.GothamBold
+yPos = yPos + 25
+
+-- 5. Manual Death
+local manualDeath=deathToggle:Clone()
+manualDeath.Text="Manual Death"
+manualDeath.Position=UDim2.new(0.05,0,0,yPos)
+manualDeath.BackgroundColor3=Color3.fromRGB(80,80,80)
+manualDeath.Parent=serverPage
+manualDeath.MouseButton1Click:Connect(function()
+    if player.Character then
+        player.Character:BreakJoints()
+        notify("Manual Death Triggered",Color3.fromRGB(255,50,50))
+    end
+end)
+yPos = yPos + 40
+
+-- 6. Manual Hop
+local manualHop=serverToggle:Clone()
+manualHop.Text="Ganti Server Manual"
+manualHop.Position=UDim2.new(0.05,0,0,yPos)
+manualHop.BackgroundColor3=Color3.fromRGB(80,80,80)
+manualHop.Parent=serverPage
+manualHop.MouseButton1Click:Connect(function()
+    TeleportService:Teleport(game.PlaceId, player)
+end)
+
+-- SETTING PAGE (Tidak diubah)
 local setPage=Instance.new("Frame",content)
 setPage.Name="Setting"
 setPage.Size=UDim2.new(1,0,1,0)
@@ -365,14 +468,13 @@ speedBox.FocusLost:Connect(function()
     local v=tonumber(speedBox.Text)
     if v then
         walkSpeed=v
-        -- Terapkan WalkSpeed segera saat diubah
         if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
             player.Character.Humanoid.WalkSpeed = walkSpeed
         end
     end
 end)
 
--- INFO PAGE
+-- INFO PAGE (Tidak diubah)
 local infoPage=Instance.new("Frame",content)
 infoPage.Name="Info"
 infoPage.Size=UDim2.new(1,0,1,0)
@@ -386,38 +488,7 @@ infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
 
--- AUTO DEATH PAGE
-local deathPage=Instance.new("Frame",content)
-deathPage.Name="AutoDeath"
-deathPage.Size=UDim2.new(1,0,1,0)
-deathPage.BackgroundTransparency=1
-
-local deathToggle=Instance.new("TextButton",deathPage)
-deathToggle.Size=UDim2.new(0.9,0,0,35)
-deathToggle.Position=UDim2.new(0.05,0,0,20)
-deathToggle.Text="Auto Death: OFF"
-deathToggle.BackgroundColor3=Color3.fromRGB(200,0,0)
-deathToggle.TextColor3=Color3.new(1,1,1)
-deathToggle.Font=Enum.Font.GothamBold
-
-deathToggle.MouseButton1Click:Connect(function()
-    autoDeath=not autoDeath
-    deathToggle.Text="Auto Death: "..(autoDeath and "ON" or "OFF")
-    deathToggle.BackgroundColor3=autoDeath and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
-end)
-
-local manualDeath=deathToggle:Clone()
-manualDeath.Text="Manual Death"
-manualDeath.Position=UDim2.new(0.05,0,0,70)
-manualDeath.Parent=deathPage
-manualDeath.MouseButton1Click:Connect(function()
-    if player.Character then
-        player.Character:BreakJoints()
-        notify("Manual Death Triggered",Color3.fromRGB(255,50,50))
-    end
-end)
-
---- IMPLEMENTASI PERBAIKAN WALK SPEED
+--- IMPLEMENTASI PERBAIKAN WALK SPEED (Tidak diubah)
 local function setWalkSpeed(char)
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if humanoid then
@@ -425,20 +496,18 @@ local function setWalkSpeed(char)
     end
 end
 
--- Terapkan WalkSpeed segera pada karakter saat ini
 if player.Character then
     player.Character:WaitForChild("Humanoid")
     setWalkSpeed(player.Character)
 end
 
--- Terapkan WalkSpeed setiap kali karakter respawn/dimuat
 player.CharacterAdded:Connect(function(char)
     char:WaitForChild("Humanoid") 
     setWalkSpeed(char)
 end)
 --- END PERBAIKAN WALK SPEED
 
---- IMPLEMENTASI PERBAIKAN HIDE/SHOW LOGIC (Header Bar)
+--- IMPLEMENTASI PERBAIKAN HIDE/SHOW LOGIC (Tidak diubah)
 local isHiddenMode = false
 local originalMainSize = main.Size 
 local headerHeight = header.Size.Y.Offset 
@@ -461,7 +530,6 @@ local function toggleGuiDisplay()
     main.Draggable = true
 end
 
--- Koneksi Tombol Hide di dalam GUI utama
 hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 --- END PERBAIKAN HIDE/SHOW LOGIC
 
