@@ -1,4 +1,4 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V2 //--
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V3 //--
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -33,6 +33,7 @@ local checkpoints = {
 -- variabel
 local autoSummit, autoDeath, serverHop = false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
+local currentCpIndex = 1 -- VAR BARU: Melacak CP terakhir untuk fitur Lanjut
 
 -- notif function
 local function notify(txt, color)
@@ -146,10 +147,23 @@ stopBtn.Text="Stop Auto Summit"
 stopBtn.Position=UDim2.new(0.05,0,0,55)
 stopBtn.Parent=autoPage
 
+-- Reset Checkpoint Button
+local resetBtn=startBtn:Clone()
+resetBtn.Text="Reset CP Index (Mulai dari Awal)"
+resetBtn.Position=UDim2.new(0.05,0,0,100) -- Disesuaikan
+resetBtn.BackgroundColor3 = Color3.fromRGB(150,50,50)
+resetBtn.Parent=autoPage
+
+resetBtn.MouseButton1Click:Connect(function()
+    currentCpIndex = 1
+    notify("Checkpoint Index Reset ke Basecamp (CP #1)", Color3.fromRGB(255,100,0))
+end)
+
+
 -- scroll CP manual
 local scroll=Instance.new("ScrollingFrame",autoPage)
-scroll.Size=UDim2.new(0.9,0,0,220)
-scroll.Position=UDim2.new(0.05,0,0,100)
+scroll.Size=UDim2.new(0.9,0,0,180) -- Disesuaikan agar muat
+scroll.Position=UDim2.new(0.05,0,0,145) -- Disesuaikan
 scroll.CanvasSize=UDim2.new(0,0,0,#checkpoints*35)
 scroll.ScrollBarThickness=6
 scroll.BackgroundColor3=Color3.fromRGB(15,15,15)
@@ -174,24 +188,45 @@ end
 local function startAuto()
     if autoSummit then return end
     autoSummit=true
-    notify("Auto Summit Started",Color3.fromRGB(0,150,255))
+    
+    local startIndex = currentCpIndex -- Mulai dari indeks terakhir yang tersimpan
+    
+    notify("Auto Summit Started (Mulai dari CP #"..startIndex..")",Color3.fromRGB(0,150,255))
+    
     task.spawn(function()
-        for _,cp in ipairs(checkpoints) do
-            if not autoSummit then break end
+        for i = startIndex, #checkpoints do
+            local cp = checkpoints[i]
+            
+            if not autoSummit then 
+                -- JIKA DIHENTIKAN: Simpan indeks saat ini (i) untuk melanjutkan
+                currentCpIndex = i 
+                break 
+            end
+            
             if player.Character and player.Character.PrimaryPart then
                 player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-                -- WalkSpeed dihandle oleh CharacterAdded
             end
+            
+            -- Lanjutkan ke indeks selanjutnya jika CP ini berhasil (untuk mencegah looping)
+            currentCpIndex = i + 1 
+            
             task.wait(delayTime)
         end
+        
+        -- Setelah loop selesai (mencapai puncak)
         if autoSummit then
             summitCount+=1
             notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
+            
+            -- Setel ulang indeks ke 1 (Basecamp) untuk putaran berikutnya
+            currentCpIndex = 1
+            
             if autoDeath then player.Character:BreakJoints() end
             if serverHop and (summitCount>=(summitLimit or 20)) then
                 TeleportService:Teleport(game.PlaceId, player)
             end
         end
+        
         autoSummit=false
     end)
 end
