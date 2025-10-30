@@ -1,4 +1,7 @@
---// BYNZZBPONJON //--
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V11 (Fix CP Jump & Auto Repeat) //--
+-- Mencegah lompatan CP acak di akhir jalur.
+-- Memperbaiki logika Auto Repeat menggunakan koneksi CharacterAdded yang lebih andal.
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -33,7 +36,7 @@ local checkpoints = {
 local autoSummit, autoDeath, serverHop, autoRepeat = false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 local currentCpIndex = 1 
-local isWaitingForRespawn = false -- VAR BARU UNTUK MENCEGAH PANGGILAN GANDA
+local isWaitingForRespawn = false -- Digunakan untuk Auto Repeat
 
 -- notif function
 local function notify(txt, color)
@@ -75,26 +78,111 @@ local function findNearestCheckpoint()
     return nearestIndex
 end
 
--- FUNGSI BARU: Menangani Auto Repeat dengan CharacterAdded
-local function handleAutoRepeat()
-    if not autoRepeat or not autoDeath or autoSummit or isWaitingForRespawn then return end
-    
-    if currentCpIndex == 1 then 
-        isWaitingForRespawn = true
-        
-        local charConn
-        charConn = player.CharacterAdded:Connect(function(newChar)
-            if isWaitingForRespawn then -- Pastikan koneksi ini hanya bekerja jika kita menunggu respawn
-                charConn:Disconnect()
-                task.wait(1) -- Beri waktu untuk Humanoid & Basecamp termuat
-                
-                notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
-                isWaitingForRespawn = false
-                startAuto() 
-            end
-        end)
+-- FUNGSI BARU: Menangani Auto Repeat (Koneksi dipasang di luar startAuto)
+local function startAuto()
+    if autoSummit then 
+        return 
     end
+    
+    autoSummit=true
+    
+    local startIndex = currentCpIndex 
+    if startIndex > #checkpoints then startIndex = 1 end
+    
+    notify("Auto Summit Started (Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name..")",Color3.fromRGB(0,150,255))
+    
+    task.spawn(function()
+        local isComplete = true
+        
+        for i = startIndex, #checkpoints do
+            local cp = checkpoints[i]
+            
+            if not autoSummit then 
+                currentCpIndex = i + 1 
+                notify("Auto Summit berhenti. Disimpan di CP #"..currentCpIndex, Color3.fromRGB(255,165,0))
+                isComplete = false
+                break 
+            end
+            
+            -- LOGIKA PERBAIKAN ROLLBACK (Nonaktifkan di CP terakhir)
+            if i < #checkpoints - 1 then -- Hanya jalankan rollback jika bukan 2 CP terakhir
+                local nearestCpIndex = findNearestCheckpoint()
+                
+                if nearestCpIndex < i then
+                    local rollbackIndex = nearestCpIndex + 1
+                    notify("CP Terlewat Terdeteksi! Kembali ke CP #"..rollbackIndex..": "..checkpoints[rollbackIndex].name, Color3.fromRGB(255, 100, 0))
+                    
+                    i = rollbackIndex 
+                    cp = checkpoints[i]
+                end
+            end
+            
+            if player.Character and player.Character.PrimaryPart then
+                player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
+            end
+            
+            currentCpIndex = i + 1 
+            
+            task.wait(delayTime)
+        end
+        
+        -- Setelah loop selesai (mencapai puncak)
+        if isComplete then
+            summitCount+=1
+            notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
+            
+            currentCpIndex = 1
+            
+            -- Cek Server Hop DULU
+            if serverHop and (summitCount>=(summitLimit or 20)) then
+                TeleportService:Teleport(game.PlaceId, player)
+                autoSummit=false
+                return
+            end
+            
+            -- Auto Death & Auto Repeat
+            if autoDeath and autoRepeat then 
+                -- Set status menunggu respawn sebelum memicu kematian
+                isWaitingForRespawn = true
+                task.wait(0.5)
+                if player.Character then
+                    player.Character:BreakJoints() 
+                end
+                -- script akan melanjutkan di CharacterAdded event (di bawah)
+                return 
+            elseif autoDeath then
+                 -- Jika hanya Auto Death, matikan tanpa mengulang
+                task.wait(0.5)
+                if player.Character then
+                    player.Character:BreakJoints() 
+                end
+            end
+        end
+        
+        autoSummit=false
+    end)
 end
+
+-- LOGIKA STABIL AUTO REPEAT (Menggunakan CharacterAdded)
+player.CharacterAdded:Connect(function(char)
+    if isWaitingForRespawn and autoRepeat and autoDeath then
+        isWaitingForRespawn = false
+        
+        char:WaitForChild("Humanoid")
+        -- Beri waktu karakter termuat sempurna di basecamp
+        task.wait(1.5) 
+        
+        notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
+        startAuto()
+    end
+    
+    -- Pastikan WalkSpeed disetel setiap kali respawn
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = walkSpeed
+    end
+end)
+
 
 -- INISIALISASI CURRENT CP INDEX SAAT SCRIPT DI-EXECUTE
 do
@@ -244,88 +332,14 @@ for i,cp in ipairs(checkpoints) do
     end)
 end
 
--- fungsi auto summit
-local function startAuto()
-    if autoSummit then 
-        if autoRepeat then return end 
-        return 
-    end
-    
-    autoSummit=true
-    
-    local startIndex = currentCpIndex 
-    if startIndex > #checkpoints then startIndex = 1 end
-    
-    notify("Auto Summit Started (Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name..")",Color3.fromRGB(0,150,255))
-    
-    task.spawn(function()
-        local isComplete = true
-        
-        for i = startIndex, #checkpoints do
-            local cp = checkpoints[i]
-            
-            if not autoSummit then 
-                currentCpIndex = i + 1 
-                notify("Auto Summit berhenti. Disimpan di CP #"..currentCpIndex, Color3.fromRGB(255,165,0))
-                isComplete = false
-                break 
-            end
-            
-            -- LOGIKA VERIFIKASI ROLLBACK
-            local nearestCpIndex = findNearestCheckpoint()
-            
-            if nearestCpIndex < i then
-                local rollbackIndex = nearestCpIndex + 1
-                notify("CP Terlewat Terdeteksi! Kembali ke CP #"..rollbackIndex..": "..checkpoints[rollbackIndex].name, Color3.fromRGB(255, 100, 0))
-                
-                i = rollbackIndex 
-                cp = checkpoints[i]
-            end
-            
-            if player.Character and player.Character.PrimaryPart then
-                player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
-            end
-            
-            currentCpIndex = i + 1 
-            
-            task.wait(delayTime)
-        end
-        
-        -- Setelah loop selesai (mencapai puncak)
-        if isComplete then
-            summitCount+=1
-            notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
-            
-            currentCpIndex = 1
-            
-            if autoDeath then 
-                task.wait(0.5)
-                player.Character:BreakJoints() 
-            end
-            
-            if serverHop and (summitCount>=(summitLimit or 20)) then
-                TeleportService:Teleport(game.PlaceId, player)
-            end
-            
-            -- Panggil fungsi penangan respawn yang baru
-            if autoRepeat and autoDeath then 
-                handleAutoRepeat()
-                -- Karena handleAutoRepeat akan memulai startAuto() lagi, kita tidak set autoSummit=false
-                return 
-            end
-        end
-        
-        autoSummit=false
-    end)
-end
 startBtn.MouseButton1Click:Connect(startAuto)
 stopBtn.MouseButton1Click:Connect(function() 
     autoSummit=false 
-    isWaitingForRespawn = false -- Reset state jika dihentikan manual
+    isWaitingForRespawn = false 
     notify("Auto Summit Stopped") 
 end)
 
--- SERVER PAGE
+-- SERVER PAGE (Estetika V10)
 local serverPage=Instance.new("Frame",content)
 serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
@@ -514,26 +528,7 @@ infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
 
---- IMPLEMENTASI PERBAIKAN WALK SPEED (Tidak diubah)
-local function setWalkSpeed(char)
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.WalkSpeed = walkSpeed
-    end
-end
-
-if player.Character then
-    player.Character:WaitForChild("Humanoid")
-    setWalkSpeed(player.Character)
-end
-
-player.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid") 
-    setWalkSpeed(char)
-end)
---- END PERBAIKAN WALK SPEED
-
---- IMPLEMENTASI PERBAIKAN HIDE/SHOW LOGIC (Tidak diubah)
+--- IMPLEMENTASI HIDE/SHOW LOGIC (Tidak diubah)
 local isHiddenMode = false
 local originalMainSize = main.Size 
 local headerHeight = header.Size.Y.Offset 
