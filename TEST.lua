@@ -1,4 +1,4 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V4 //--
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V6 //--
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -47,6 +47,51 @@ local function notify(txt, color)
     n.Text = txt
     game:GetService("Debris"):AddItem(n,2)
 end
+
+-- FUNGSI BARU: Cari Checkpoint terdekat
+local function findNearestCheckpoint()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+    local playerPos = rootPart.Position
+    
+    local nearestIndex = 1
+    local minDistance = math.huge
+    
+    for i, cp in ipairs(checkpoints) do
+        -- Kita hanya peduli dengan sumbu X dan Z, bukan Y (tinggi)
+        local cpPosXZ = Vector3.new(cp.pos.X, 0, cp.pos.Z)
+        local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
+        local distance = (playerPosXZ - cpPosXZ).Magnitude
+        
+        if distance < minDistance then
+            minDistance = distance
+            nearestIndex = i
+        end
+    end
+    
+    -- Jika pemain terlalu jauh, asumsikan Basecamp (Index 1)
+    if minDistance > 300 then 
+        return 1
+    end
+
+    return nearestIndex
+end
+
+-- INISIALISASI CURRENT CP INDEX SAAT SCRIPT DI-EXECUTE
+do
+    -- Dapatkan index CP terdekat dari posisi saat ini
+    local nearestCp = findNearestCheckpoint()
+    
+    if nearestCp < #checkpoints then
+        -- Atur ke CP SELANJUTNYA 
+        currentCpIndex = nearestCp + 1
+    else
+        -- Jika terdekat adalah Puncak, mulai dari Basecamp
+        currentCpIndex = 1
+    end
+end
+-- END INISIALISASI
+
 
 -- hapus GUI lama
 if playerGui:FindFirstChild("BynzzBponjon") then
@@ -184,14 +229,12 @@ for i,cp in ipairs(checkpoints) do
     end)
 end
 
--- fungsi auto summit (LOGIKA PERBAIKAN DI SINI)
+-- fungsi auto summit
 local function startAuto()
     if autoSummit then return end
     autoSummit=true
     
-    local startIndex = currentCpIndex -- Mulai dari indeks terakhir yang tersimpan
-    
-    -- Pastikan indeks tidak melebihi batas (jika di-Stop tepat di Puncak)
+    local startIndex = currentCpIndex 
     if startIndex > #checkpoints then startIndex = 1 end
     
     notify("Auto Summit Started (Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name..")",Color3.fromRGB(0,150,255))
@@ -201,18 +244,30 @@ local function startAuto()
             local cp = checkpoints[i]
             
             if not autoSummit then 
-                -- JIKA DIHENTIKAN: Simpan indeks SELANJUTNYA (i + 1) untuk melanjutkan
-                -- Ini memastikan CP yang sedang/baru selesai di-teleport di-skip di run berikutnya.
                 currentCpIndex = i + 1 
                 notify("Auto Summit berhenti. Disimpan di CP #"..currentCpIndex, Color3.fromRGB(255,165,0))
                 break 
             end
             
+            -- *** LOGIKA VERIFIKASI ROLLBACK BARU DI SINI ***
+            -- Cek apakah ada CP yang terlewat antara Basecamp dan CP saat ini (i)
+            local nearestCpIndex = findNearestCheckpoint()
+            
+            if nearestCpIndex < i then
+                -- Ada CP yang terlewat! Kita harus kembali ke CP yang terlewat (nearestCpIndex + 1)
+                local rollbackIndex = nearestCpIndex + 1
+                notify("CP Terlewat Terdeteksi! Kembali ke CP #"..rollbackIndex..": "..checkpoints[rollbackIndex].name, Color3.fromRGB(255, 100, 0))
+                
+                -- Setel ulang loop ke rollbackIndex
+                i = rollbackIndex 
+                cp = checkpoints[i]
+            end
+            -- *** AKHIR LOGIKA VERIFIKASI ROLLBACK ***
+            
             if player.Character and player.Character.PrimaryPart then
                 player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
             end
             
-            -- Perbarui indeks saat ini untuk langkah selanjutnya, ini penting jika delay Time 0.
             currentCpIndex = i + 1 
             
             task.wait(delayTime)
@@ -223,7 +278,6 @@ local function startAuto()
             summitCount+=1
             notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
             
-            -- Setel ulang indeks ke 1 (Basecamp) untuk putaran berikutnya
             currentCpIndex = 1
             
             if autoDeath then player.Character:BreakJoints() end
@@ -379,33 +433,30 @@ end
 
 -- Terapkan WalkSpeed setiap kali karakter respawn/dimuat
 player.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid") -- Pastikan Humanoid sudah ada
+    char:WaitForChild("Humanoid") 
     setWalkSpeed(char)
 end)
 --- END PERBAIKAN WALK SPEED
 
 --- IMPLEMENTASI PERBAIKAN HIDE/SHOW LOGIC (Header Bar)
 local isHiddenMode = false
-local originalMainSize = main.Size -- Simpan ukuran asli main frame
-local headerHeight = header.Size.Y.Offset -- Tinggi header (30)
+local originalMainSize = main.Size 
+local headerHeight = header.Size.Y.Offset 
 
 local function toggleGuiDisplay()
     isHiddenMode = not isHiddenMode
     
     if isHiddenMode then
-        -- Mode minimalis (hanya header: Title, Hide, Close)
-        main.Size = UDim2.new(originalMainSize.X.Scale, originalMainSize.X.Offset, 0, headerHeight) -- Ubah tinggi main frame
+        main.Size = UDim2.new(originalMainSize.X.Scale, originalMainSize.X.Offset, 0, headerHeight) 
         left.Visible = false
         right.Visible = false
         hideBtn.Text = "Show"
     else
-        -- Mode normal (GUI penuh)
-        main.Size = originalMainSize -- Kembalikan ke ukuran asli
+        main.Size = originalMainSize 
         left.Visible = true
         right.Visible = true
         hideBtn.Text = "Hide"
     end
-    -- Pastikan Draggable tetap aktif untuk main frame
     main.Active = true
     main.Draggable = true
 end
@@ -415,4 +466,6 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 --- END PERBAIKAN HIDE/SHOW LOGIC
 
 
-notify("BynzzBponjon GUI Loaded ✅",Color3.fromRGB(0,200,100))
+-- Notifikasi akhir menampilkan CP awal yang terdeteksi
+local startCpName = checkpoints[currentCpIndex].name
+notify("BynzzBponjon GUI Loaded. Auto Summit akan dimulai dari: "..startCpName.." (#"..currentCpIndex..")",Color3.fromRGB(0,200,100))
