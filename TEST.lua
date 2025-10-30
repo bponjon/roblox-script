@@ -1,4 +1,4 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V3 //--
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V4 //--
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -33,7 +33,7 @@ local checkpoints = {
 -- variabel
 local autoSummit, autoDeath, serverHop = false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
-local currentCpIndex = 1 -- VAR BARU: Melacak CP terakhir untuk fitur Lanjut
+local currentCpIndex = 1 -- Melacak CP terakhir untuk fitur Lanjut
 
 -- notif function
 local function notify(txt, color)
@@ -150,7 +150,7 @@ stopBtn.Parent=autoPage
 -- Reset Checkpoint Button
 local resetBtn=startBtn:Clone()
 resetBtn.Text="Reset CP Index (Mulai dari Awal)"
-resetBtn.Position=UDim2.new(0.05,0,0,100) -- Disesuaikan
+resetBtn.Position=UDim2.new(0.05,0,0,100)
 resetBtn.BackgroundColor3 = Color3.fromRGB(150,50,50)
 resetBtn.Parent=autoPage
 
@@ -162,8 +162,8 @@ end)
 
 -- scroll CP manual
 local scroll=Instance.new("ScrollingFrame",autoPage)
-scroll.Size=UDim2.new(0.9,0,0,180) -- Disesuaikan agar muat
-scroll.Position=UDim2.new(0.05,0,0,145) -- Disesuaikan
+scroll.Size=UDim2.new(0.9,0,0,180)
+scroll.Position=UDim2.new(0.05,0,0,145)
 scroll.CanvasSize=UDim2.new(0,0,0,#checkpoints*35)
 scroll.ScrollBarThickness=6
 scroll.BackgroundColor3=Color3.fromRGB(15,15,15)
@@ -184,22 +184,27 @@ for i,cp in ipairs(checkpoints) do
     end)
 end
 
--- fungsi auto summit
+-- fungsi auto summit (LOGIKA PERBAIKAN DI SINI)
 local function startAuto()
     if autoSummit then return end
     autoSummit=true
     
     local startIndex = currentCpIndex -- Mulai dari indeks terakhir yang tersimpan
     
-    notify("Auto Summit Started (Mulai dari CP #"..startIndex..")",Color3.fromRGB(0,150,255))
+    -- Pastikan indeks tidak melebihi batas (jika di-Stop tepat di Puncak)
+    if startIndex > #checkpoints then startIndex = 1 end
+    
+    notify("Auto Summit Started (Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name..")",Color3.fromRGB(0,150,255))
     
     task.spawn(function()
         for i = startIndex, #checkpoints do
             local cp = checkpoints[i]
             
             if not autoSummit then 
-                -- JIKA DIHENTIKAN: Simpan indeks saat ini (i) untuk melanjutkan
-                currentCpIndex = i 
+                -- JIKA DIHENTIKAN: Simpan indeks SELANJUTNYA (i + 1) untuk melanjutkan
+                -- Ini memastikan CP yang sedang/baru selesai di-teleport di-skip di run berikutnya.
+                currentCpIndex = i + 1 
+                notify("Auto Summit berhenti. Disimpan di CP #"..currentCpIndex, Color3.fromRGB(255,165,0))
                 break 
             end
             
@@ -207,7 +212,7 @@ local function startAuto()
                 player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
             end
             
-            -- Lanjutkan ke indeks selanjutnya jika CP ini berhasil (untuk mencegah looping)
+            -- Perbarui indeks saat ini untuk langkah selanjutnya, ini penting jika delay Time 0.
             currentCpIndex = i + 1 
             
             task.wait(delayTime)
