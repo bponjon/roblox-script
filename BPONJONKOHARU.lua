@@ -1,5 +1,5 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V25 (Minimal Fix to Prevent Overlap) //--
--- Menggunakan struktur GUI versi stabil lama, hanya memperbaiki fungsi showPage agar tidak tumpang tindih.
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V26 (Versi Normal Stabil Akhir) //--
+-- Versi paling stabil dengan perbaikan minimal untuk mencegah overlap menu dan memastikan scroll.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -208,7 +208,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = 1 - guiOpacity 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V25 - Overlap Fix)"
+title.Text = "BynzzBponjon GUI (V26 - Versi Normal Stabil)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -252,13 +252,10 @@ content.Size = UDim2.new(1,0,1,0)
 content.BackgroundTransparency = 1
 
 
--- KUNCI PERBAIKAN: Fungsi Show Page yang Sederhana
+-- Fungsi Show Page (FIXED)
 local function showPage(name)
-    -- Iterasi melalui semua anak dari 'content'
     for _,v in pairs(content:GetChildren()) do 
-        -- Memastikan kita hanya menyembunyikan/menampilkan Frame atau ScrollingFrame yang merupakan menu
         if v:IsA("ScrollingFrame") then
-            -- Hanya tampilkan Frame yang namanya cocok
             v.Visible = (v.Name == name)
         end
     end
@@ -602,7 +599,7 @@ local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V25 (Minimal Overlap Fix)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Semua Menu Bisa Di-Scroll (Manual Besar)"
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V26 (Normal Stabil Akhir)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Semua Menu Bisa Di-Scroll (Manual Besar)\n\nIni adalah versi paling stabil dan diperbaiki dari versi lama yang berhasil."
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
@@ -637,4 +634,4 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 
 local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V25) Loaded. Ini adalah versi stabil yang lama dengan perbaikan minimal untuk overlap menu.",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V26) Loaded. Versi Normal Stabil Akhir siap digunakan!",Color3.fromRGB(0,200,100))
