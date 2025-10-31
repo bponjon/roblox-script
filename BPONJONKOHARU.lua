@@ -3,6 +3,8 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService") -- Untuk Anti-AFK
+local RunService = game:GetService("RunService")
 
 -- checkpoints
 local checkpoints = {
@@ -30,11 +32,12 @@ local checkpoints = {
 }
 
 -- variabel
-local autoSummit, autoDeath, serverHop, autoRepeat = false, false, false, false
+local autoSummit, autoDeath, serverHop, autoRepeat, antiAFK = false, false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 local currentCpIndex = 1 
-local summitThread = nil -- Menyimpan referensi thread auto summit
-
+local summitThread = nil
+local antiAFKThread = nil 
+local guiOpacity = 0.9 
 
 -- notif function
 local function notify(txt, color)
@@ -76,18 +79,37 @@ local function findNearestCheckpoint()
     return nearestIndex
 end
 
--- **********************************
--- ***** INI DIGANTI: HAPUS LOGIKA ASLI PLAYER.CHARACTERADDED
--- **********************************
--- LOGIKA STABIL AUTO REPEAT (Menggunakan WalkSpeed Setter saja)
-player.CharacterAdded:Connect(function(char)
-    -- Pastikan WalkSpeed disetel setiap kali respawn
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.WalkSpeed = walkSpeed
+-- FUNGSI: TOGGLE ANTI AFK
+local function toggleAntiAFK(isEnable)
+    if isEnable and not antiAFKThread then
+        antiAFK = true
+        notify("Anti-AFK Aktif", Color3.fromRGB(50, 200, 50))
+        antiAFKThread = task.spawn(function()
+            while antiAFK do
+                -- Kirim input mouse/jari tipis (gerakan kecil pada layar)
+                local input = Instance.new("InputObject")
+                input.UserInputType = Enum.UserInputType.MouseButton1
+                input.UserInputState = Enum.UserInputState.Begin
+                input.Position = Vector3.new(50, 50, 0)
+                UserInputService:SimulateMouseClick(input)
+                
+                input.UserInputState = Enum.UserInputState.End
+                UserInputService:SimulateMouseClick(input)
+                
+                -- Hanya perlu gerakan tipis setiap 15 detik
+                task.wait(15) 
+            end
+            antiAFKThread = nil
+        end)
+    elseif not isEnable and antiAFKThread then
+        antiAFK = false
+        if antiAFKThread then
+            task.cancel(antiAFKThread)
+        end
+        antiAFKThread = nil
+        notify("Anti-AFK Nonaktif", Color3.fromRGB(200, 50, 50))
     end
-    -- Logika Auto Repeat dipindahkan ke dalam startAuto()
-end)
+end
 
 
 -- fungsi auto summit
@@ -99,23 +121,20 @@ local function startAuto()
     autoSummit = true
     notify("Auto Summit Started!",Color3.fromRGB(0,150,255))
     
-    -- Menggunakan thread terpisah untuk loop
     summitThread = task.spawn(function()
         
         while autoSummit do
             
             -- Cek Server Hop DULU sebelum loop dimulai
             if serverHop and (summitCount >= (summitLimit or 20)) then
-                -- Tidak ada fungsi Server Hop di script ini, menggunakan Teleport biasa
                 TeleportService:Teleport(game.PlaceId, player)
                 autoSummit=false
-                break -- Keluar dari while loop
+                break
             end
             
             -- BARIS PENTING: Force reset CP index jika Auto Repeat aktif
             local startIndex = 1
             if not autoRepeat then
-                -- Jika bukan Auto Repeat, ambil CP index terakhir yang tersimpan
                 startIndex = currentCpIndex
                 if startIndex > #checkpoints then startIndex = 1 end
                 notify("Auto Summit: Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name,Color3.fromRGB(0,200,200))
@@ -144,7 +163,7 @@ local function startAuto()
                         local rollbackIndex = nearestCpIndex + 1
                         notify("CP Terlewat Terdeteksi! Kembali ke CP #"..rollbackIndex..": "..checkpoints[rollbackIndex].name, Color3.fromRGB(255, 100, 0))
                         
-                        i = rollbackIndex - 1 -- Kurangi 1 karena loop akan menambahkannya di awal iterasi berikutnya
+                        i = rollbackIndex - 1
                         cp = checkpoints[rollbackIndex]
                     end
                 end
@@ -156,7 +175,7 @@ local function startAuto()
                 currentCpIndex = i + 1 
                 
                 task.wait(delayTime)
-            end -- End For Loop Checkpoint
+            end
             
             
             if isComplete then
@@ -165,38 +184,30 @@ local function startAuto()
                 
                 currentCpIndex = 1
                 
-                -- Logic Auto Repeat dan Auto Death
                 if autoDeath then 
-                    -- Matikan karakter
                     task.wait(0.5)
                     if player.Character then
                         pcall(function() player.Character:BreakJoints() end)
                     end
                     
                     if autoRepeat then
-                        -- Jeda loop sampai karakter muncul kembali
                         player.CharacterAdded:Wait()
-                        -- Beri waktu karakter termuat sempurna di basecamp
                         task.wait(1.5) 
-                        -- Loop akan berlanjut ke awal 'while autoSummit do'
                     else
-                        -- Hanya Auto Death, matikan AutoSummit
                         autoSummit = false
                         break
                     end
                 else
-                    -- Tidak ada Auto Death, matikan AutoSummit
                     autoSummit = false 
                     break 
                 end
             end
             
-            -- Jika bukan AutoRepeat, hentikan setelah 1 kali run
             if not autoRepeat then break end
             
-        end -- End While Loop Auto Repeat
+        end 
         
-        summitThread = nil -- Reset thread setelah selesai/dihentikan
+        summitThread = nil
         if not autoSummit then
             notify("Auto Summit Finished/Stopped.", Color3.fromRGB(255,165,0))
         end
@@ -206,7 +217,7 @@ end
 -- FUNGSI STOP
 local function stopAuto()
     if summitThread then
-        task.cancel(summitThread) -- Hentikan thread
+        task.cancel(summitThread)
         summitThread = nil
     end
     autoSummit = false 
@@ -214,17 +225,22 @@ local function stopAuto()
 end
 
 
--- INISIALISASI CURRENT CP INDEX SAAT SCRIPT DI-EXECUTE (Tidak diubah)
+-- INISIALISASI
+player.CharacterAdded:Connect(function(char)
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = walkSpeed
+    end
+end)
+
 do
     local nearestCp = findNearestCheckpoint()
-    
     if nearestCp < #checkpoints then
         currentCpIndex = nearestCp + 1
     else
         currentCpIndex = 1
     end
 end
--- END INISIALISASI
 
 
 -- hapus GUI lama
@@ -242,15 +258,17 @@ local main = Instance.new("Frame", gui)
 main.Size = UDim2.new(0,520,0,400)
 main.Position = UDim2.new(0.25,0,0.25,0)
 main.BackgroundColor3 = Color3.fromRGB(15,15,15)
+main.BackgroundTransparency = 1 - guiOpacity 
 main.Active = true
 main.Draggable = true
 
 local header = Instance.new("Frame", main)
 header.Size = UDim2.new(1,0,0,30)
 header.BackgroundColor3 = Color3.fromRGB(40,40,40)
+header.BackgroundTransparency = 1 - guiOpacity 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V16)"
+title.Text = "BynzzBponjon GUI (V18)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -263,6 +281,7 @@ hideBtn.Size = UDim2.new(0.2,0,1,0)
 hideBtn.Position = UDim2.new(0.6,0,0,0)
 hideBtn.Text = "Hide"
 hideBtn.BackgroundColor3 = Color3.fromRGB(80,80,80)
+hideBtn.BackgroundTransparency = 1 - guiOpacity
 hideBtn.TextColor3 = Color3.new(1,1,1)
 hideBtn.Font = Enum.Font.GothamBold
 
@@ -271,7 +290,8 @@ closeBtn.Text = "Close"
 closeBtn.Position = UDim2.new(0.8,0,0,0)
 closeBtn.Parent = header
 closeBtn.MouseButton1Click:Connect(function() 
-    stopAuto() -- Pastikan loop dihentikan
+    toggleAntiAFK(false) -- Matikan AFK
+    stopAuto()
     gui:Destroy() 
 end)
 
@@ -280,14 +300,17 @@ local left = Instance.new("Frame", main)
 left.Size = UDim2.new(0,130,1,-30)
 left.Position = UDim2.new(0,0,0,30)
 left.BackgroundColor3 = Color3.fromRGB(5,5,5)
+left.BackgroundTransparency = 1 - guiOpacity
 
 -- panel kanan
 local right = Instance.new("Frame", main)
 right.Size = UDim2.new(1,-130,1,-30)
 right.Position = UDim2.new(0,130,0,30)
 right.BackgroundColor3 = Color3.fromRGB(10,10,10)
+right.BackgroundTransparency = 1 - guiOpacity
 
-local content = Instance.new("Frame", right)
+-- CONTENT FRAME UTAMA (Diubah menjadi ScrollingFrame agar konten bisa di-scroll jika melebihi batas)
+local content = Instance.new("Frame", right) -- Dibiarkan Frame, yang diubah adalah isinya
 content.Size = UDim2.new(1,0,1,0)
 content.BackgroundTransparency = 1
 
@@ -296,26 +319,25 @@ local function showPage(name)
     if content:FindFirstChild(name) then content[name].Visible=true end
 end
 
--- tombol menu
-local pages = {"Auto","Setting","Info","Server"}
-for i,v in ipairs(pages) do
-    local b=Instance.new("TextButton",left)
-    b.Size=UDim2.new(0.9,0,0,35)
-    b.Position=UDim2.new(0.05,0,0,10+(i-1)*45)
-    b.Text=v
-    b.BackgroundColor3=Color3.fromRGB(25,25,25)
-    b.TextColor3=Color3.new(1,1,1)
-    b.Font = Enum.Font.GothamBold
-    b.MouseButton1Click:Connect(function() showPage(v) end)
+local function createSeparator(parent, y)
+    local sep = Instance.new("Frame", parent)
+    sep.Size = UDim2.new(0.9, 0, 0, 2)
+    sep.Position = UDim2.new(0.05, 0, 0, y)
+    sep.BackgroundColor3 = Color3.fromRGB(40, 40, 40) 
+    return sep
 end
 
--- AUTO PAGE
-local autoPage=Instance.new("Frame",content)
+
+-- AUTO PAGE (DIUBAH MENJADI SCROLLINGFRAME)
+local autoPage=Instance.new("ScrollingFrame",content)
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
 autoPage.BackgroundTransparency=1
+autoPage.CanvasSize = UDim2.new(0,0,0, (35*3) + 10 + (#checkpoints * 35) + 10) -- Ukuran Canvas disesuaikan dengan konten
+autoPage.ScrollBarThickness=6
 autoPage.Visible=true
 
+-- [Konten Auto Page...]
 local startBtn=Instance.new("TextButton",autoPage)
 startBtn.Size=UDim2.new(0.9,0,0,35)
 startBtn.Position=UDim2.new(0.05,0,0,10)
@@ -329,7 +351,6 @@ stopBtn.Text="Stop Auto Summit"
 stopBtn.Position=UDim2.new(0.05,0,0,55)
 stopBtn.Parent=autoPage
 
--- Reset Checkpoint Button
 local resetBtn=startBtn:Clone()
 resetBtn.Text="Reset CP Index (Mulai dari Awal)"
 resetBtn.Position=UDim2.new(0.05,0,0,100)
@@ -341,7 +362,7 @@ resetBtn.MouseButton1Click:Connect(function()
     notify("Checkpoint Index Reset ke Basecamp (CP #1)", Color3.fromRGB(255,100,0))
 end)
 
--- scroll CP manual
+-- SCROLLING FRAME UNTUK DAFTAR CP (Sub-scrollingframe)
 local scroll=Instance.new("ScrollingFrame",autoPage)
 scroll.Size=UDim2.new(0.9,0,0,180)
 scroll.Position=UDim2.new(0.05,0,0,145)
@@ -368,21 +389,16 @@ end
 startBtn.MouseButton1Click:Connect(startAuto)
 stopBtn.MouseButton1Click:Connect(stopAuto)
 
--- SERVER PAGE (Estetika V10)
-local serverPage=Instance.new("Frame",content)
+
+-- SERVER PAGE (DIUBAH MENJADI SCROLLINGFRAME)
+local serverPage=Instance.new("ScrollingFrame",content)
 serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
+serverPage.ScrollBarThickness=6
+serverPage.CanvasSize = UDim2.new(0,0,0, 360) -- Menampung semua elemen (360 offset)
 
 local yPos = 10 
-
-local function createSeparator(parent, y)
-    local sep = Instance.new("Frame", parent)
-    sep.Size = UDim2.new(0.9, 0, 0, 2)
-    sep.Position = UDim2.new(0.05, 0, 0, y)
-    sep.BackgroundColor3 = Color3.fromRGB(40, 40, 40) 
-    return sep
-end
 
 -- KELOMPOK 1: AUTO LOOP CONTROL
 local group1Header = Instance.new("TextLabel", serverPage)
@@ -472,17 +488,30 @@ yPos = yPos + 35
 createSeparator(serverPage, yPos)
 yPos = yPos + 10 
 
--- KELOMPOK 3: MANUAL ACTION
+-- KELOMPOK 3: MANUAL ACTION & ANTI AFK
 local group3Header = Instance.new("TextLabel", serverPage)
 group3Header.Size = UDim2.new(0.9, 0, 0, 20)
 group3Header.Position = UDim2.new(0.05, 0, 0, yPos)
-group3Header.Text = "MANUAL ACTIONS"
+group3Header.Text = "MANUAL ACTIONS & ANTI-AFK"
 group3Header.TextColor3 = Color3.fromRGB(200, 200, 200)
 group3Header.BackgroundTransparency = 1
 group3Header.Font = Enum.Font.GothamBold
 yPos = yPos + 25
 
--- 5. Manual Death
+-- 5. TOGGLE ANTI-AFK 
+local afkToggle=repeatToggle:Clone()
+afkToggle.Position=UDim2.new(0.05,0,0,yPos)
+afkToggle.Text="Anti-AFK: OFF"
+afkToggle.Parent = serverPage
+
+afkToggle.MouseButton1Click:Connect(function()
+    toggleAntiAFK(not antiAFK)
+    afkToggle.Text="Anti-AFK: "..(antiAFK and "ON" or "OFF")
+    afkToggle.BackgroundColor3=antiAFK and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+end)
+yPos = yPos + 40
+
+-- 6. Manual Death
 local manualDeath=deathToggle:Clone()
 manualDeath.Text="Manual Death"
 manualDeath.Position=UDim2.new(0.05,0,0,yPos)
@@ -496,7 +525,7 @@ manualDeath.MouseButton1Click:Connect(function()
 end)
 yPos = yPos + 40
 
--- 6. Manual Hop
+-- 7. Manual Hop
 local manualHop=serverToggle:Clone()
 manualHop.Text="Ganti Server Manual"
 manualHop.Position=UDim2.new(0.05,0,0,yPos)
@@ -506,11 +535,14 @@ manualHop.MouseButton1Click:Connect(function()
     TeleportService:Teleport(game.PlaceId, player)
 end)
 
--- SETTING PAGE (Tidak diubah)
-local setPage=Instance.new("Frame",content)
+
+-- SETTING PAGE (DIUBAH MENJADI SCROLLINGFRAME)
+local setPage=Instance.new("ScrollingFrame",content)
 setPage.Name="Setting"
 setPage.Size=UDim2.new(1,0,1,0)
 setPage.BackgroundTransparency=1
+setPage.ScrollBarThickness=6
+setPage.CanvasSize = UDim2.new(0,0,0, 260) -- Ukuran Canvas disesuaikan dengan konten
 
 local delayBox=Instance.new("TextBox",setPage)
 delayBox.Size=UDim2.new(0.9,0,0,30)
@@ -543,21 +575,82 @@ speedBox.FocusLost:Connect(function()
     end
 end)
 
--- INFO PAGE (Tidak diubah)
-local infoPage=Instance.new("Frame",content)
+createSeparator(setPage, 100)
+
+-- ***** SLIDER TRANSPARANSI BARU *****
+local opacityLabel = Instance.new("TextLabel", setPage)
+opacityLabel.Size = UDim2.new(0.9, 0, 0, 20)
+opacityLabel.Position = UDim2.new(0.05, 0, 0, 110)
+opacityLabel.Text = "GUI Opacity: "..string.format("%.2f", guiOpacity)
+opacityLabel.BackgroundTransparency = 1
+opacityLabel.TextColor3 = Color3.new(1,1,1)
+opacityLabel.Font = Enum.Font.GothamBold
+opacityLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local slider = Instance.new("Frame", setPage)
+slider.Size = UDim2.new(0.9, 0, 0, 20)
+slider.Position = UDim2.new(0.05, 0, 0, 135)
+slider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+local sliderHandle = Instance.new("TextButton", slider)
+sliderHandle.Size = UDim2.new(0, 20, 1, 0)
+sliderHandle.Position = UDim2.new(guiOpacity, -10, 0, 0)
+sliderHandle.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+sliderHandle.Text = ""
+
+-- Fungsi untuk mengupdate Opacity
+local function updateOpacity(x)
+    -- Hitung opacity baru (dibatasi antara 0.1 dan 1.0)
+    local newOpacity = math.min(1, math.max(0.1, x / slider.AbsoluteSize.X)) 
+    guiOpacity = newOpacity
+    opacityLabel.Text = "GUI Opacity: " .. string.format("%.2f", guiOpacity)
+    
+    -- Terapkan transparansi ke Frame utama dan header
+    local transparency = 1 - guiOpacity
+    main.BackgroundTransparency = transparency
+    header.BackgroundTransparency = transparency
+    left.BackgroundTransparency = transparency
+    right.BackgroundTransparency = transparency
+    hideBtn.BackgroundTransparency = transparency
+    closeBtn.BackgroundTransparency = transparency
+    
+    -- Pindahkan handle
+    sliderHandle.Position = UDim2.new(newOpacity, -10, 0, 0)
+end
+
+local isDragging = false
+sliderHandle.MouseButton1Down:Connect(function() isDragging = true end)
+sliderHandle.MouseButton1Up:Connect(function() isDragging = false end)
+
+RunService.RenderStepped:Connect(function()
+    if isDragging then
+        local mouse = player:GetMouse()
+        local relativeX = mouse.X - slider.AbsolutePosition.X
+        updateOpacity(relativeX)
+    end
+end)
+-- **********************************
+
+
+-- INFO PAGE (DIUBAH MENJADI SCROLLINGFRAME)
+local infoPage=Instance.new("ScrollingFrame",content)
 infoPage.Name="Info"
 infoPage.Size=UDim2.new(1,0,1,0)
 infoPage.BackgroundTransparency=1
+infoPage.ScrollBarThickness=6
+infoPage.CanvasSize = UDim2.new(0,0,0, 150) -- Ukuran Canvas disesuaikan dengan konten
+
 local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)"
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V18\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menu Pages"
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
+infoText.TextXAlignment = Enum.TextXAlignment.Left
 
---- IMPLEMENTASI HIDE/SHOW LOGIC (Tidak diubah)
+
+--- IMPLEMENTASI HIDE/SHOW LOGIC 
 local isHiddenMode = false
 local originalMainSize = main.Size 
 local headerHeight = header.Size.Y.Offset 
@@ -586,4 +679,4 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 -- Notifikasi akhir menampilkan CP awal yang terdeteksi
 local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V16) Loaded. Auto Summit akan dimulai dari: "..startCpName.." (#"..currentCpIndex..")",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V18) Loaded. Semua menu sekarang bisa di-scroll.",Color3.fromRGB(0,200,100))
