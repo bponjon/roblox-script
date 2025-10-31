@@ -1,5 +1,5 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V21 (Fixed Empty Pages) //--
--- Memperbaiki masalah menu kosong dengan memastikan semua elemen dibuat di dalam ScrollingFrame.
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V23 (Automatic Scrolling Pages) //--
+-- Menggunakan UIListLayout dan AutomaticCanvasSize untuk memastikan scroll bar berfungsi di semua menu.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -188,7 +188,8 @@ do
 end
 if playerGui:FindFirstChild("BynzzBponjon") then playerGui.BynzzBponjon:Destroy() end
 
--- [GUI Setup (main, header, left, right) Dihilangkan untuk brevity]
+
+-- GUI Setup
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "BynzzBponjon"
 gui.ResetOnSpawn = false
@@ -207,7 +208,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = 1 - guiOpacity 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V21)"
+title.Text = "BynzzBponjon GUI (V23 - Auto Scroll)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -246,18 +247,22 @@ right.Position = UDim2.new(0,130,0,30)
 right.BackgroundColor3 = Color3.fromRGB(10,10,10)
 right.BackgroundTransparency = 1 - guiOpacity
 
+-- CONTENT FRAME UTAMA (Frame biasa)
 local content = Instance.new("Frame", right) 
 content.Size = UDim2.new(1,0,1,0)
 content.BackgroundTransparency = 1
 
+
+-- Logika Show Page (mencari ScrollingFrame)
 local function showPage(name)
     for _,v in pairs(content:GetChildren()) do 
-        if v:IsA("ScrollingFrame") then
+        if v:IsA("ScrollingFrame") then 
             v.Visible = (v.Name == name)
         end
     end
 end
 
+-- Tombol Menu
 local pages = {"Auto","Setting","Info","Server"}
 for i,v in ipairs(pages) do
     local b=Instance.new("TextButton",left)
@@ -278,17 +283,47 @@ local function createSeparator(parent, y)
     return sep
 end
 
+-- =========================================================================
+-- FUNCTION UNTUK MEMBUAT ELEMEN BERIKUTNYA MENGGUNAKAN UILISTLAYOUT
+-- =========================================================================
 
--- AUTO PAGE (ScrollingFrame)
-local autoPage=Instance.new("ScrollingFrame",content)
+local function setupLayout(parent)
+    local layout = Instance.new("UIListLayout", parent)
+    layout.Padding = UDim.new(0, 5)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    -- Tambahkan Padding Awal (kosong) agar tidak menempel di atas
+    local topPadding = Instance.new("Frame", parent)
+    topPadding.Size = UDim2.new(0.9, 0, 0, 10) 
+    topPadding.BackgroundTransparency = 1
+end
+
+-- Helper untuk membuat separator (menggunakan Frame, bukan posisi Y)
+local function createLayoutSeparator(parent)
+    local sepContainer = Instance.new("Frame", parent)
+    sepContainer.Size = UDim2.new(0.9, 0, 0, 12) 
+    sepContainer.BackgroundTransparency = 1 
+    
+    local sep = Instance.new("Frame", sepContainer)
+    sep.Size = UDim2.new(1, 0, 0, 2)
+    sep.Position = UDim2.new(0, 0, 0.5, -1)
+    sep.BackgroundColor3 = Color3.fromRGB(40, 40, 40) 
+    sep.Parent = sepContainer
+end
+
+
+-- AUTO PAGE (MENGGUNAKAN ScrollingFrame untuk daftar CP)
+local autoPage=Instance.new("ScrollingFrame",content) 
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
 autoPage.BackgroundTransparency=1
-autoPage.CanvasSize = UDim2.new(0,0,0, (35*3) + 10 + (#checkpoints * 35) + 10 + 20)
 autoPage.ScrollBarThickness=6
 autoPage.ScrollBarInset = Enum.ScrollBarInset.Always 
+autoPage.CanvasSize = UDim2.new(0,0,0, 480) -- Manual size karena ada sub-scrolling frame, nanti bisa disesuaikan
 autoPage.Visible=true 
 
+-- [Konten Auto Page]
 local startBtn=Instance.new("TextButton",autoPage)
 startBtn.Size=UDim2.new(0.9,0,0,35)
 startBtn.Position=UDim2.new(0.05,0,0,10)
@@ -313,11 +348,13 @@ resetBtn.MouseButton1Click:Connect(function()
     notify("Checkpoint Index Reset ke Basecamp (CP #1)", Color3.fromRGB(255,100,0))
 end)
 
-local scroll=Instance.new("ScrollingFrame",autoPage)
-scroll.Size=UDim2.new(0.9,0,0,180)
+-- SCROLLING FRAME UNTUK DAFTAR CP (Sub-scrollingframe)
+local scroll=Instance.new("ScrollingFrame",autoPage) -- TETAP SCROLLING FRAME
+scroll.Size=UDim2.new(0.9,0,0,250) 
 scroll.Position=UDim2.new(0.05,0,0,145)
 scroll.CanvasSize=UDim2.new(0,0,0,#checkpoints*35)
 scroll.ScrollBarThickness=6
+scroll.ScrollBarInset = Enum.ScrollBarInset.Always 
 scroll.BackgroundColor3=Color3.fromRGB(15,15,15)
 
 for i,cp in ipairs(checkpoints) do
@@ -340,38 +377,33 @@ startBtn.MouseButton1Click:Connect(startAuto)
 stopBtn.MouseButton1Click:Connect(stopAuto)
 
 
--- SERVER PAGE (ScrollingFrame)
-local serverPage=Instance.new("ScrollingFrame",content)
+-- SERVER PAGE (ScrollingFrame DENGAN AUTO SIZE)
+local serverPage=Instance.new("ScrollingFrame",content) 
 serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
 serverPage.ScrollBarThickness=6
-serverPage.CanvasSize = UDim2.new(0,0,0, 420) -- Ukuran kanvas diperbesar lagi
 serverPage.ScrollBarInset = Enum.ScrollBarInset.Always 
+serverPage.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y -- KUNCI: Hitung CanvasSize otomatis
 serverPage.Visible=false 
 
-local yPos = 10 
+setupLayout(serverPage) -- Terapkan Layout
 
--- KELOMPOK 1: AUTO LOOP CONTROL
+-- 1. KELOMPOK 1: AUTO LOOP CONTROL
 local group1Header = Instance.new("TextLabel", serverPage)
 group1Header.Size = UDim2.new(0.9, 0, 0, 20)
-group1Header.Position = UDim2.new(0.05, 0, 0, yPos)
 group1Header.Text = "AUTO LOOP CONTROL"
 group1Header.TextColor3 = Color3.fromRGB(200, 200, 200)
 group1Header.BackgroundTransparency = 1
 group1Header.Font = Enum.Font.GothamBold
-group1Header.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
-yPos = yPos + 25
 
--- 1. TOGGLE AUTO REPEAT
+-- 1.1 TOGGLE AUTO REPEAT
 local repeatToggle=Instance.new("TextButton",serverPage)
 repeatToggle.Size=UDim2.new(0.9,0,0,35)
-repeatToggle.Position=UDim2.new(0.05,0,0,yPos)
 repeatToggle.Text="Auto Repeat: OFF"
 repeatToggle.BackgroundColor3=Color3.fromRGB(200,0,0)
 repeatToggle.TextColor3=Color3.new(1,1,1)
 repeatToggle.Font=Enum.Font.GothamBold
-repeatToggle.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
 
 repeatToggle.MouseButton1Click:Connect(function()
     autoRepeat=not autoRepeat
@@ -379,133 +411,111 @@ repeatToggle.MouseButton1Click:Connect(function()
     repeatToggle.BackgroundColor3=autoRepeat and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
     notify("Auto Repeat: "..(autoRepeat and "Aktif" or "Nonaktif"), autoRepeat and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0))
 end)
-yPos = yPos + 40
 
--- 2. AUTO DEATH TOGGLE
+-- 1.2 AUTO DEATH TOGGLE
 local deathToggle=repeatToggle:Clone()
-deathToggle.Position=UDim2.new(0.05,0,0,yPos)
 deathToggle.Text="Auto Death: OFF"
-deathToggle.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
+deathToggle.Parent = serverPage
 
 deathToggle.MouseButton1Click:Connect(function()
     autoDeath=not autoDeath
     deathToggle.Text="Auto Death: "..(autoDeath and "ON" or "OFF")
     deathToggle.BackgroundColor3=autoDeath and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
 end)
-yPos = yPos + 40
 
--- Garis Pemisah 1
-createSeparator(serverPage, yPos)
-yPos = yPos + 10 
+createLayoutSeparator(serverPage) -- Garis Pemisah 1
 
--- KELOMPOK 2: SERVER HOP
+-- 2. KELOMPOK 2: SERVER HOP
 local group2Header = Instance.new("TextLabel", serverPage)
 group2Header.Size = UDim2.new(0.9, 0, 0, 20)
-group2Header.Position = UDim2.new(0.05, 0, 0, yPos)
 group2Header.Text = "SERVER HOP CONTROL"
 group2Header.TextColor3 = Color3.fromRGB(200, 200, 200)
 group2Header.BackgroundTransparency = 1
 group2Header.Font = Enum.Font.GothamBold
-group2Header.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
-yPos = yPos + 25
 
--- 3. Server Hop Toggle
+-- 2.1 Server Hop Toggle
 local serverToggle=repeatToggle:Clone()
-serverToggle.Position=UDim2.new(0.05,0,0,yPos)
 serverToggle.Text="Server Hop: OFF"
-serverToggle.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
+serverToggle.Parent = serverPage
 
 serverToggle.MouseButton1Click:Connect(function()
     serverHop=not serverHop
     serverToggle.Text="Server Hop: "..(serverHop and "ON" or "OFF")
     serverToggle.BackgroundColor3=serverHop and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
 end)
-yPos = yPos + 40
 
--- 4. Summit Limit Box
+-- 2.2 Summit Limit Box
 local limitBox=Instance.new("TextBox",serverPage)
 limitBox.Size=UDim2.new(0.9,0,0,30)
-limitBox.Position=UDim2.new(0.05,0,0,yPos)
 limitBox.Text=tostring(summitLimit)
 limitBox.PlaceholderText="Batas Summit (default 20)"
 limitBox.BackgroundColor3=Color3.fromRGB(30,30,30)
 limitBox.TextColor3=Color3.new(1,1,1)
 limitBox.Font=Enum.Font.Gotham
-limitBox.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
 limitBox.FocusLost:Connect(function()
     local v=tonumber(limitBox.Text)
     if v then summitLimit=v end
 end)
-yPos = yPos + 35
 
--- Garis Pemisah 2
-createSeparator(serverPage, yPos)
-yPos = yPos + 10 
+createLayoutSeparator(serverPage) -- Garis Pemisah 2
 
--- KELOMPOK 3: MANUAL ACTION & ANTI AFK
+-- 3. KELOMPOK 3: MANUAL ACTION & ANTI AFK
 local group3Header = Instance.new("TextLabel", serverPage)
 group3Header.Size = UDim2.new(0.9, 0, 0, 20)
-group3Header.Position = UDim2.new(0.05, 0, 0, yPos)
 group3Header.Text = "MANUAL ACTIONS & ANTI-AFK"
 group3Header.TextColor3 = Color3.fromRGB(200, 200, 200)
 group3Header.BackgroundTransparency = 1
 group3Header.Font = Enum.Font.GothamBold
-group3Header.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
-yPos = yPos + 25
 
--- 5. TOGGLE ANTI-AFK 
+-- 3.1 TOGGLE ANTI-AFK 
 local afkToggle=repeatToggle:Clone()
-afkToggle.Position=UDim2.new(0.05,0,0,yPos)
 afkToggle.Text="Anti-AFK: OFF"
-afkToggle.Parent = serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
+afkToggle.Parent = serverPage
 
 afkToggle.MouseButton1Click:Connect(function()
     toggleAntiAFK(not antiAFK)
     afkToggle.Text="Anti-AFK: "..(antiAFK and "ON" or "OFF")
     afkToggle.BackgroundColor3=antiAFK and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
 end)
-yPos = yPos + 40
 
--- 6. Manual Death
+-- 3.2 Manual Death
 local manualDeath=deathToggle:Clone()
 manualDeath.Text="Manual Death"
-manualDeath.Position=UDim2.new(0.05,0,0,yPos)
 manualDeath.BackgroundColor3=Color3.fromRGB(80,80,80)
-manualDeath.Parent=serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
+manualDeath.Parent=serverPage
 manualDeath.MouseButton1Click:Connect(function()
     if player.Character then player.Character:BreakJoints() end
 end)
-yPos = yPos + 40
 
--- 7. Manual Hop
+-- 3.3 Manual Hop
 local manualHop=serverToggle:Clone()
 manualHop.Text="Ganti Server Manual"
-manualHop.Position=UDim2.new(0.05,0,0,yPos)
 manualHop.BackgroundColor3=Color3.fromRGB(80,80,80)
-manualHop.Parent=serverPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
+manualHop.Parent=serverPage
 manualHop.MouseButton1Click:Connect(function()
     TeleportService:Teleport(game.PlaceId, player)
 end)
 
+-- =========================================================================
 
--- SETTING PAGE (ScrollingFrame)
+-- SETTING PAGE (ScrollingFrame DENGAN AUTO SIZE)
 local setPage=Instance.new("ScrollingFrame",content)
 setPage.Name="Setting"
 setPage.Size=UDim2.new(1,0,1,0)
 setPage.BackgroundTransparency=1
 setPage.ScrollBarThickness=6
-setPage.CanvasSize = UDim2.new(0,0,0, 280) 
-setPage.ScrollBarInset = Enum.ScrollBarInset.Always 
+setPage.ScrollBarInset = Enum.ScrollBarInset.Always
+setPage.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y -- KUNCI: Hitung CanvasSize otomatis
 setPage.Visible=false 
+
+setupLayout(setPage) -- Terapkan Layout
 
 local delayBox=Instance.new("TextBox",setPage)
 delayBox.Size=UDim2.new(0.9,0,0,30)
-delayBox.Position=UDim2.new(0.05,0,0,20)
 delayBox.Text=tostring(delayTime)
 delayBox.PlaceholderText="Delay detik"
 delayBox.BackgroundColor3=Color3.fromRGB(30,30,30)
 delayBox.TextColor3=Color3.new(1,1,1)
-delayBox.Parent = setPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
 delayBox.FocusLost:Connect(function()
     local v=tonumber(delayBox.Text)
     if v then delayTime=v end
@@ -513,12 +523,10 @@ end)
 
 local speedBox=Instance.new("TextBox",setPage)
 speedBox.Size=UDim2.new(0.9,0,0,30)
-speedBox.Position=UDim2.new(0.05,0,0,60)
 speedBox.Text=tostring(walkSpeed)
 speedBox.PlaceholderText="WalkSpeed"
 speedBox.BackgroundColor3=Color3.fromRGB(30,30,30)
 speedBox.TextColor3=Color3.new(1,1,1)
-speedBox.Parent = setPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
 speedBox.FocusLost:Connect(function()
     local v=tonumber(speedBox.Text)
     if v then
@@ -529,25 +537,25 @@ speedBox.FocusLost:Connect(function()
     end
 end)
 
-createSeparator(setPage, 100)
+createLayoutSeparator(setPage)
 
 local opacityLabel = Instance.new("TextLabel", setPage)
 opacityLabel.Size = UDim2.new(0.9, 0, 0, 20)
-opacityLabel.Position = UDim2.new(0.05, 0, 0, 110)
 opacityLabel.Text = "GUI Opacity: "..string.format("%.2f", guiOpacity)
 opacityLabel.BackgroundTransparency = 1
 opacityLabel.TextColor3 = Color3.new(1,1,1)
 opacityLabel.Font = Enum.Font.GothamBold
 opacityLabel.TextXAlignment = Enum.TextXAlignment.Left
-opacityLabel.Parent = setPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
 
-local slider = Instance.new("Frame", setPage)
-slider.Size = UDim2.new(0.9, 0, 0, 20)
-slider.Position = UDim2.new(0.05, 0, 0, 135)
+local sliderContainer = Instance.new("Frame", setPage)
+sliderContainer.Size = UDim2.new(0.9, 0, 0, 20)
+sliderContainer.BackgroundTransparency = 1
+local slider = Instance.new("Frame", sliderContainer)
+slider.Size = UDim2.new(1, 0, 1, 0)
 slider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-slider.Parent = setPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
+slider.Position = UDim2.new(0,0,0,0)
 
--- [Logika Slider Opacity Dihilangkan untuk brevity, tetap ada di script lengkap]
+
 local sliderHandle = Instance.new("TextButton", slider)
 sliderHandle.Size = UDim2.new(0, 20, 1, 0)
 sliderHandle.Position = UDim2.new(guiOpacity, -10, 0, 0)
@@ -583,26 +591,26 @@ RunService.RenderStepped:Connect(function()
 end)
 
 
--- INFO PAGE (ScrollingFrame)
+-- INFO PAGE (ScrollingFrame DENGAN AUTO SIZE)
 local infoPage=Instance.new("ScrollingFrame",content)
 infoPage.Name="Info"
 infoPage.Size=UDim2.new(1,0,1,0)
 infoPage.BackgroundTransparency=1
 infoPage.ScrollBarThickness=6
-infoPage.CanvasSize = UDim2.new(0,0,0, 150) 
-infoPage.ScrollBarInset = Enum.ScrollBarInset.Always 
+infoPage.ScrollBarInset = Enum.ScrollBarInset.Always
+infoPage.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y -- KUNCI: Hitung CanvasSize otomatis
 infoPage.Visible=false 
 
+setupLayout(infoPage)
+
 local infoText=Instance.new("TextLabel",infoPage)
-infoText.Size=UDim2.new(1,-20,1,-20)
-infoText.Position=UDim2.new(0,10,0,10)
+infoText.Size=UDim2.new(0.9,0,0,130) -- Beri ukuran Y yang cukup untuk teks
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V21 (Fixed Element Placement)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menu Pages (All pages)"
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V23 (Auto Scroll)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Semua Menu Sekarang Bisa Di-Scroll (Otomatis)"
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
 infoText.TextXAlignment = Enum.TextXAlignment.Left
-infoText.Parent = infoPage -- DIPINDAHKAN KE DALAM SCROLLINGFRAME
 
 
 local isHiddenMode = false
@@ -631,4 +639,4 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 
 local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V21) Loaded. Semua elemen sudah kembali di tempatnya dan siap di-scroll!",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V23) Loaded. Semua menu sekarang bisa di-scroll secara otomatis!",Color3.fromRGB(0,200,100))
