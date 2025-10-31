@@ -1,5 +1,5 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V26 (Versi Normal Stabil Akhir) //--
--- Versi paling stabil dengan perbaikan minimal untuk mencegah overlap menu dan memastikan scroll.
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V19 (Fixed Overlay Menu) //--
+-- Memperbaiki masalah menu tumpang tindih akibat salah penerapan ScrollingFrame.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -8,7 +8,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService")
 
--- checkpoints (Dihilangkan untuk brevity)
+-- checkpoints
 local checkpoints = {
     {name="Basecamp", pos=Vector3.new(-883.288,43.358,933.698)},
     {name="CP1", pos=Vector3.new(-473.240,49.167,624.194)},
@@ -33,7 +33,7 @@ local checkpoints = {
     {name="Puncak", pos=Vector3.new(-1534.938,933.116,-2176.096)}
 }
 
--- variabel (Dihilangkan untuk brevity)
+-- variabel
 local autoSummit, autoDeath, serverHop, autoRepeat, antiAFK = false, false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 local currentCpIndex = 1 
@@ -41,7 +41,7 @@ local summitThread = nil
 local antiAFKThread = nil 
 local guiOpacity = 0.9 
 
--- notif function (Dihilangkan untuk brevity)
+-- notif function
 local function notify(txt, color)
     local n = Instance.new("TextLabel", playerGui)
     n.Size = UDim2.new(0,400,0,35)
@@ -54,7 +54,7 @@ local function notify(txt, color)
     game:GetService("Debris"):AddItem(n,2)
 end
 
--- [Fungsi findNearestCheckpoint, toggleAntiAFK, startAuto, stopAuto, dan Initializations Dihilangkan untuk brevity]
+-- FUNGSI: Cari Checkpoint terdekat (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function findNearestCheckpoint()
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -80,6 +80,8 @@ local function findNearestCheckpoint()
 
     return nearestIndex
 end
+
+-- FUNGSI: TOGGLE ANTI AFK (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function toggleAntiAFK(isEnable)
     if isEnable and not antiAFKThread then
         antiAFK = true
@@ -108,6 +110,9 @@ local function toggleAntiAFK(isEnable)
         notify("Anti-AFK Nonaktif", Color3.fromRGB(200, 50, 50))
     end
 end
+
+
+-- fungsi auto summit (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function startAuto()
     if autoSummit then return end
     autoSummit = true
@@ -134,6 +139,7 @@ local function startAuto()
                 local cp = checkpoints[i]
                 if not autoSummit then currentCpIndex = i; isComplete = false; break end
                 
+                -- LOGIKA PERBAIKAN ROLLBACK
                 if i < #checkpoints - 1 then 
                     local nearestCpIndex = findNearestCheckpoint()
                     if nearestCpIndex < i then
@@ -173,23 +179,30 @@ local function startAuto()
         if not autoSummit then notify("Auto Summit Finished/Stopped.", Color3.fromRGB(255,165,0)) end
     end)
 end
+
+-- FUNGSI STOP (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function stopAuto()
     if summitThread then task.cancel(summitThread); summitThread = nil end
     autoSummit = false 
     notify("Auto Summit Stopped", Color3.fromRGB(255, 50, 50))
 end
+
+
+-- INISIALISASI (Dihilangkan untuk brevity, tetap ada di script lengkap)
 player.CharacterAdded:Connect(function(char)
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if humanoid then humanoid.WalkSpeed = walkSpeed end
 end)
+
 do
     local nearestCp = findNearestCheckpoint()
     if nearestCp < #checkpoints then currentCpIndex = nearestCp + 1 else currentCpIndex = 1 end
 end
+
 if playerGui:FindFirstChild("BynzzBponjon") then playerGui.BynzzBponjon:Destroy() end
 
 
--- GUI Setup
+-- GUI utama (ScreenGui, Main Frame, Header, Left Panel)
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "BynzzBponjon"
 gui.ResetOnSpawn = false
@@ -208,7 +221,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = 1 - guiOpacity 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V26 - Versi Normal Stabil)"
+title.Text = "BynzzBponjon GUI (V19)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -247,21 +260,23 @@ right.Position = UDim2.new(0,130,0,30)
 right.BackgroundColor3 = Color3.fromRGB(10,10,10)
 right.BackgroundTransparency = 1 - guiOpacity
 
+-- CONTENT FRAME UTAMA (Ini adalah Frame, tempat semua ScrollingFrame menu diletakkan)
 local content = Instance.new("Frame", right) 
 content.Size = UDim2.new(1,0,1,0)
 content.BackgroundTransparency = 1
 
 
--- Fungsi Show Page (FIXED)
+-- ************** PERBAIKAN LOGIKA SHOW PAGE **************
 local function showPage(name)
     for _,v in pairs(content:GetChildren()) do 
+        -- Memastikan hanya satu ScrollingFrame yang Visible
         if v:IsA("ScrollingFrame") then
             v.Visible = (v.Name == name)
         end
     end
 end
 
--- Tombol Menu
+-- tombol menu
 local pages = {"Auto","Setting","Info","Server"}
 for i,v in ipairs(pages) do
     local b=Instance.new("TextButton",left)
@@ -288,11 +303,11 @@ local autoPage=Instance.new("ScrollingFrame",content)
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
 autoPage.BackgroundTransparency=1
-autoPage.CanvasSize = UDim2.new(0,0,0, 480) 
+autoPage.CanvasSize = UDim2.new(0,0,0, (35*3) + 10 + (#checkpoints * 35) + 10 + 20)
 autoPage.ScrollBarThickness=6
-autoPage.ScrollBarInset = Enum.ScrollBarInset.Always 
-autoPage.Visible=true 
+autoPage.Visible=true -- Default ke Auto
 
+-- [Konten Auto Page...]
 local startBtn=Instance.new("TextButton",autoPage)
 startBtn.Size=UDim2.new(0.9,0,0,35)
 startBtn.Position=UDim2.new(0.05,0,0,10)
@@ -317,8 +332,9 @@ resetBtn.MouseButton1Click:Connect(function()
     notify("Checkpoint Index Reset ke Basecamp (CP #1)", Color3.fromRGB(255,100,0))
 end)
 
+-- SCROLLING FRAME UNTUK DAFTAR CP (Sub-scrollingframe)
 local scroll=Instance.new("ScrollingFrame",autoPage)
-scroll.Size=UDim2.new(0.9,0,0,250)
+scroll.Size=UDim2.new(0.9,0,0,180)
 scroll.Position=UDim2.new(0.05,0,0,145)
 scroll.CanvasSize=UDim2.new(0,0,0,#checkpoints*35)
 scroll.ScrollBarThickness=6
@@ -350,9 +366,8 @@ serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
 serverPage.ScrollBarThickness=6
-serverPage.CanvasSize = UDim2.new(0,0,0, 900) 
-serverPage.ScrollBarInset = Enum.ScrollBarInset.Always 
-serverPage.Visible=false 
+serverPage.CanvasSize = UDim2.new(0,0,0, 360) 
+serverPage.Visible=false -- Sembunyikan
 
 local yPos = 10 
 
@@ -366,7 +381,7 @@ group1Header.BackgroundTransparency = 1
 group1Header.Font = Enum.Font.GothamBold
 yPos = yPos + 25
 
--- 1. TOGGLE AUTO REPEAT
+-- 1. TOGGLE AUTO REPEAT (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local repeatToggle=Instance.new("TextButton",serverPage)
 repeatToggle.Size=UDim2.new(0.9,0,0,35)
 repeatToggle.Position=UDim2.new(0.05,0,0,yPos)
@@ -383,7 +398,7 @@ repeatToggle.MouseButton1Click:Connect(function()
 end)
 yPos = yPos + 40
 
--- 2. AUTO DEATH TOGGLE
+-- 2. AUTO DEATH TOGGLE (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local deathToggle=repeatToggle:Clone()
 deathToggle.Position=UDim2.new(0.05,0,0,yPos)
 deathToggle.Text="Auto Death: OFF"
@@ -400,7 +415,7 @@ yPos = yPos + 40
 createSeparator(serverPage, yPos)
 yPos = yPos + 10 
 
--- KELOMPOK 2: SERVER HOP
+-- KELOMPOK 2: SERVER HOP (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local group2Header = Instance.new("TextLabel", serverPage)
 group2Header.Size = UDim2.new(0.9, 0, 0, 20)
 group2Header.Position = UDim2.new(0.05, 0, 0, yPos)
@@ -442,7 +457,7 @@ yPos = yPos + 35
 createSeparator(serverPage, yPos)
 yPos = yPos + 10 
 
--- KELOMPOK 3: MANUAL ACTION & ANTI AFK
+-- KELOMPOK 3: MANUAL ACTION & ANTI AFK (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local group3Header = Instance.new("TextLabel", serverPage)
 group3Header.Size = UDim2.new(0.9, 0, 0, 20)
 group3Header.Position = UDim2.new(0.05, 0, 0, yPos)
@@ -493,15 +508,12 @@ setPage.Name="Setting"
 setPage.Size=UDim2.new(1,0,1,0)
 setPage.BackgroundTransparency=1
 setPage.ScrollBarThickness=6
-setPage.CanvasSize = UDim2.new(0,0,0, 900)
-setPage.ScrollBarInset = Enum.ScrollBarInset.Always 
-setPage.Visible=false 
-
-local setYPos = 20
+setPage.CanvasSize = UDim2.new(0,0,0, 260) 
+setPage.Visible=false -- Sembunyikan
 
 local delayBox=Instance.new("TextBox",setPage)
 delayBox.Size=UDim2.new(0.9,0,0,30)
-delayBox.Position=UDim2.new(0.05,0,0,setYPos)
+delayBox.Position=UDim2.new(0.05,0,0,20)
 delayBox.Text=tostring(delayTime)
 delayBox.PlaceholderText="Delay detik"
 delayBox.BackgroundColor3=Color3.fromRGB(30,30,30)
@@ -510,11 +522,10 @@ delayBox.FocusLost:Connect(function()
     local v=tonumber(delayBox.Text)
     if v then delayTime=v end
 end)
-setYPos = setYPos + 40
 
 local speedBox=Instance.new("TextBox",setPage)
 speedBox.Size=UDim2.new(0.9,0,0,30)
-speedBox.Position=UDim2.new(0.05,0,0,setYPos)
+speedBox.Position=UDim2.new(0.05,0,0,60)
 speedBox.Text=tostring(walkSpeed)
 speedBox.PlaceholderText="WalkSpeed"
 speedBox.BackgroundColor3=Color3.fromRGB(30,30,30)
@@ -528,34 +539,30 @@ speedBox.FocusLost:Connect(function()
         end
     end
 end)
-setYPos = setYPos + 40
 
-createSeparator(setPage, setYPos)
-setYPos = setYPos + 10
+createSeparator(setPage, 100)
 
+-- ***** SLIDER TRANSPARANSI BARU *****
 local opacityLabel = Instance.new("TextLabel", setPage)
 opacityLabel.Size = UDim2.new(0.9, 0, 0, 20)
-opacityLabel.Position = UDim2.new(0.05, 0, 0, setYPos)
+opacityLabel.Position = UDim2.new(0.05, 0, 0, 110)
 opacityLabel.Text = "GUI Opacity: "..string.format("%.2f", guiOpacity)
 opacityLabel.BackgroundTransparency = 1
 opacityLabel.TextColor3 = Color3.new(1,1,1)
 opacityLabel.Font = Enum.Font.GothamBold
 opacityLabel.TextXAlignment = Enum.TextXAlignment.Left
-setYPos = setYPos + 25
 
 local slider = Instance.new("Frame", setPage)
 slider.Size = UDim2.new(0.9, 0, 0, 20)
-slider.Position = UDim2.new(0.05, 0, 0, setYPos)
+slider.Position = UDim2.new(0.05, 0, 0, 135)
 slider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-
--- [Logika Slider Opacity Dihilangkan untuk brevity, tetap ada di script lengkap]
 local sliderHandle = Instance.new("TextButton", slider)
 sliderHandle.Size = UDim2.new(0, 20, 1, 0)
 sliderHandle.Position = UDim2.new(guiOpacity, -10, 0, 0)
 sliderHandle.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 sliderHandle.Text = ""
 
+-- Fungsi untuk mengupdate Opacity
 local function updateOpacity(x)
     local newOpacity = math.min(1, math.max(0.1, x / slider.AbsoluteSize.X)) 
     guiOpacity = newOpacity
@@ -583,6 +590,7 @@ RunService.RenderStepped:Connect(function()
         updateOpacity(relativeX)
     end
 end)
+-- **********************************
 
 
 -- INFO PAGE (ScrollingFrame)
@@ -591,22 +599,21 @@ infoPage.Name="Info"
 infoPage.Size=UDim2.new(1,0,1,0)
 infoPage.BackgroundTransparency=1
 infoPage.ScrollBarThickness=6
-infoPage.CanvasSize = UDim2.new(0,0,0, 900) 
-infoPage.ScrollBarInset = Enum.ScrollBarInset.Always 
-infoPage.Visible=false 
+infoPage.CanvasSize = UDim2.new(0,0,0, 150) 
+infoPage.Visible=false -- Sembunyikan
 
 local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V26 (Normal Stabil Akhir)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Semua Menu Bisa Di-Scroll (Manual Besar)\n\nIni adalah versi paling stabil dan diperbaiki dari versi lama yang berhasil."
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V19 (Fixed Overlay)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menu Pages (Fixed)"
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
 infoText.TextXAlignment = Enum.TextXAlignment.Left
 
 
--- Logika Tombol Hide
+--- IMPLEMENTASI HIDE/SHOW LOGIC (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local isHiddenMode = false
 local originalMainSize = main.Size 
 local headerHeight = header.Size.Y.Offset 
@@ -619,19 +626,19 @@ local function toggleGuiDisplay()
         left.Visible = false
         right.Visible = false
         hideBtn.Text = "Show"
-        main.Draggable = true 
     else
         main.Size = originalMainSize 
         left.Visible = true
         right.Visible = true
         hideBtn.Text = "Hide"
-        main.Draggable = true
     end
     main.Active = true
+    main.Draggable = true
 end
 
 hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 
+-- Notifikasi akhir
 local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V26) Loaded. Versi Normal Stabil Akhir siap digunakan!",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V19) Loaded. Menu Overlay Fixed!",Color3.fromRGB(0,200,100))
