@@ -1,5 +1,5 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V19 (Fixed Overlay Menu) //--
--- Memperbaiki masalah menu tumpang tindih akibat salah penerapan ScrollingFrame.
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V27 (V19 Stabil + Fixed Overlay) //--
+-- Menggunakan struktur GUI V19 yang kompatibel, dengan modifikasi simpel di showPage.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -8,7 +8,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService")
 
--- checkpoints
+-- checkpoints (Sama seperti V19)
 local checkpoints = {
     {name="Basecamp", pos=Vector3.new(-883.288,43.358,933.698)},
     {name="CP1", pos=Vector3.new(-473.240,49.167,624.194)},
@@ -33,7 +33,7 @@ local checkpoints = {
     {name="Puncak", pos=Vector3.new(-1534.938,933.116,-2176.096)}
 }
 
--- variabel
+-- variabel (Sama seperti V19)
 local autoSummit, autoDeath, serverHop, autoRepeat, antiAFK = false, false, false, false, false
 local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 local currentCpIndex = 1 
@@ -41,7 +41,7 @@ local summitThread = nil
 local antiAFKThread = nil 
 local guiOpacity = 0.9 
 
--- notif function
+-- [Fungsi notifikasi, findNearestCheckpoint, toggleAntiAFK, startAuto, stopAuto, dan Initializations lainnya sama seperti V19/V26]
 local function notify(txt, color)
     local n = Instance.new("TextLabel", playerGui)
     n.Size = UDim2.new(0,400,0,35)
@@ -54,7 +54,6 @@ local function notify(txt, color)
     game:GetService("Debris"):AddItem(n,2)
 end
 
--- FUNGSI: Cari Checkpoint terdekat (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function findNearestCheckpoint()
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -81,7 +80,6 @@ local function findNearestCheckpoint()
     return nearestIndex
 end
 
--- FUNGSI: TOGGLE ANTI AFK (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function toggleAntiAFK(isEnable)
     if isEnable and not antiAFKThread then
         antiAFK = true
@@ -111,8 +109,6 @@ local function toggleAntiAFK(isEnable)
     end
 end
 
-
--- fungsi auto summit (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function startAuto()
     if autoSummit then return end
     autoSummit = true
@@ -180,7 +176,6 @@ local function startAuto()
     end)
 end
 
--- FUNGSI STOP (Dihilangkan untuk brevity, tetap ada di script lengkap)
 local function stopAuto()
     if summitThread then task.cancel(summitThread); summitThread = nil end
     autoSummit = false 
@@ -188,7 +183,6 @@ local function stopAuto()
 end
 
 
--- INISIALISASI (Dihilangkan untuk brevity, tetap ada di script lengkap)
 player.CharacterAdded:Connect(function(char)
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if humanoid then humanoid.WalkSpeed = walkSpeed end
@@ -202,7 +196,7 @@ end
 if playerGui:FindFirstChild("BynzzBponjon") then playerGui.BynzzBponjon:Destroy() end
 
 
--- GUI utama (ScreenGui, Main Frame, Header, Left Panel)
+-- GUI utama
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "BynzzBponjon"
 gui.ResetOnSpawn = false
@@ -221,7 +215,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = 1 - guiOpacity 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V19)"
+title.Text = "BynzzBponjon GUI (V27 - V19 Stabil)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -260,17 +254,16 @@ right.Position = UDim2.new(0,130,0,30)
 right.BackgroundColor3 = Color3.fromRGB(10,10,10)
 right.BackgroundTransparency = 1 - guiOpacity
 
--- CONTENT FRAME UTAMA (Ini adalah Frame, tempat semua ScrollingFrame menu diletakkan)
 local content = Instance.new("Frame", right) 
 content.Size = UDim2.new(1,0,1,0)
 content.BackgroundTransparency = 1
 
 
--- ************** PERBAIKAN LOGIKA SHOW PAGE **************
+-- ************** PERBAIKAN LOGIKA SHOW PAGE V27 (Lebih Umum) **************
 local function showPage(name)
     for _,v in pairs(content:GetChildren()) do 
-        -- Memastikan hanya satu ScrollingFrame yang Visible
-        if v:IsA("ScrollingFrame") then
+        -- Memastikan setiap anak dari frame 'content' (yang seharusnya adalah menu) disembunyikan/ditampilkan
+        if v:IsA("GuiObject") then -- Cek apakah ini elemen GUI (Frame, ScrollingFrame, dll.)
             v.Visible = (v.Name == name)
         end
     end
@@ -303,7 +296,7 @@ local autoPage=Instance.new("ScrollingFrame",content)
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
 autoPage.BackgroundTransparency=1
-autoPage.CanvasSize = UDim2.new(0,0,0, (35*3) + 10 + (#checkpoints * 35) + 10 + 20)
+autoPage.CanvasSize = UDim2.new(0,0,0, (35*3) + 10 + 180 + 10) 
 autoPage.ScrollBarThickness=6
 autoPage.Visible=true -- Default ke Auto
 
@@ -370,6 +363,7 @@ serverPage.CanvasSize = UDim2.new(0,0,0, 360)
 serverPage.Visible=false -- Sembunyikan
 
 local yPos = 10 
+-- [Konten Server Page sama seperti V19/V26]
 
 -- KELOMPOK 1: AUTO LOOP CONTROL
 local group1Header = Instance.new("TextLabel", serverPage)
@@ -381,7 +375,7 @@ group1Header.BackgroundTransparency = 1
 group1Header.Font = Enum.Font.GothamBold
 yPos = yPos + 25
 
--- 1. TOGGLE AUTO REPEAT (Dihilangkan untuk brevity, tetap ada di script lengkap)
+-- 1. TOGGLE AUTO REPEAT
 local repeatToggle=Instance.new("TextButton",serverPage)
 repeatToggle.Size=UDim2.new(0.9,0,0,35)
 repeatToggle.Position=UDim2.new(0.05,0,0,yPos)
@@ -398,7 +392,7 @@ repeatToggle.MouseButton1Click:Connect(function()
 end)
 yPos = yPos + 40
 
--- 2. AUTO DEATH TOGGLE (Dihilangkan untuk brevity, tetap ada di script lengkap)
+-- 2. AUTO DEATH TOGGLE
 local deathToggle=repeatToggle:Clone()
 deathToggle.Position=UDim2.new(0.05,0,0,yPos)
 deathToggle.Text="Auto Death: OFF"
@@ -415,7 +409,7 @@ yPos = yPos + 40
 createSeparator(serverPage, yPos)
 yPos = yPos + 10 
 
--- KELOMPOK 2: SERVER HOP (Dihilangkan untuk brevity, tetap ada di script lengkap)
+-- KELOMPOK 2: SERVER HOP
 local group2Header = Instance.new("TextLabel", serverPage)
 group2Header.Size = UDim2.new(0.9, 0, 0, 20)
 group2Header.Position = UDim2.new(0.05, 0, 0, yPos)
@@ -457,7 +451,7 @@ yPos = yPos + 35
 createSeparator(serverPage, yPos)
 yPos = yPos + 10 
 
--- KELOMPOK 3: MANUAL ACTION & ANTI AFK (Dihilangkan untuk brevity, tetap ada di script lengkap)
+-- KELOMPOK 3: MANUAL ACTION & ANTI AFK
 local group3Header = Instance.new("TextLabel", serverPage)
 group3Header.Size = UDim2.new(0.9, 0, 0, 20)
 group3Header.Position = UDim2.new(0.05, 0, 0, yPos)
@@ -509,11 +503,13 @@ setPage.Size=UDim2.new(1,0,1,0)
 setPage.BackgroundTransparency=1
 setPage.ScrollBarThickness=6
 setPage.CanvasSize = UDim2.new(0,0,0, 260) 
-setPage.Visible=false -- Sembunyikan
+setPage.Visible=false 
+
+local setYPos = 20
 
 local delayBox=Instance.new("TextBox",setPage)
 delayBox.Size=UDim2.new(0.9,0,0,30)
-delayBox.Position=UDim2.new(0.05,0,0,20)
+delayBox.Position=UDim2.new(0.05,0,0,setYPos)
 delayBox.Text=tostring(delayTime)
 delayBox.PlaceholderText="Delay detik"
 delayBox.BackgroundColor3=Color3.fromRGB(30,30,30)
@@ -522,10 +518,11 @@ delayBox.FocusLost:Connect(function()
     local v=tonumber(delayBox.Text)
     if v then delayTime=v end
 end)
+setYPos = setYPos + 40
 
 local speedBox=Instance.new("TextBox",setPage)
 speedBox.Size=UDim2.new(0.9,0,0,30)
-speedBox.Position=UDim2.new(0.05,0,0,60)
+speedBox.Position=UDim2.new(0.05,0,0,setYPos)
 speedBox.Text=tostring(walkSpeed)
 speedBox.PlaceholderText="WalkSpeed"
 speedBox.BackgroundColor3=Color3.fromRGB(30,30,30)
@@ -539,22 +536,25 @@ speedBox.FocusLost:Connect(function()
         end
     end
 end)
+setYPos = setYPos + 40
 
-createSeparator(setPage, 100)
+createSeparator(setPage, setYPos)
+setYPos = setYPos + 10
 
--- ***** SLIDER TRANSPARANSI BARU *****
+-- ***** SLIDER TRANSPARANSI *****
 local opacityLabel = Instance.new("TextLabel", setPage)
 opacityLabel.Size = UDim2.new(0.9, 0, 0, 20)
-opacityLabel.Position = UDim2.new(0.05, 0, 0, 110)
+opacityLabel.Position = UDim2.new(0.05, 0, 0, setYPos)
 opacityLabel.Text = "GUI Opacity: "..string.format("%.2f", guiOpacity)
 opacityLabel.BackgroundTransparency = 1
 opacityLabel.TextColor3 = Color3.new(1,1,1)
 opacityLabel.Font = Enum.Font.GothamBold
 opacityLabel.TextXAlignment = Enum.TextXAlignment.Left
+setYPos = setYPos + 25
 
 local slider = Instance.new("Frame", setPage)
 slider.Size = UDim2.new(0.9, 0, 0, 20)
-slider.Position = UDim2.new(0.05, 0, 0, 135)
+slider.Position = UDim2.new(0.05, 0, 0, setYPos)
 slider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 local sliderHandle = Instance.new("TextButton", slider)
 sliderHandle.Size = UDim2.new(0, 20, 1, 0)
@@ -590,7 +590,6 @@ RunService.RenderStepped:Connect(function()
         updateOpacity(relativeX)
     end
 end)
--- **********************************
 
 
 -- INFO PAGE (ScrollingFrame)
@@ -600,20 +599,20 @@ infoPage.Size=UDim2.new(1,0,1,0)
 infoPage.BackgroundTransparency=1
 infoPage.ScrollBarThickness=6
 infoPage.CanvasSize = UDim2.new(0,0,0, 150) 
-infoPage.Visible=false -- Sembunyikan
+infoPage.Visible=false 
 
 local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V19 (Fixed Overlay)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menu Pages (Fixed)"
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V27 (V19 Stabil + Fixed Overlay)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menu Pages (Fixed)"
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
 infoText.TextXAlignment = Enum.TextXAlignment.Left
 
 
---- IMPLEMENTASI HIDE/SHOW LOGIC (Dihilangkan untuk brevity, tetap ada di script lengkap)
+--- IMPLEMENTASI HIDE/SHOW LOGIC (Sama seperti V19)
 local isHiddenMode = false
 local originalMainSize = main.Size 
 local headerHeight = header.Size.Y.Offset 
@@ -641,4 +640,4 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 -- Notifikasi akhir
 local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V19) Loaded. Menu Overlay Fixed!",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V27) Loaded. Semoga kali ini berhasil menuntaskan masalah!",Color3.fromRGB(0,200,100))
