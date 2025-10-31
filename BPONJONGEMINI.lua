@@ -1,5 +1,5 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V30 (V27 Fitur Lengkap + 2 CP Resume) //--
--- Menggunakan fitur lengkap V29 tetapi hanya dengan 2 Checkpoint (Basecamp dan Puncak).
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V31 (V27 + Implicit Resume) //--
+-- Mengambil struktur V30 (fitur lengkap) dan memastikan logika utamanya sangat stabil.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -10,11 +10,11 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 -- **********************************
--- ***** CHECKPOINTS KEMBALI 2 CP ****
+-- ***** CHECKPOINTS KEMBALI 2 CP (TOLONG PASTIKAN KOORDINAT INI BENAR) ****
 -- **********************************
 local checkpoints = {
-    {name="Basecamp", pos=Vector3.new(1272.160, 639.021, 1792.852)},
-    {name="Puncak", pos=Vector3.new(-6652.260, 3151.055, -796.739)}
+    {name="Basecamp", pos=Vector3.new(1272.160, 639.021, 1792.852)}, -- Harap Ganti Jika Berbeda
+    {name="Puncak", pos=Vector3.new(-6652.260, 3151.055, -796.739)}   -- Harap Ganti Jika Berbeda
 }
 -- **********************************
 
@@ -26,7 +26,7 @@ local summitThread = nil
 local antiAFKThread = nil 
 local guiOpacity = 0.9 
 
--- FUNGSI UMUM
+-- FUNGSI UMUM (Tidak diubah dari V30/V27)
 local function notify(txt, color)
     local n = Instance.new("TextLabel", playerGui)
     n.Size = UDim2.new(0,400,0,35)
@@ -39,7 +39,6 @@ local function notify(txt, color)
     game:GetService("Debris"):AddItem(n,2)
 end
 
--- findNearestCheckpoint dipertahankan hanya untuk inisialisasi awal index jika diperlukan
 local function findNearestCheckpoint()
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -97,6 +96,8 @@ end
 
 local function doServerHop()
     local servers = {}
+    -- PENGGUNAAN game:HttpGet DIGANTI KE http:GetAsync UNTUK KOMPATIBILITAS (JIKA DIPERLUKAN)
+    -- Asumsi 'game:HttpGet' masih berfungsi di exploit Anda (seperti V27).
     local ok, raw = pcall(function() return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100") end)
     
     if not ok or not raw then notify("Server Hop Gagal: Gagal Ambil Data", Color3.fromRGB(200, 50, 50)) return end
@@ -119,15 +120,14 @@ local function doServerHop()
 end
 
 -- **********************************
--- ***** FUNGSI UTAMA AUTO SUMMIT ****
+-- ***** FUNGSI UTAMA AUTO SUMMIT (DIPERTAHANKAN) ****
 -- **********************************
 local function startAuto()
     if autoSummit then return end
     autoSummit = true
     
-    -- Tentukan Index Mulai (Implicit Resume Logic)
+    -- LOGIKA IMPLICIT RESUME
     local startIndex = 1
-    -- JIKA AutoRepeat OFF DAN kita berhenti di CP > 1, maka resume
     if not autoRepeat and currentCpIndex > 1 and currentCpIndex <= #checkpoints then
         startIndex = currentCpIndex
     end
@@ -151,13 +151,14 @@ local function startAuto()
             for i = startIndex, #checkpoints do
                 local cp = checkpoints[i]
                 
-                -- ** LOGIKA RESUME: SIMPAN INDEX SAAT DI-STOP **
+                -- LOGIKA RESUME: SIMPAN INDEX SAAT DI-STOP
                 if not autoSummit then 
                     currentCpIndex = i 
                     isComplete = false
                     break 
                 end
                 
+                -- TELEPORT
                 if player.Character and player.Character.PrimaryPart then
                     player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
                 end
@@ -186,7 +187,6 @@ local function startAuto()
         end 
         summitThread = nil
         
-        -- ** NOTIFIKASI INDEX SAAT STOP **
         if not autoSummit then 
              local nextCp = math.min(currentCpIndex, #checkpoints)
              local nextCpName = checkpoints[nextCp].name
@@ -206,7 +206,6 @@ player.CharacterAdded:Connect(function(char)
     if humanoid then humanoid.WalkSpeed = walkSpeed end
 end)
 
--- Inisialisasi index saat script dimuat (Opsional untuk 2 CP, tapi dipertahankan)
 do
     local nearestCp = findNearestCheckpoint()
     if nearestCp < #checkpoints then currentCpIndex = nearestCp + 1 else currentCpIndex = 1 end
@@ -215,7 +214,9 @@ end
 if playerGui:FindFirstChild("BynzzBponjon") then playerGui.BynzzBponjon:Destroy() end
 
 
--- GUI utama
+-- **********************************
+-- ***** GUI (BAGIAN INI SAMA DENGAN V30/V27) ****
+-- **********************************
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "BynzzBponjon"
 gui.ResetOnSpawn = false
@@ -235,7 +236,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = getTransparency() 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V30 - 2 CP + Resume)"
+title.Text = "BynzzBponjon GUI (V31 - V27 Stabil + Resume)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -386,4 +387,274 @@ local group1Header = Instance.new("TextLabel", serverPage)
 group1Header.Size = UDim2.new(0.9, 0, 0, 20)
 group1Header.Position = UDim2.new(0.05, 0, 0, yPos)
 group1Header.Text = "AUTO LOOP CONTROL"
-group1Header.TextColor3 = Color3.fromRGB(200, 2
+group1Header.TextColor3 = Color3.fromRGB(200, 200, 200)
+group1Header.BackgroundTransparency = 1
+group1Header.Font = Enum.Font.GothamBold
+yPos = yPos + 25
+
+-- 1. TOGGLE AUTO REPEAT
+local repeatToggle=Instance.new("TextButton",serverPage)
+repeatToggle.Size=UDim2.new(0.9,0,0,35)
+repeatToggle.Position=UDim2.new(0.05,0,0,yPos)
+repeatToggle.Text="Auto Repeat: OFF"
+repeatToggle.BackgroundColor3=Color3.fromRGB(200,0,0)
+repeatToggle.TextColor3=Color3.new(1,1,1)
+repeatToggle.Font=Enum.Font.GothamBold
+
+repeatToggle.MouseButton1Click:Connect(function()
+    autoRepeat=not autoRepeat
+    repeatToggle.Text="Auto Repeat: "..(autoRepeat and "ON" or "OFF")
+    repeatToggle.BackgroundColor3=autoRepeat and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+    notify("Auto Repeat: "..(autoRepeat and "Aktif" or "Nonaktif"), autoRepeat and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0))
+end)
+yPos = yPos + 40
+
+-- 2. AUTO DEATH TOGGLE
+local deathToggle=repeatToggle:Clone()
+deathToggle.Position=UDim2.new(0.05,0,0,yPos)
+deathToggle.Text="Auto Death: OFF"
+deathToggle.Parent = serverPage
+
+deathToggle.MouseButton1Click:Connect(function()
+    autoDeath=not autoDeath
+    deathToggle.Text="Auto Death: "..(autoDeath and "ON" or "OFF")
+    deathToggle.BackgroundColor3=autoDeath and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+end)
+yPos = yPos + 40
+
+-- Garis Pemisah 1
+createSeparator(serverPage, yPos)
+yPos = yPos + 10 
+
+-- KELOMPOK 2: SERVER HOP
+local group2Header = Instance.new("TextLabel", serverPage)
+group2Header.Size = UDim2.new(0.9, 0, 0, 20)
+group2Header.Position = UDim2.new(0.05, 0, 0, yPos)
+group2Header.Text = "SERVER HOP CONTROL"
+group2Header.TextColor3 = Color3.fromRGB(200, 200, 200)
+group2Header.BackgroundTransparency = 1
+group2Header.Font = Enum.Font.GothamBold
+yPos = yPos + 25
+
+-- 3. Server Hop Toggle
+local serverToggle=repeatToggle:Clone()
+serverToggle.Position=UDim2.new(0.05,0,0,yPos)
+serverToggle.Text="Server Hop: OFF"
+serverToggle.Parent = serverPage
+
+serverToggle.MouseButton1Click:Connect(function()
+    serverHop=not serverHop
+    serverToggle.Text="Server Hop: "..(serverHop and "ON" or "OFF")
+    serverToggle.BackgroundColor3=serverHop and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+end)
+yPos = yPos + 40
+
+-- 4. Summit Limit Box
+local limitBox=Instance.new("TextBox",serverPage)
+limitBox.Size=UDim2.new(0.9,0,0,30)
+limitBox.Position=UDim2.new(0.05,0,0,yPos)
+limitBox.Text=tostring(summitLimit)
+limitBox.PlaceholderText="Batas Summit (default 20)"
+limitBox.BackgroundColor3=Color3.fromRGB(30,30,30)
+limitBox.TextColor3=Color3.new(1,1,1)
+limitBox.Font=Enum.Font.Gotham
+limitBox.FocusLost:Connect(function()
+    local v=tonumber(limitBox.Text)
+    if v then summitLimit=v end
+end)
+yPos = yPos + 35
+
+-- Garis Pemisah 2
+createSeparator(serverPage, yPos)
+yPos = yPos + 10 
+
+-- KELOMPOK 3: MANUAL ACTION & ANTI AFK
+local group3Header = Instance.new("TextLabel", serverPage)
+group3Header.Size = UDim2.new(0.9, 0, 0, 20)
+group3Header.Position = UDim2.new(0.05, 0, 0, yPos)
+group3Header.Text = "MANUAL ACTIONS & ANTI-AFK"
+group3Header.TextColor3 = Color3.fromRGB(200, 200, 200)
+group3Header.BackgroundTransparency = 1
+group3Header.Font = Enum.Font.GothamBold
+yPos = yPos + 25
+
+-- 5. TOGGLE ANTI-AFK 
+local afkToggle=repeatToggle:Clone()
+afkToggle.Position=UDim2.new(0.05,0,0,yPos)
+afkToggle.Text="Anti-AFK: OFF"
+afkToggle.Parent = serverPage
+
+afkToggle.MouseButton1Click:Connect(function()
+    toggleAntiAFK(not antiAFK)
+    afkToggle.Text="Anti-AFK: "..(antiAFK and "ON" or "OFF")
+    afkToggle.BackgroundColor3=antiAFK and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+end)
+yPos = yPos + 40
+
+-- 6. Manual Death
+local manualDeath=deathToggle:Clone()
+manualDeath.Text="Manual Death"
+manualDeath.Position=UDim2.new(0.05,0,0,yPos)
+manualDeath.BackgroundColor3=Color3.fromRGB(80,80,80)
+manualDeath.Parent=serverPage
+manualDeath.MouseButton1Click:Connect(function()
+    if player.Character then pcall(function() player.Character:BreakJoints() end) end
+end)
+yPos = yPos + 40
+
+-- 7. Manual Hop
+local manualHop=serverToggle:Clone()
+manualHop.Text="Ganti Server Manual"
+manualHop.Position=UDim2.new(0.05,0,0,yPos)
+manualHop.BackgroundColor3=Color3.fromRGB(80,80,80)
+manualHop.Parent=serverPage
+manualHop.MouseButton1Click:Connect(function()
+    doServerHop()
+end)
+
+
+-- SETTING PAGE (ScrollingFrame)
+local setPage=Instance.new("ScrollingFrame",content)
+setPage.Name="Setting"
+setPage.Size=UDim2.new(1,0,1,0)
+setPage.BackgroundTransparency=1
+setPage.ScrollBarThickness=6
+setPage.CanvasSize = UDim2.new(0,0,0, 260) 
+setPage.Visible=false 
+
+local setYPos = 20
+
+local delayBox=Instance.new("TextBox",setPage)
+delayBox.Size=UDim2.new(0.9,0,0,30)
+delayBox.Position=UDim2.new(0.05,0,0,setYPos)
+delayBox.Text=tostring(delayTime)
+delayBox.PlaceholderText="Delay detik"
+delayBox.BackgroundColor3=Color3.fromRGB(30,30,30)
+delayBox.TextColor3=Color3.new(1,1,1)
+delayBox.FocusLost:Connect(function()
+    local v=tonumber(delayBox.Text)
+    if v then delayTime=v end
+end)
+setYPos = setYPos + 40
+
+local speedBox=Instance.new("TextBox",setPage)
+speedBox.Size=UDim2.new(0.9,0,0,30)
+speedBox.Position=UDim2.new(0.05,0,0,setYPos)
+speedBox.Text=tostring(walkSpeed)
+speedBox.PlaceholderText="WalkSpeed"
+speedBox.BackgroundColor3=Color3.fromRGB(30,30,30)
+speedBox.TextColor3=Color3.new(1,1,1)
+speedBox.FocusLost:Connect(function()
+    local v=tonumber(speedBox.Text)
+    if v then
+        walkSpeed=v
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = walkSpeed
+        end
+    end
+end)
+setYPos = setYPos + 40
+
+createSeparator(setPage, setYPos)
+setYPos = setYPos + 10
+
+-- SLIDER TRANSPARANSI
+local opacityLabel = Instance.new("TextLabel", setPage)
+opacityLabel.Size = UDim2.new(0.9, 0, 0, 20)
+opacityLabel.Position = UDim2.new(0.05, 0, 0, setYPos)
+opacityLabel.Text = "GUI Opacity: "..string.format("%.2f", guiOpacity)
+opacityLabel.BackgroundTransparency = 1
+opacityLabel.TextColor3 = Color3.new(1,1,1)
+opacityLabel.Font = Enum.Font.GothamBold
+opacityLabel.TextXAlignment = Enum.TextXAlignment.Left
+setYPos = setYPos + 25
+
+local slider = Instance.new("Frame", setPage)
+slider.Size = UDim2.new(0.9, 0, 0, 20)
+slider.Position = UDim2.new(0.05, 0, 0, setYPos)
+slider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+local sliderHandle = Instance.new("TextButton", slider)
+sliderHandle.Size = UDim2.new(0, 20, 1, 0)
+sliderHandle.Position = UDim2.new(guiOpacity, -10, 0, 0)
+sliderHandle.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+sliderHandle.Text = ""
+
+-- Fungsi untuk mengupdate Opacity
+local function updateOpacity(x)
+    local newOpacity = math.min(1, math.max(0.1, x / slider.AbsoluteSize.X)) 
+    guiOpacity = newOpacity
+    opacityLabel.Text = "GUI Opacity: " .. string.format("%.2f", guiOpacity)
+    
+    local transparency = 1 - guiOpacity
+    main.BackgroundTransparency = transparency
+    header.BackgroundTransparency = transparency
+    left.BackgroundTransparency = transparency
+    right.BackgroundTransparency = transparency
+    hideBtn.BackgroundTransparency = transparency
+    closeBtn.BackgroundTransparency = transparency
+    
+    sliderHandle.Position = UDim2.new(newOpacity, -10, 0, 0)
+end
+
+local isDragging = false
+sliderHandle.MouseButton1Down:Connect(function() isDragging = true end)
+sliderHandle.MouseButton1Up:Connect(function() isDragging = false end)
+
+RunService.RenderStepped:Connect(function()
+    if isDragging then
+        local mouse = player:GetMouse()
+        local relativeX = mouse.X - slider.AbsolutePosition.X
+        updateOpacity(relativeX)
+    end
+end)
+
+
+-- INFO PAGE (ScrollingFrame)
+local infoPage=Instance.new("ScrollingFrame",content)
+infoPage.Name="Info"
+infoPage.Size=UDim2.new(1,0,1,0)
+infoPage.BackgroundTransparency=1
+infoPage.ScrollBarThickness=6
+infoPage.CanvasSize = UDim2.new(0,0,0, 150) 
+infoPage.Visible=false 
+
+local infoText=Instance.new("TextLabel",infoPage)
+infoText.Size=UDim2.new(1,-20,1,-20)
+infoText.Position=UDim2.new(0,10,0,10)
+infoText.BackgroundTransparency=1
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V31 (V27 Stabil + Resume)\nFitur:\n- Auto Summit dan Loop (2 CP)\n- **Implicit Resume (Lanjut dari CP Terakhir) di Tombol Start**\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menus"
+infoText.TextColor3=Color3.new(1,1,1)
+infoText.Font=Enum.Font.Gotham
+infoText.TextWrapped=true
+infoText.TextXAlignment = Enum.TextXAlignment.Left
+
+
+--- IMPLEMENTASI HIDE/SHOW LOGIC 
+local isHiddenMode = false
+local originalMainSize = main.Size 
+local headerHeight = header.Size.Y.Offset 
+
+local function toggleGuiDisplay()
+    isHiddenMode = not isHiddenMode
+    
+    if isHiddenMode then
+        main.Size = UDim2.new(originalMainSize.X.Scale, originalMainSize.X.Offset, 0, headerHeight) 
+        left.Visible = false
+        right.Visible = false
+        hideBtn.Text = "Show"
+    else
+        main.Size = originalMainSize 
+        left.Visible = true
+        right.Visible = true
+        hideBtn.Text = "Hide"
+    end
+    main.Active = true
+    main.Draggable = true
+end
+
+hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
+
+
+-- Notifikasi akhir
+local startCpName = checkpoints[currentCpIndex].name
+notify("BynzzBponjon GUI (V31) Loaded. Implicit Resume Aktif!",Color3.fromRGB(0,200,100))
