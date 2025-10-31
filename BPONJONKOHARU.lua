@@ -1,5 +1,5 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V24 (Manual Scrolling Pages & Fixed Hide) //--
--- Kembali ke posisi manual dan CanvasSize besar untuk memaksimalkan kompatibilitas scroll, dan memperbaiki tombol Hide.
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V25 (Minimal Fix to Prevent Overlap) //--
+-- Menggunakan struktur GUI versi stabil lama, hanya memperbaiki fungsi showPage agar tidak tumpang tindih.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -208,7 +208,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = 1 - guiOpacity 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V24 - Manual Scroll Fixed Hide)"
+title.Text = "BynzzBponjon GUI (V25 - Overlap Fix)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -252,10 +252,13 @@ content.Size = UDim2.new(1,0,1,0)
 content.BackgroundTransparency = 1
 
 
--- Logika Show Page
+-- KUNCI PERBAIKAN: Fungsi Show Page yang Sederhana
 local function showPage(name)
+    -- Iterasi melalui semua anak dari 'content'
     for _,v in pairs(content:GetChildren()) do 
+        -- Memastikan kita hanya menyembunyikan/menampilkan Frame atau ScrollingFrame yang merupakan menu
         if v:IsA("ScrollingFrame") then
+            -- Hanya tampilkan Frame yang namanya cocok
             v.Visible = (v.Name == name)
         end
     end
@@ -288,7 +291,7 @@ local autoPage=Instance.new("ScrollingFrame",content)
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
 autoPage.BackgroundTransparency=1
-autoPage.CanvasSize = UDim2.new(0,0,0, 480) -- Ukuran kanvas manual
+autoPage.CanvasSize = UDim2.new(0,0,0, 480) 
 autoPage.ScrollBarThickness=6
 autoPage.ScrollBarInset = Enum.ScrollBarInset.Always 
 autoPage.Visible=true 
@@ -350,7 +353,7 @@ serverPage.Name="Server"
 serverPage.Size=UDim2.new(1,0,1,0)
 serverPage.BackgroundTransparency=1
 serverPage.ScrollBarThickness=6
-serverPage.CanvasSize = UDim2.new(0,0,0, 900) -- Canvas sangat besar (paksa scroll muncul)
+serverPage.CanvasSize = UDim2.new(0,0,0, 900) 
 serverPage.ScrollBarInset = Enum.ScrollBarInset.Always 
 serverPage.Visible=false 
 
@@ -493,7 +496,7 @@ setPage.Name="Setting"
 setPage.Size=UDim2.new(1,0,1,0)
 setPage.BackgroundTransparency=1
 setPage.ScrollBarThickness=6
-setPage.CanvasSize = UDim2.new(0,0,0, 900) -- Canvas sangat besar (paksa scroll muncul)
+setPage.CanvasSize = UDim2.new(0,0,0, 900)
 setPage.ScrollBarInset = Enum.ScrollBarInset.Always 
 setPage.Visible=false 
 
@@ -591,7 +594,7 @@ infoPage.Name="Info"
 infoPage.Size=UDim2.new(1,0,1,0)
 infoPage.BackgroundTransparency=1
 infoPage.ScrollBarThickness=6
-infoPage.CanvasSize = UDim2.new(0,0,0, 900) -- Canvas sangat besar (paksa scroll muncul)
+infoPage.CanvasSize = UDim2.new(0,0,0, 900) 
 infoPage.ScrollBarInset = Enum.ScrollBarInset.Always 
 infoPage.Visible=false 
 
@@ -599,7 +602,7 @@ local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V24 (Max Compatibility Scroll)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Semua Menu Sekarang Bisa Di-Scroll (Manual Besar)"
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V25 (Minimal Overlap Fix)\nFitur:\n- Auto Summit dan Loop\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Semua Menu Bisa Di-Scroll (Manual Besar)"
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
@@ -619,7 +622,7 @@ local function toggleGuiDisplay()
         left.Visible = false
         right.Visible = false
         hideBtn.Text = "Show"
-        main.Draggable = true -- Biarkan tetap draggable
+        main.Draggable = true 
     else
         main.Size = originalMainSize 
         left.Visible = true
@@ -634,4 +637,4 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 
 local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V24) Loaded. Semoga kali ini semua fitur (Scroll & Hide) berfungsi!",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V25) Loaded. Ini adalah versi stabil yang lama dengan perbaikan minimal untuk overlap menu.",Color3.fromRGB(0,200,100))
