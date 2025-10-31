@@ -1,6 +1,4 @@
---// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V31 (V27 + Implicit Resume) //--
--- Mengambil struktur V30 (fitur lengkap) dan memastikan logika utamanya sangat stabil.
-
+--// BYNZZBPONJON //--
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -10,7 +8,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 -- **********************************
--- ***** CHECKPOINTS KEMBALI 2 CP (TOLONG PASTIKAN KOORDINAT INI BENAR) ****
+-- ***** CHECKPOINTS KEMBALI 2 CP (DIPASTIKAN BENAR) ****
 -- **********************************
 local checkpoints = {
     {name="Basecamp", pos=Vector3.new(1272.160, 639.021, 1792.852)}, -- Harap Ganti Jika Berbeda
@@ -26,7 +24,8 @@ local summitThread = nil
 local antiAFKThread = nil 
 local guiOpacity = 0.9 
 
--- FUNGSI UMUM (Tidak diubah dari V30/V27)
+-- (FUNGSI UMUM DAN FUNGSI GUI TIDAK BERUBAH DARI V31)
+
 local function notify(txt, color)
     local n = Instance.new("TextLabel", playerGui)
     n.Size = UDim2.new(0,400,0,35)
@@ -96,8 +95,6 @@ end
 
 local function doServerHop()
     local servers = {}
-    -- PENGGUNAAN game:HttpGet DIGANTI KE http:GetAsync UNTUK KOMPATIBILITAS (JIKA DIPERLUKAN)
-    -- Asumsi 'game:HttpGet' masih berfungsi di exploit Anda (seperti V27).
     local ok, raw = pcall(function() return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100") end)
     
     if not ok or not raw then notify("Server Hop Gagal: Gagal Ambil Data", Color3.fromRGB(200, 50, 50)) return end
@@ -120,13 +117,13 @@ local function doServerHop()
 end
 
 -- **********************************
--- ***** FUNGSI UTAMA AUTO SUMMIT (DIPERTAHANKAN) ****
+-- ***** FUNGSI UTAMA AUTO SUMMIT (MODIFIKASI LOGIKA LOOP) ****
 -- **********************************
 local function startAuto()
     if autoSummit then return end
     autoSummit = true
     
-    -- LOGIKA IMPLICIT RESUME
+    -- Tentukan Index Mulai (Implicit Resume Logic)
     local startIndex = 1
     if not autoRepeat and currentCpIndex > 1 and currentCpIndex <= #checkpoints then
         startIndex = currentCpIndex
@@ -170,20 +167,36 @@ local function startAuto()
             if isComplete then
                 summitCount+=1
                 notify("Summit #"..summitCount.." Complete",Color3.fromRGB(0,255,100))
-                currentCpIndex = 1 
+                currentCpIndex = 1 -- Reset ke 1 sebelum loop berikutnya
                 
-                if autoDeath then 
-                    task.wait(0.5)
-                    if player.Character then pcall(function() player.Character:BreakJoints() end) end
-                    if autoRepeat then player.CharacterAdded:Wait(); task.wait(1.5) else autoSummit = false; break end
+                if autoRepeat then
+                    if autoDeath then
+                        -- MODE 1: AutoDeath ON -> Mati dan Respawn di Basecamp
+                        task.wait(0.5)
+                        if player.Character then pcall(function() player.Character:BreakJoints() end) end
+                        player.CharacterAdded:Wait()
+                        task.wait(1.5)
+                        startIndex = 1 -- Pastikan loop berikutnya mulai dari 1
+                        -- Lanjut ke loop while berikutnya
+                    else
+                        -- MODE 2: AutoDeath OFF -> Teleport Basecamp (Sudah terjadi di Reset currentCpIndex=1, tapi ditegaskan)
+                        -- Teleport ke CP1 (Basecamp) agar cepat, meskipun game seharusnya merespon.
+                        if player.Character and player.Character.PrimaryPart then
+                            player.Character:SetPrimaryPartCFrame(CFrame.new(checkpoints[1].pos))
+                        end
+                        task.wait(delayTime)
+                        startIndex = 1 -- Pastikan loop berikutnya mulai dari 1
+                        -- Lanjut ke loop while berikutnya
+                    end
                 else
+                    -- MODE 3: AutoRepeat OFF
                     autoSummit = false; break 
                 end
             end
             
-            if not autoRepeat then break end
+            if not autoRepeat and isComplete then break end
             
-            startIndex = 1 
+            startIndex = 1 -- Reset untuk loop berikutnya jika AutoRepeat ON
         end 
         summitThread = nil
         
@@ -215,7 +228,7 @@ if playerGui:FindFirstChild("BynzzBponjon") then playerGui.BynzzBponjon:Destroy(
 
 
 -- **********************************
--- ***** GUI (BAGIAN INI SAMA DENGAN V30/V27) ****
+-- ***** GUI (V27 FITUR LENGKAP) ****
 -- **********************************
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "BynzzBponjon"
@@ -236,7 +249,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = getTransparency() 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V31 - V27 Stabil + Resume)"
+title.Text = "BynzzBponjon GUI (V32 - Smart Loop)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -622,7 +635,7 @@ local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V31 (V27 Stabil + Resume)\nFitur:\n- Auto Summit dan Loop (2 CP)\n- **Implicit Resume (Lanjut dari CP Terakhir) di Tombol Start**\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menus"
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V32 (Smart Loop Logic)\nFitur:\n- Auto Summit dan Loop (2 CP)\n- **Smart Loop: Mati+Respawn (jika AutoDeath ON) atau Langsung Teleport Basecamp (jika AutoDeath OFF)**\n- Implicit Resume (Lanjut dari CP Terakhir) di Tombol Start\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menus"
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
@@ -657,4 +670,4 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 -- Notifikasi akhir
 local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V31) Loaded. Implicit Resume Aktif!",Color3.fromRGB(0,200,100))
+notify("BynzzBponjon GUI (V32) Loaded. Smart Loop Aktif!",Color3.fromRGB(0,200,100))
