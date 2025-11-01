@@ -1,7 +1,4 @@
---// UNIVERSAL AUTO SUMMIT GUI V28 (TES STABILITAS UKURAN) //--
--- HANYA MEMUAT MOUNT GEMI (BARU) DAN MOUNT KOHARU (21 CP)
--- 5 Map lain dihapus untuk mengurangi ukuran skrip.
-
+--// BYNZZBPONJON //--
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,7 +10,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local CURRENT_PLACE_ID = tostring(game.PlaceId)
 
 -- **********************************
--- ***** KONFIGURASI MAP (HANYA 2 MAP) *****
+-- ***** KONFIGURASI MAP GLOBAL (Data Final User V24) *****
 -- **********************************
 local MAP_CONFIG = {
     -- MOUNT KOHARU (21 CP)
@@ -48,7 +45,101 @@ local MAP_CONFIG = {
             {name="Basecamp", pos=Vector3.new(1269.030, 639.076, 1793.997)},
             {name="Puncak", pos=Vector3.new(-6665.046, 3151.532, -799.116)}
         }
-    }
+    },
+    -- MOUNT JALUR TAKDIR (7 CP)
+    ["127557455707420"] = {name = "MOUNT JALUR TAKDIR (7 CP)", 
+        checkpoints = {
+            {name="Basecamp", pos=Vector3.new(-942.227, 14.021, -954.444)}, 
+            {name="Checkpoint 1", pos=Vector3.new(-451.266, 78.021, -662.000)},
+            {name="Checkpoint 2", pos=Vector3.new(-484.121, 78.015, 119.971)},
+            {name="Checkpoint 3", pos=Vector3.new(576.478, 242.021, 852.784)},
+            {name="Checkpoint 4", pos=Vector3.new(779.530, 606.021, -898.384)},
+            {name="Checkpoint 5", pos=Vector3.new(-363.401, 1086.021, 705.354)},
+            {name="Puncak", pos=Vector3.new(292.418, 1274.021, 374.069)}
+        }
+    },
+    -- MOUNT LIRVANA (22 CP)
+    ["79272087242323"] = {name = "MOUNT LIRVANA (22 CP)", 
+        checkpoints = {
+            {name="Checkpoint 0", pos=Vector3.new(-33.023, 86.149, 7.025)},
+            {name="Checkpoint 1", pos=Vector3.new(35.501, 200.700, -559.027)},
+            {name="Checkpoint 2", pos=Vector3.new(-381.037, 316.700, -560.712)},
+            {name="Checkpoint 3", pos=Vector3.new(-401.126, 456.700, -1014.478)},
+            {name="Checkpoint 4", pos=Vector3.new(-35.014, 548.700, -1028.476)},
+            {name="Checkpoint 5", pos=Vector3.new(-50.832, 542.149, -1371.412)},
+            {name="Checkpoint 6", pos=Vector3.new(-68.830, 582.149, -1615.556)},
+            {name="Checkpoint 7", pos=Vector3.new(262.292, 610.149, -1647.285)},
+            {name="Checkpoint 8", pos=Vector3.new(270.919, 678.149, -1378.510)},
+            {name="Checkpoint 9", pos=Vector3.new(278.914, 622.149, -1025.756)},
+            {name="Checkpoint 10", pos=Vector3.new(292.020, 638.149, -676.378)},
+            {name="Checkpoint 11", pos=Vector3.new(601.175, 678.149, -680.490)},
+            {name="Checkpoint 12", pos=Vector3.new(617.442, 626.149, -1028.689)},
+            {name="Checkpoint 13", pos=Vector3.new(600.942, 678.149, -1370.222)},
+            {name="Checkpoint 14", pos=Vector3.new(594.054, 670.149, -1626.474)},
+            {name="Checkpoint 15", pos=Vector3.new(917.511, 690.149, -1644.750)},
+            {name="Checkpoint 16", pos=Vector3.new(899.131, 702.149, -1362.030)},
+            {name="Checkpoint 17", pos=Vector3.new(971.016, 674.149, -941.262)},
+            {name="Checkpoint 18", pos=Vector3.new(880.015, 710.149, -675.175)},
+            {name="Checkpoint 19", pos=Vector3.new(1187.287, 694.149, -661.098)},
+            {name="Checkpoint 20", pos=Vector3.new(1187.453, 718.149, -332.297)},
+            {name="Checkpoint 21", pos=Vector3.new(799.696, 1001.949, 207.303)}
+        }
+    },
+    -- MOUNT AHPAYAH (12 CP)
+    ["129916920179384"] = {name = "MOUNT AHPAYAH (12 CP)", 
+        checkpoints = {
+            {name="Basecamp", pos=Vector3.new(-405.208, 46.021, -540.538)},
+            {name="Checkpoint 1", pos=Vector3.new(-397.862, 46.386, -225.315)},
+            {name="Checkpoint 2", pos=Vector3.new(446.973, 310.386, -454.457)},
+            {name="Checkpoint 3", pos=Vector3.new(389.741, 415.219, -38.504)},
+            {name="Checkpoint 4", pos=Vector3.new(228.787, 358.386, 420.735)},
+            {name="Checkpoint 5", pos=Vector3.new(-248.196, 546.015, 537.969)},
+            {name="Checkpoint 6", pos=Vector3.new(-707.398, 478.386, 471.019)},
+            {name="Checkpoint 7", pos=Vector3.new(-823.563, 598.903, -193.940)},
+            {name="Checkpoint 8", pos=Vector3.new(-1539.058, 682.267, -643.505)},
+            {name="Checkpoint 9", pos=Vector3.new(-1581.844, 650.396, 448.762)},
+            {name="Checkpoint 10", pos=Vector3.new(-2566.289, 662.396, 450.378)},
+            {name="Puncak", pos=Vector3.new(-2921.433, 844.065, 18.757)}
+        }
+    },
+    -- MOUNT BINGUNG (22 CP)
+    ["111417482709154"] = {name = "MOUNT BINGUNG (22 CP)", 
+        checkpoints = {
+            {name="Basecamp", pos=Vector3.new(166.00293,14.9578,822.9834)},
+            {name="Checkpoint 1", pos=Vector3.new(198.238098,10.1375217,128.423187)},
+            {name="Checkpoint 2", pos=Vector3.new(228.194977,128.879974,-211.192383)},
+            {name="Checkpoint 3", pos=Vector3.new(231.817947,146.768204,-558.723816)},
+            {name="Checkpoint 4", pos=Vector3.new(340.004669,132.319489,-987.244446)},
+            {name="Checkpoint 5", pos=Vector3.new(393.582062,119.624352,-1415.08472)},
+            {name="Checkpoint 6", pos=Vector3.new(344.682739,190.306702,-2695.90625)},
+            {name="Checkpoint 7", pos=Vector3.new(353.37085,243.564514,-3065.35181)},
+            {name="Checkpoint 8", pos=Vector3.new(-1.62862873,259.373474,-3431.15869)},
+            {name="Checkpoint 9", pos=Vector3.new(54.7402382,373.025543,-3835.73633)},
+            {name="Checkpoint 10", pos=Vector3.new(-347.480225,505.230347,-4970.26514)},
+            {name="Checkpoint 11", pos=Vector3.new(-841.818359,506.035736,-4984.36621)},
+            {name="Checkpoint 12", pos=Vector3.new(-825.191345,571.779053,-5727.79297)},
+            {name="Checkpoint 13", pos=Vector3.new(-831.682068,575.300842,-6424.26855)},
+            {name="Checkpoint 14", pos=Vector3.new(-288.520508,661.583984,-6804.15234)},
+            {name="Checkpoint 15", pos=Vector3.new(675.513794,743.510742,-7249.33496)},
+            {name="Checkpoint 16", pos=Vector3.new(816.311768,833.685852,-7606.22998)},
+            {name="Checkpoint 17", pos=Vector3.new(805.29248,821.01062,-8516.9082)},
+            {name="Checkpoint 18", pos=Vector3.new(473.562775,879.063538,-8585.45312)},
+            {name="Checkpoint 19", pos=Vector3.new(268.831238,897.108215,-8576.44922)},
+            {name="Checkpoint 20", pos=Vector3.new(285.314331,933.954651,-8983.91992)},
+            {name="Puncak", pos=Vector3.new(107.141029,988.262573,-9015.23145)}
+        }
+    },
+    -- MOUNT TENERIE (6 CP - Menggunakan CFrame)
+    ["76084648389385"] = {name = "MOUNT TENERIE (6 CP)", 
+        checkpoints = {
+            {name="Checkpoint 1", pos=CFrame.new(24.996, 163.296, 319.838, -0.997991, 0.024712, -0.058331, -0.000000, 0.920780, 0.390083, 0.063350, 0.389299, -0.918930)},
+            {name="Checkpoint 2", pos=CFrame.new(-830.715, 239.184, 887.750, -0.972382, -0.073546, 0.221503, -0.000009, 0.949065, 0.315080, -0.233393, 0.306376, -0.922855)},
+            {name="Checkpoint 3", pos=CFrame.new(-1081.016, 400.153, 1662.579, -0.685627, 0.345798, -0.640578, 0.000000, 0.879971, 0.475027, 0.727953, 0.325691, -0.603332)},
+            {name="Checkpoint 4", pos=CFrame.new(-638.603, 659.233, 3034.486, -0.840349, 0.156491, -0.518964, -0.000000, 0.957418, 0.288705, 0.542045, 0.242613, -0.804566)},
+            {name="Checkpoint 5", pos=CFrame.new(339.759, 820.852, 3891.180, 0.120165, 0.220135, -0.968040, -0.000000, 0.975105, 0.221742, 0.992754, -0.026646, 0.117173)},
+            {name="Puncak", pos=CFrame.new(878.573, 1019.189, 4704.508, 0.005409, 0.375075, -0.926979, 0.000348, 0.926992, 0.375082, 0.999985, -0.002352, 0.004884)}
+        }
+    },
 }
 -- **********************************
 
@@ -64,9 +155,10 @@ local summitThread = nil
 local antiAFKThread = nil 
 
 -- **********************************
--- ***** DEKLARASI FUNGSI GLOBAL (FIRST) ****
+-- ***** DEKLARASI FUNGSI GLOBAL (DI ATAS) ****
 -- **********************************
 
+-- Fungsi NOTIFY dideklarasikan paling atas
 local function notify(txt, color)
     pcall(function() 
         local n = Instance.new("TextLabel", playerGui)
@@ -81,9 +173,9 @@ local function notify(txt, color)
     end)
 end
 
--- Pengecekan Awal
+-- PENGECEKAN AWAL (SEKARANG AMAN KARENA 'notify' SUDAH ADA)
 if not currentMapConfig or #checkpoints == 0 then
-    notify("V28 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan di skrip ini.", Color3.fromRGB(255, 0, 0))
+    notify("V29 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
     return 
 end
 
@@ -109,6 +201,12 @@ local function findNearestCheckpoint()
     end
     
     if minDistance > 300 and nearestIndex ~= #checkpoints then return 1 end
+    
+    -- Fix 'Implicit Resume'
+    if minDistance < 50 and nearestIndex < #checkpoints then
+        return nearestIndex + 1
+    end
+    
     return nearestIndex
 end
 
@@ -160,7 +258,7 @@ local function startAuto()
     
     local startIndex = currentCpIndex
     
-    notify("Auto Summit Started! Map: "..scriptName..". Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name,Color3.fromRGB(0,150,255))
+    notify("Auto Summit Started! Map: "..scriptName..". Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name,Color3.L(0,150,255))
     
     summitThread = task.spawn(function()
         while autoSummit do
@@ -180,7 +278,10 @@ local function startAuto()
                 local character = player.Character or player.CharacterAdded:Wait()
                 if character and character.PrimaryPart then
                     local targetCFrame = (type(cp.pos) == "Vector3" and CFrame.new(cp.pos)) or cp.pos
-                    character:PivotTo(targetCFrame)
+                    
+                    -- Menggunakan SetPrimaryPartCFrame (Metode V24 yang stabil)
+                    character:SetPrimaryPartCFrame(targetCFrame) 
+                    
                     notify("Teleported to CP #"..i..": "..cp.name, Color3.fromRGB(0, 255, 100))
                 else
                     notify("Gagal menemukan karakter. Stop Auto.", Color3.fromRGB(255, 50, 50))
@@ -207,7 +308,7 @@ local function startAuto()
                         local character = player.Character or player.CharacterAdded:Wait()
                         if character and character.PrimaryPart then
                             local startPos = (type(checkpoints[1].pos) == "Vector3" and CFrame.new(checkpoints[1].pos)) or checkpoints[1].pos
-                            character:PivotTo(startPos)
+                            character:SetPrimaryPartCFrame(startPos)
                         end
                         task.wait(delayTime)
                     end
@@ -235,7 +336,7 @@ end
 -- **********************************
 
 local function initialize()
-    if playerGui:FindFirstChild("UniversalV28") then playerGui.UniversalV28:Destroy() end
+    if playerGui:FindFirstChild("UniversalV29") then playerGui.UniversalV29:Destroy() end
 
     -- INIT CURRENT CP INDEX
     if player.Character then
@@ -248,12 +349,16 @@ local function initialize()
         local humanoid = char:FindFirstChildOfClass("Humanoid")
         if humanoid then humanoid.WalkSpeed = walkSpeed end
     end)
+    -- Terapkan WalkSpeed sekarang jika karakter sudah ada
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = walkSpeed
+    end
 
-    notify("V28 (2 MAPS) Loaded! Siap mulai dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
+    notify("V29 Loaded! (Nil Fix). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
 
-    -- (GUI V26/V14 yang disederhanakan)
+    -- (GUI V25 Sederhana)
     local gui = Instance.new("ScreenGui", playerGui)
-    gui.Name = "UniversalV28"
+    gui.Name = "UniversalV29"
     gui.ResetOnSpawn = false
 
     local main = Instance.new("Frame", gui)
@@ -268,7 +373,7 @@ local function initialize()
     header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 
     local title = Instance.new("TextLabel", header)
-    title.Text = "Universal Auto GUI V28 - Map: "..scriptName
+    title.Text = "Universal Auto GUI V29 - Map: "..scriptName
     title.Size = UDim2.new(1,-50,1,0)
     title.Position = UDim2.new(0,0,0,0)
     title.BackgroundTransparency = 1
@@ -351,60 +456,47 @@ local function initialize()
     end)
     yOffset = yOffset + 5
     
-    local function createTextBox(text, defaultValue, focusLostHandler)
+    local function createTextBox(text, varName, isNumber)
         local box = Instance.new("TextBox", main)
         box.Size = UDim2.new(0.9, 0, 0, 25)
         box.Position = UDim2.new(0.05, 0, 0, yOffset)
+        local defaultValue = _G[varName]
         box.Text = text..": "..tostring(defaultValue)
         box.PlaceholderText = text
         box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         box.TextColor3 = Color3.new(1, 1, 1)
         box.Font = Enum.Font.Gotham
         box.TextScaled = true
+        
         box.FocusLost:Connect(function(enterPressed)
-            if enterPressed and focusLostHandler then
-                focusLostHandler(box)
-            else
-                box.Text = text..": "..tostring(defaultValue)
+            if enterPressed then
+                local v = tonumber(box.Text)
+                if isNumber and v then
+                    if varName == "delayTime" and v >= 0.5 then
+                        delayTime = v
+                        notify("Delay diatur ke "..delayTime.." detik", Color3.fromRGB(255, 165, 0))
+                    elseif varName == "walkSpeed" then
+                        walkSpeed = v
+                        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                            player.Character.Humanoid.WalkSpeed = walkSpeed
+                        end
+                        notify("WalkSpeed diatur ke "..walkSpeed, Color3.fromRGB(255, 165, 0))
+                    elseif varName == "summitLimit" and v >= 1 then
+                        summitLimit = v
+                        notify("Summit Limit diatur ke "..summitLimit, Color3.fromRGB(255, 165, 0))
+                    end
+                end
             end
+            -- Selalu reset teks ke nilai saat ini jika fokus hilang
+            box.Text = text..": "..tostring(_G[varName])
         end)
         yOffset = yOffset + 30
         return box
     end
 
-    createTextBox("Delay (detik)", delayTime, function(box)
-        local v=tonumber(box.Text)
-        if v and v >= 0.5 then 
-            delayTime=v 
-            box.Text="Delay (detik): "..tostring(delayTime)
-            notify("Delay diatur ke "..delayTime.." detik", Color3.fromRGB(255, 165, 0))
-        else
-            box.Text="Delay (detik): "..tostring(delayTime)
-        end
-    end)
-
-    createTextBox("WalkSpeed", walkSpeed, function(box)
-        local v=tonumber(box.Text)
-        if v then
-            walkSpeed=v
-            box.Text="WalkSpeed: "..tostring(walkSpeed)
-            if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                player.Character.Humanoid.WalkSpeed = walkSpeed
-            end
-        else
-            box.Text="WalkSpeed: "..tostring(walkSpeed)
-        end
-    end)
-
-    createTextBox("Summit Limit", summitLimit, function(box)
-        local v=tonumber(box.Text)
-        if v and v >= 1 then 
-            summitLimit=v 
-            box.Text="Summit Limit: "..tostring(summitLimit)
-        else
-            box.Text="Summit Limit: "..tostring(summitLimit)
-        end
-    end)
+    createTextBox("Delay (detik)", "delayTime", true)
+    createTextBox("WalkSpeed", "walkSpeed", true)
+    createTextBox("Summit Limit", "summitLimit", true)
 
     yOffset = yOffset + 10
     local manualHop=startBtn:Clone()
