@@ -1,4 +1,5 @@
---// BYNZZBPONJON //--
+--// UNIVERSAL AUTO SUMMIT GUI (V7 - FINAL SYNTAX CLEANUP & TENERIE VECTOR3) //--
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -141,11 +142,10 @@ local MAP_CONFIG = {
         }
     },
 
-    -- 7. MOUNT TENERIE (6 CP) - **SEKARANG MENGGUNAKAN VECTOR3 BIASA**
+    -- 7. MOUNT TENERIE (6 CP) - MENGGUNAKAN VECTOR3 BIASA
     ["76084648389385"] = {
         name = "MOUNT TENERIE", 
         checkpoints = {
-            -- HANYA MENGAMBIL POSISI (X, Y, Z) DARI CFRAME LAMA
             {name="CP1", pos=Vector3.new(24.996, 163.296, 319.838)},
             {name="CP2", pos=Vector3.new(-830.715, 239.184, 887.750)},
             {name="CP3", pos=Vector3.new(-1081.016, 400.153, 1662.579)},
@@ -212,8 +212,7 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
-        -- Pastikan cp.pos adalah Vector3
-        local cpPos = (typeof(cp.pos) == "CFrame" and cp.pos.p or cp.pos) -- Dipastikan aman
+        local cpPos = cp.pos -- Sekarang semua CP harus Vector3
         local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
         local cpPosXZ = Vector3.new(cpPos.X, 0, cpPos.Z)
         local distance = (playerPosXZ - cpPosXZ).Magnitude
@@ -303,15 +302,9 @@ local function startAuto()
                 end
                 
                 if player.Character and player.Character.PrimaryPart then
-                    -- ** MENGGUNAKAN PivotTo DENGAN CFRAME DARI CP.POS **
+                    -- ** MENGGUNAKAN PivotTo DENGAN CFRAME DARI CP.POS (Vector3) **
                     local cpPos = cp.pos
-                    
-                    if typeof(cpPos) == "CFrame" then
-                        player.Character:PivotTo(cpPos)
-                    else
-                        -- Sekarang semua CP adalah Vector3, aman menggunakan CFrame.new(Vector3)
-                        player.Character:PivotTo(CFrame.new(cpPos))
-                    end
+                    player.Character:PivotTo(CFrame.new(cpPos))
                 end
                 
                 currentCpIndex = i + 1 
@@ -334,11 +327,7 @@ local function startAuto()
                         if player.Character and player.Character.PrimaryPart then
                             local cpPos = checkpoints[1].pos
                             -- ** MENGGUNAKAN PivotTo **
-                            if typeof(cpPos) == "CFrame" then
-                                player.Character:PivotTo(cpPos)
-                            else
-                                player.Character:PivotTo(CFrame.new(cpPos))
-                            end
+                            player.Character:PivotTo(CFrame.new(cpPos))
                         end
                         task.wait(delayTime)
                         startIndex = 1 
@@ -536,11 +525,7 @@ for i,cp in ipairs(checkpoints) do
         if player.Character and player.Character.PrimaryPart then
              local cpPos = cp.pos
              -- ** MENGGUNAKAN PivotTo **
-             if typeof(cpPos) == "CFrame" then
-                player.Character:PivotTo(cpPos)
-            else
-                player.Character:PivotTo(CFrame.new(cpPos))
-            end
+             player.Character:PivotTo(CFrame.new(cpPos))
             notify("Teleported to "..cp.name,Color3.fromRGB(0,200,100))
         end
     end)
@@ -804,7 +789,7 @@ local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,0,0,140)
 infoText.Position=UDim2.new(0,0,0,0)
 infoText.BackgroundTransparency=1
-infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V6 (TENERIE Vector3 Fix)\nMap Terintegrasi: "..#MAP_CONFIG.."\nFitur Utama:\n- Deteksi map otomatis.\n- Menggunakan PivotTo (teleportasi modern).\n- Auto Loop, Server Hop, Anti-AFK, dan Pengaturan Kecepatan."
+infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V7 (Final Syntax Check)\nMap Terintegrasi: "..#MAP_CONFIG.."\nFitur Utama:\n- Deteksi map otomatis.\n- Menggunakan PivotTo (teleportasi modern).\n- Auto Loop, Server Hop, Anti-AFK, dan Pengaturan Kecepatan."
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
