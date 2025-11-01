@@ -1,4 +1,6 @@
---// BYNZZBPONJON //--
+--// UNIVERSAL AUTO SUMMIT GUI V30 (THE REAL FINAL FIX: typeof) //--
+-- Memperbaiki kesalahan 'type()' menjadi 'typeof()' di semua fungsi.
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
@@ -39,7 +41,7 @@ local MAP_CONFIG = {
             {name="Puncak", pos=Vector3.new(-1534.938,933.116,-2176.096)}
         }
     },
-    -- MOUNT GEMI (2 CP - DATA BARU DARI USER)
+    -- MOUNT GEMI (2 CP)
     ["140014177882408"] = {name = "MOUNT GEMI (2 CP)", 
         checkpoints = {
             {name="Basecamp", pos=Vector3.new(1269.030, 639.076, 1793.997)},
@@ -175,7 +177,7 @@ end
 
 -- PENGECEKAN AWAL (SEKARANG AMAN KARENA 'notify' SUDAH ADA)
 if not currentMapConfig or #checkpoints == 0 then
-    notify("V29 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
+    notify("V30 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
     return 
 end
 
@@ -189,7 +191,9 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
-        local cpPos = (type(cp.pos) == "Vector3" and cp.pos) or cp.pos.p
+        -- FIX V30: Menggunakan typeof() yang benar
+        local cpPos = (typeof(cp.pos) == "Vector3" and cp.pos) or cp.pos.p 
+        
         local cpPosXZ = Vector3.new(cpPos.X, 0, cpPos.Z)
         local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
         local distance = (playerPosXZ - cpPosXZ).Magnitude
@@ -202,7 +206,6 @@ local function findNearestCheckpoint()
     
     if minDistance > 300 and nearestIndex ~= #checkpoints then return 1 end
     
-    -- Fix 'Implicit Resume'
     if minDistance < 50 and nearestIndex < #checkpoints then
         return nearestIndex + 1
     end
@@ -258,7 +261,7 @@ local function startAuto()
     
     local startIndex = currentCpIndex
     
-    notify("Auto Summit Started! Map: "..scriptName..". Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name,Color3.L(0,150,255))
+    notify("Auto Summit Started! Map: "..scriptName..". Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name,Color3.fromRGB(0,150,255))
     
     summitThread = task.spawn(function()
         while autoSummit do
@@ -277,12 +280,21 @@ local function startAuto()
                 
                 local character = player.Character or player.CharacterAdded:Wait()
                 if character and character.PrimaryPart then
-                    local targetCFrame = (type(cp.pos) == "Vector3" and CFrame.new(cp.pos)) or cp.pos
                     
-                    -- Menggunakan SetPrimaryPartCFrame (Metode V24 yang stabil)
-                    character:SetPrimaryPartCFrame(targetCFrame) 
+                    -- FIX V30: Menggunakan typeof() yang benar
+                    local targetCFrame
+                    if typeof(cp.pos) == "Vector3" then
+                        targetCFrame = CFrame.new(cp.pos)
+                    elseif typeof(cp.pos) == "CFrame" then
+                        targetCFrame = cp.pos
+                    end
                     
-                    notify("Teleported to CP #"..i..": "..cp.name, Color3.fromRGB(0, 255, 100))
+                    if targetCFrame then
+                        character:SetPrimaryPartCFrame(targetCFrame) 
+                        notify("Teleported to CP #"..i..": "..cp.name, Color3.fromRGB(0, 255, 100))
+                    else
+                        notify("Data CP #"..i.." error (bukan Vector3 atau CFrame).", Color3.fromRGB(255, 50, 50))
+                    end
                 else
                     notify("Gagal menemukan karakter. Stop Auto.", Color3.fromRGB(255, 50, 50))
                     autoSummit = false; isComplete = false; break
@@ -307,8 +319,14 @@ local function startAuto()
                     else
                         local character = player.Character or player.CharacterAdded:Wait()
                         if character and character.PrimaryPart then
-                            local startPos = (type(checkpoints[1].pos) == "Vector3" and CFrame.new(checkpoints[1].pos)) or checkpoints[1].pos
-                            character:SetPrimaryPartCFrame(startPos)
+                            -- FIX V30: Menggunakan typeof() yang benar
+                            local startCFrame
+                            if typeof(checkpoints[1].pos) == "Vector3" then
+                                startCFrame = CFrame.new(checkpoints[1].pos)
+                            elseif typeof(checkpoints[1].pos) == "CFrame" then
+                                startCFrame = checkpoints[1].pos
+                            end
+                            character:SetPrimaryPartCFrame(startCFrame)
                         end
                         task.wait(delayTime)
                     end
@@ -336,7 +354,7 @@ end
 -- **********************************
 
 local function initialize()
-    if playerGui:FindFirstChild("UniversalV29") then playerGui.UniversalV29:Destroy() end
+    if playerGui:FindFirstChild("UniversalV30") then playerGui.UniversalV30:Destroy() end
 
     -- INIT CURRENT CP INDEX
     if player.Character then
@@ -349,16 +367,15 @@ local function initialize()
         local humanoid = char:FindFirstChildOfClass("Humanoid")
         if humanoid then humanoid.WalkSpeed = walkSpeed end
     end)
-    -- Terapkan WalkSpeed sekarang jika karakter sudah ada
     if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
         player.Character.Humanoid.WalkSpeed = walkSpeed
     end
 
-    notify("V29 Loaded! (Nil Fix). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
+    notify("V30 Loaded! (typeof Fix). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
 
     -- (GUI V25 Sederhana)
     local gui = Instance.new("ScreenGui", playerGui)
-    gui.Name = "UniversalV29"
+    gui.Name = "UniversalV30"
     gui.ResetOnSpawn = false
 
     local main = Instance.new("Frame", gui)
@@ -373,7 +390,7 @@ local function initialize()
     header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 
     local title = Instance.new("TextLabel", header)
-    title.Text = "Universal Auto GUI V29 - Map: "..scriptName
+    title.Text = "Universal Auto GUI V30 - Map: "..scriptName
     title.Size = UDim2.new(1,-50,1,0)
     title.Position = UDim2.new(0,0,0,0)
     title.BackgroundTransparency = 1
@@ -460,6 +477,8 @@ local function initialize()
         local box = Instance.new("TextBox", main)
         box.Size = UDim2.new(0.9, 0, 0, 25)
         box.Position = UDim2.new(0.05, 0, 0, yOffset)
+        
+        -- Gunakan _G (Global) untuk mengakses variabel yang didefinisikan di luar fungsi
         local defaultValue = _G[varName]
         box.Text = text..": "..tostring(defaultValue)
         box.PlaceholderText = text
@@ -487,7 +506,6 @@ local function initialize()
                     end
                 end
             end
-            -- Selalu reset teks ke nilai saat ini jika fokus hilang
             box.Text = text..": "..tostring(_G[varName])
         end)
         yOffset = yOffset + 30
@@ -510,7 +528,7 @@ local function initialize()
     local resetBtn=startBtn:Clone()
     resetBtn.Text="Reset CP Index (Mulai dari CP #1)"
     resetBtn.Position=UDim2.new(0.05,0,0,yOffset)
-    resetBtn.BackgroundColor3 = Color3.fromRGB(100,100,0)
+    resetBtn.BackgroundColor3=Color3.fromRGB(100,100,0)
     resetBtn.Parent=main
     resetBtn.MouseButton1Click:Connect(function()
         currentCpIndex = 1
