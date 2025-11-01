@@ -1,4 +1,4 @@
---// UNIVERSAL AUTO SUMMIT GUI (V14 - SOLUSI ERROR INIT) //--
+--// UNIVERSAL AUTO SUMMIT GUI (V15 - FINAL TELEPORT FIX: JUMP+FALL) //--
 
 -- Variabel global untuk memaksa inisialisasi di awal (Mengatasi nil value error)
 Players = game:GetService("Players")
@@ -9,9 +9,8 @@ playerGui = player:WaitForChild("PlayerGui")
 CURRENT_PLACE_ID = tostring(game.PlaceId)
 
 -- **********************************
--- ***** KONFIGURASI MAP GLOBAL (7 MAPS) *****
+-- ***** KONFIGURASI MAP GLOBAL (DIPERTAHANKAN) *****
 -- **********************************
--- Dipertahankan seperti V13 (disederhanakan untuk CP)
 MAP_CONFIG = {
     ["94261028489288"] = {name = "MOUNT KOHARU (21 CP)", 
         checkpoints = {
@@ -19,7 +18,7 @@ MAP_CONFIG = {
             {name="CP1", pos=Vector3.new(-473.240,49.167,624.194)},
             {name="Puncak", pos=Vector3.new(-1534.938,933.116,-2176.096)}
         }
-    }, -- Hanya 3 CP untuk uji coba
+    },
     ["140014177882408"] = {name = "MOUNT GEMI (2 CP)", checkpoints = {{name="Awal (Start)", pos=Vector3.new(1947.5, 417.8, 1726.8)}, {name="Finish GEMI", pos=Vector3.new(2080.7, 437.2, 1789.7)}}},
     ["127557455707420"] = {name = "MOUNT JALUR TAKDIR", checkpoints = {{name="Basecamp", pos=Vector3.new(-942.227, 14.021, -954.444)}, {name="Puncak", pos=Vector3.new(292.418, 1274.021, 374.069)}}},
     ["79272087242323"] = {name = "MOUNT LIRVANA", checkpoints = {{name="Checkpoint 0", pos=Vector3.new(-33.023, 86.149, 7.025)}, {name="Checkpoint 21", pos=Vector3.new(799.696, 1001.949, 207.303)}}},
@@ -27,15 +26,12 @@ MAP_CONFIG = {
     ["111417482709154"] = {name = "MOUNT BINGUNG", checkpoints = {{name="Basecamp", pos=Vector3.new(166.00293,14.9578,822.9834)}, {name="Puncak", pos=Vector3.new(107.141029,988.262573,-9015.23145)}}},
     ["76084648389385"] = {name = "MOUNT TENERIE", checkpoints = {{name="CP1", pos=Vector3.new(24.996, 163.296, 319.838)}, {name="Puncak", pos=Vector3.new(878.573, 1019.189, 4704.508)}}},
 }
--- **********************************
 
 currentMapConfig = MAP_CONFIG[CURRENT_PLACE_ID]
 scriptName = currentMapConfig and currentMapConfig.name or "UNIVERSAL (Map Tidak Dikenal)"
 checkpoints = currentMapConfig and currentMapConfig.checkpoints or {}
 
--- FUNGSI UMUM NOTIFIKASI
 function notify(txt, color)
-    -- Pengecekan pcall untuk mencegah error di fungsi notifikasi
     pcall(function()
         local n = Instance.new("TextLabel", playerGui)
         n.Size = UDim2.new(0,400,0,35)
@@ -49,20 +45,17 @@ function notify(txt, color)
     end)
 end
 
--- Pengecekan Awal
 if not currentMapConfig or #checkpoints == 0 then
-    notify("V14 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan atau CP kosong.", Color3.fromRGB(255, 0, 0))
-    return -- STOP SCRIPT
+    notify("V15 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan atau CP kosong.", Color3.fromRGB(255, 0, 0))
+    return
 end
 
--- Variabel Status & Fitur
 autoSummit, autoDeath, serverHop, autoRepeat, antiAFK = false, false, false, false, false
 summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
 currentCpIndex = 1 
 summitThread = nil
 antiAFKThread = nil 
 
--- LOGIKA PENENTUAN CP TERDEKAT
 function findNearestCheckpoint()
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart", 5)
@@ -91,7 +84,10 @@ function doServerHop()
     autoSummit = false
 end
 
--- FUNGSI UTAMA AUTO SUMMIT (Logic Inti V12/V11)
+
+-- ************************************************************
+-- ***** FUNGSI UTAMA AUTO SUMMIT DENGAN JUMP+FALL TECHNIQUE ****
+-- ************************************************************
 function startAuto()
     if autoSummit then return end
     autoSummit = true
@@ -118,11 +114,20 @@ function startAuto()
                 
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart", 5) 
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
                 
-                if rootPart then
-                    -- TELEPORTASI FIX (PivotTo)
-                    character:PivotTo(CFrame.new(cp.pos) * CFrame.Angles(0, 0, 0)) 
-                    notify("Teleported to CP #"..i..": "..cp.name, Color3.fromRGB(0, 255, 100))
+                if rootPart and humanoid then
+                    
+                    -- 1. TELEPORT KE ATAS CP (Force Fall Technique)
+                    local cpPos = cp.pos + Vector3.new(0, 50, 0) -- Teleport 50 Studs di atas CP
+                    character:PivotTo(CFrame.new(cpPos) * CFrame.Angles(0, 0, 0)) 
+                    
+                    -- 2. PAKSA MELOMPAT (untuk reset keadaan)
+                    humanoid.Jump = true 
+                    task.wait(0.1)
+                    humanoid.Jump = false
+                    
+                    notify("Teleported (Fall Technique) to CP #"..i..": "..cp.name, Color3.fromRGB(0, 255, 100))
                 else
                     notify("Gagal menemukan HumanoidRootPart. Stop Auto.", Color3.fromRGB(255, 50, 50))
                     autoSummit = false; isComplete = false; break
@@ -168,7 +173,6 @@ function stopAuto()
     notify("Auto Summit Dihentikan.", Color3.fromRGB(200,50,50))
 end
 
--- Toggle Anti-AFK (Logika Dipertahankan)
 function toggleAntiAFK(isEnable)
     if isEnable and not antiAFKThread then
         antiAFK = true
@@ -195,22 +199,23 @@ player.CharacterAdded:Connect(function(char)
     if humanoid then humanoid.WalkSpeed = walkSpeed end
 end)
 
--- INIT CP INDEX
 do
     local nearestCp = findNearestCheckpoint()
     currentCpIndex = nearestCp
 end
 
-if playerGui:FindFirstChild("UniversalV14") then playerGui.UniversalV14:Destroy() end
+if playerGui:FindFirstChild("UniversalV15") then playerGui.UniversalV15:Destroy() end
 
 
 -- **********************************
--- ***** GUI V14 (Struktur Sederhana V13) ****
+-- ***** GUI V15 (Struktur Sederhana V14) ****
 -- **********************************
+-- (Logika GUI V14 disalin di sini untuk kelengkapan skrip)
+
 pcall(function() 
 
     gui = Instance.new("ScreenGui", playerGui)
-    gui.Name = "UniversalV14"
+    gui.Name = "UniversalV15"
     gui.ResetOnSpawn = false
 
     main = Instance.new("Frame", gui)
@@ -225,7 +230,7 @@ pcall(function()
     header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 
     title = Instance.new("TextLabel", header)
-    title.Text = "Universal Auto GUI V14 - Map: "..scriptName
+    title.Text = "Universal Auto GUI V15 - Map: "..scriptName
     title.Size = UDim2.new(1,-50,1,0)
     title.Position = UDim2.new(0,0,0,0)
     title.BackgroundTransparency = 1
@@ -413,6 +418,6 @@ pcall(function()
     local startCpName = checkpoints[nextCpIndex].name
     currentCpIndex = nextCpIndex 
 
-    notify("V14 Loaded! FINAL FIX. Siap mulai dari CP #"..nextCpIndex..": "..startCpName,Color3.fromRGB(0,200,100))
+    notify("V15 Loaded! JUMP+FALL FIX. Siap mulai dari CP #"..nextCpIndex..": "..startCpName,Color3.fromRGB(0,200,100))
     
-end) -- End pcall for GUI creation
+end)
