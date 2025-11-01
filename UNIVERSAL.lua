@@ -39,7 +39,7 @@ local MAP_CONFIG = {
     },
     ["140014177882408"] = {name = "MOUNT GEMI (2 CP)", 
         checkpoints = {
-            {name="Awal (Start)", pos=Vector3.new(1947.5, 417.8, 1726.8)},
+            {name="Awal (Start)", pos=Vector3.new(1269.030, 639.076, 1793.997)},
             {name="Finish GEMI", pos=Vector3.new(-6665.046, 3151.532, -799.116)}
         }
     },
