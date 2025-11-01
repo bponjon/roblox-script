@@ -1,4 +1,5 @@
---// BYNZZBPONJON //--
+--// BYNZZBPONJON FINAL CLEAN READY TO USE - FIXED V37 (Auto Repeat Honors Resume Fix) //--
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -65,6 +66,7 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
+        -- HANYA BANDINGKAN JARAK DI SUMBU X DAN Z (ABAIAKAN KETINGGIAN Y)
         local cpPosXZ = Vector3.new(cp.pos.X, 0, cp.pos.Z)
         local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
         local distance = (playerPosXZ - cpPosXZ).Magnitude
@@ -75,7 +77,8 @@ local function findNearestCheckpoint()
         end
     end
     
-    if minDistance > 300 then 
+    -- JIKA JARAK TERDEKAT > 300 STUD, ANGGAP DI BASECAMP UNTUK AMAN
+    if minDistance > 300 and nearestIndex ~= #checkpoints then 
         return 1
     end
 
@@ -142,11 +145,9 @@ local function startAuto()
     autoSummit = true
     
     -- Tentukan Index Mulai (Implicit Resume Logic)
-    local startIndex = 1
-    if not autoRepeat and currentCpIndex > 1 and currentCpIndex <= #checkpoints then
-        startIndex = currentCpIndex
-    end
-
+    -- FIX V37: StartIndex SELALU menggunakan currentCpIndex (CP berikutnya setelah yang terdekat)
+    local startIndex = currentCpIndex
+    
     notify("Auto Summit Started! Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name,Color3.fromRGB(0,150,255))
     
     summitThread = task.spawn(function()
@@ -157,7 +158,8 @@ local function startAuto()
                 break
             end
             
-            if autoRepeat then
+            -- Hanya notifikasi 'Summit Baru' jika AutoRepeat ON dan ini BUKAN start awal loop
+            if autoRepeat and startIndex == 1 then
                  notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
             end
 
@@ -236,9 +238,15 @@ player.CharacterAdded:Connect(function(char)
     if humanoid then humanoid.WalkSpeed = walkSpeed end
 end)
 
+-- INIT CURRENT CP INDEX SAAT SCRIPT DIMULAI
 do
     local nearestCp = findNearestCheckpoint()
-    if nearestCp < #checkpoints then currentCpIndex = nearestCp + 1 else currentCpIndex = 1 end
+    
+    if nearestCp < #checkpoints then 
+        currentCpIndex = nearestCp + 1 
+    else 
+        currentCpIndex = 1 
+    end
 end
 
 if playerGui:FindFirstChild("BynzzBponjon") then playerGui.BynzzBponjon:Destroy() end
@@ -266,7 +274,7 @@ header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 header.BackgroundTransparency = getTransparency() 
 
 local title = Instance.new("TextLabel", header)
-title.Text = "BynzzBponjon GUI (V35 - Final 21 CP Fix)"
+title.Text = "BynzzBponjon GUI (V37 - Auto Repeat Resume FIX)"
 title.Size = UDim2.new(0.6,0,1,0)
 title.Position = UDim2.new(0.03,0,0,0)
 title.BackgroundTransparency = 1
@@ -344,7 +352,7 @@ local autoPage=Instance.new("ScrollingFrame",content)
 autoPage.Name="Auto"
 autoPage.Size=UDim2.new(1,0,1,0)
 autoPage.BackgroundTransparency=1
-autoPage.CanvasSize = UDim2.new(0,0,0, (35*3) + 10 + 21*35 + 10) -- Disesuaikan untuk 21 CP 
+autoPage.CanvasSize = UDim2.new(0,0,0, (35*3) + 10 + 21*35 + 10) 
 autoPage.ScrollBarThickness=6
 autoPage.Visible=true 
 
@@ -375,7 +383,7 @@ end)
 
 -- SCROLLING FRAME UNTUK DAFTAR CP
 local scroll=Instance.new("ScrollingFrame",autoPage)
-scroll.Size=UDim2.new(0.9,0,0,250) -- Ukuran disesuaikan agar bisa menampung banyak CP
+scroll.Size=UDim2.new(0.9,0,0,250) 
 scroll.Position=UDim2.new(0.05,0,0,145)
 scroll.CanvasSize=UDim2.new(0,0,0,#checkpoints*35)
 scroll.ScrollBarThickness=6
@@ -652,7 +660,7 @@ local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V35 (Smart Loop + 21 CP dari User)\nFitur:\n- Auto Summit dan Loop (21 CP Stabil)\n- Smart Loop: Mati+Respawn (jika AutoDeath ON) atau Langsung Teleport Basecamp (jika AutoDeath OFF)\n- Implicit Resume (Lanjut dari CP Terakhir) di Tombol Start\n- Anti-AFK (Server Page)\n- Slider Opacity GUI (Setting Page)\n- Scrollable Menus"
+infoText.Text="Created by BynzzBponjon\nAuto Summit GUI (Clean Final)\n\nVersion: V37 (Auto Repeat Resume Fix)\nFitur:\n- Auto Summit dan Loop (21 CP Stabil)\n- Implicit Resume: Lanjut dari CP terdekat saat ini (fix)\n- Auto Repeat kini menghormati posisi awal (Resume) jika belum menyelesaikan 1 putaran.\n- Smart Loop: Mati+Respawn (jika AutoDeath ON) atau Langsung Teleport Basecamp (jika AutoDeath OFF)\n- Anti-AFK, Server Hop, & Pengaturan Kecepatan."
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
@@ -686,5 +694,6 @@ hideBtn.MouseButton1Click:Connect(toggleGuiDisplay)
 
 
 -- Notifikasi akhir
-local startCpName = checkpoints[currentCpIndex].name
-notify("BynzzBponjon GUI (V35) Loaded. Full 21 CP List & Smart Loop Aktif!",Color3.fromRGB(0,200,100))
+local nextCpIndex = math.min(currentCpIndex, #checkpoints)
+local startCpName = checkpoints[nextCpIndex].name
+notify("BynzzBponjon GUI (V37) Loaded. Siap Mulai dari CP #"..nextCpIndex..": "..startCpName,Color3.fromRGB(0,200,100))
