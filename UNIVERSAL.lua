@@ -13,7 +13,7 @@ local CURRENT_PLACE_ID = tostring(game.PlaceId)
 -- ***** KONFIGURASI MAP GLOBAL FINAL (7 MAPS) *****
 -- **********************************
 local MAP_CONFIG = {
-    -- 1. MOUNT KOHARU (21 CP) - ID LAMA
+    -- 1. MOUNT KOHARU (21 CP)
     ["94261028489288"] = {
         name = "MOUNT KOHARU (21 CP)", 
         checkpoints = {
@@ -41,7 +41,7 @@ local MAP_CONFIG = {
         }
     },
 
-    -- 2. MOUNT GEMI (2 CP) - ID LAMA
+    -- 2. MOUNT GEMI (2 CP)
     ["140014177882408"] = {
         name = "MOUNT GEMI (2 CP)", 
         checkpoints = {
@@ -50,7 +50,7 @@ local MAP_CONFIG = {
         }
     },
     
-    -- 3. MOUNT JALUR TAKDIR (7 CP) - ID BARU
+    -- 3. MOUNT JALUR TAKDIR (7 CP)
     ["127557455707420"] = {
         name = "MOUNT JALUR TAKDIR",
         checkpoints = {
@@ -64,7 +64,7 @@ local MAP_CONFIG = {
         }
     },
 
-    -- 4. MOUNT LIRVANA (22 CP) - ID BARU
+    -- 4. MOUNT LIRVANA (22 CP)
     ["79272087242323"] = {
         name = "MOUNT LIRVANA",
         checkpoints = {
@@ -93,7 +93,7 @@ local MAP_CONFIG = {
         }
     },
 
-    -- 5. MOUNT AHPAYAH (12 CP) - ID BARU
+    -- 5. MOUNT AHPAYAH (12 CP)
     ["129916920179384"] = {
         name = "MOUNT AHPAYAH",
         checkpoints = {
@@ -112,7 +112,7 @@ local MAP_CONFIG = {
         }
     },
 
-    -- 6. MOUNT BINGUNG (21 CP) - ID BARU
+    -- 6. MOUNT BINGUNG (21 CP)
     ["111417482709154"] = {
         name = "MOUNT BINGUNG",
         checkpoints = {
@@ -141,23 +141,23 @@ local MAP_CONFIG = {
         }
     },
 
-    -- 7. MOUNT TENERIE (6 CP) - ID BARU
-    -- NOTE: CFrame.p akan otomatis diubah menjadi Vector3
+    -- 7. MOUNT TENERIE (6 CP) - **SEKARANG MENGGUNAKAN VECTOR3 BIASA**
     ["76084648389385"] = {
         name = "MOUNT TENERIE", 
         checkpoints = {
-            {name="CP1", pos=CFrame.new(24.996, 163.296, 319.838, -0.997991, 0.024712, -0.058331, -0.000000, 0.920780, 0.390083, 0.063350, 0.389299, -0.918930).p},
-            {name="CP2", pos=CFrame.new(-830.715, 239.184, 887.750, -0.972382, -0.073546, 0.221503, -0.000009, 0.949065, 0.315080, -0.233393, 0.306376, -0.922855).p},
-            {name="CP3", pos=CFrame.new(-1081.016, 400.153, 1662.579, -0.685627, 0.345798, -0.640578, 0.000000, 0.879971, 0.475027, 0.727953, 0.325691, -0.603332).p},
-            {name="CP4", pos=CFrame.new(-638.603, 659.233, 3034.486, -0.840349, 0.156491, -0.518964, -0.000000, 0.957418, 0.288705, 0.542045, 0.242613, -0.804566).p},
-            {name="CP5", pos=CFrame.new(339.759, 820.852, 3891.180, 0.120165, 0.220135, -0.968040, -0.000000, 0.975105, 0.221742, 0.992754, -0.026646, 0.117173).p},
-            {name="Puncak", pos=CFrame.new(878.573, 1019.189, 4704.508, 0.005409, 0.375075, -0.926979, 0.000348, 0.926992, 0.375082, 0.999985, -0.002352, 0.004884).p}
+            -- HANYA MENGAMBIL POSISI (X, Y, Z) DARI CFRAME LAMA
+            {name="CP1", pos=Vector3.new(24.996, 163.296, 319.838)},
+            {name="CP2", pos=Vector3.new(-830.715, 239.184, 887.750)},
+            {name="CP3", pos=Vector3.new(-1081.016, 400.153, 1662.579)},
+            {name="CP4", pos=Vector3.new(-638.603, 659.233, 3034.486)},
+            {name="CP5", pos=Vector3.new(339.759, 820.852, 3891.180)},
+            {name="Puncak", pos=Vector3.new(878.573, 1019.189, 4704.508)}
         }
     },
 }
 -- **********************************
 
--- Cek apakah Map saat ini ada di konfigurasi (Sisanya sama seperti V2, hanya ganti CURRENT_PLACE_ID)
+-- Cek apakah Map saat ini ada di konfigurasi
 local currentMapConfig = MAP_CONFIG[CURRENT_PLACE_ID]
 local scriptName = currentMapConfig and currentMapConfig.name or "UNIVERSAL (Map Tidak Dikenal)"
 local checkpoints = currentMapConfig and currentMapConfig.checkpoints or {}
@@ -202,7 +202,7 @@ local function notify(txt, color)
     game:GetService("Debris"):AddItem(n,2)
 end
 
--- LOGIKA PENENTUAN CP TERDEKAT (V37 Logic)
+-- LOGIKA PENENTUAN CP TERDEKAT
 local function findNearestCheckpoint()
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -213,7 +213,7 @@ local function findNearestCheckpoint()
     
     for i, cp in ipairs(checkpoints) do
         -- Pastikan cp.pos adalah Vector3
-        local cpPos = (type(cp.pos) == "userdata" and cp.pos.X and cp.pos or CFrame.new(cp.pos)).p
+        local cpPos = (typeof(cp.pos) == "CFrame" and cp.pos.p or cp.pos) -- Dipastikan aman
         local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
         local cpPosXZ = Vector3.new(cpPos.X, 0, cpPos.Z)
         local distance = (playerPosXZ - cpPosXZ).Magnitude
@@ -238,6 +238,7 @@ local function toggleAntiAFK(isEnable)
         notify("Anti-AFK Aktif", Color3.fromRGB(50, 200, 50))
         antiAFKThread = task.spawn(function()
             while antiAFK do
+                -- Simulasi klik mouse kecil
                 local input = Instance.new("InputObject")
                 input.UserInputType = Enum.UserInputType.MouseButton1
                 input.UserInputState = Enum.UserInputState.Begin
@@ -262,29 +263,14 @@ local function toggleAntiAFK(isEnable)
 end
 
 local function doServerHop()
-    local servers = {}
-    local ok, raw = pcall(function() return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100") end)
+    notify("Server Hop: Melompat ke server acak...", Color3.fromRGB(0, 100, 200))
+    pcall(function() TeleportService:Teleport(game.PlaceId, player) end) 
     
-    if not ok or not raw then notify("Server Hop Gagal: Gagal Ambil Data", Color3.fromRGB(200, 50, 50)) return end
-    
-    local ok2, dec = pcall(function() return HttpService:JSONDecode(raw) end)
-    if not ok2 or type(dec) ~= "table" or not dec.data then notify("Server Hop Gagal: Data Invalid", Color3.fromRGB(200, 50, 50)) return end
-    
-    for _,v in pairs(dec.data) do
-        if v.playing and v.maxPlayers and v.playing < v.maxPlayers then table.insert(servers,v.id) end
-    end
-    
-    if #servers > 0 then 
-        local selectedServer = servers[math.random(1,#servers)]
-        notify("Server Hop: Melompat ke server baru...", Color3.fromRGB(0, 100, 200))
-        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, selectedServer, player) end) 
-    else
-        notify("Server Hop Gagal: Tidak ada server kosong.", Color3.fromRGB(200, 50, 50))
-    end
+    -- Pastikan Auto Summit berhenti saat Hop
     autoSummit = false
 end
 
--- FUNGSI UTAMA AUTO SUMMIT (Smart Loop Logic V37)
+-- FUNGSI UTAMA AUTO SUMMIT (PivotTo Fix)
 local function startAuto()
     if autoSummit then return end
     autoSummit = true
@@ -301,7 +287,7 @@ local function startAuto()
                 break
             end
             
-            if autoRepeat and startIndex == 1 then
+            if autoRepeat and startIndex == 1 and summitCount > 0 then
                  notify("Auto Repeat: Memulai Summit Baru (Summit #"..(summitCount+1)..")", Color3.fromRGB(0, 255, 255))
             end
 
@@ -317,12 +303,13 @@ local function startAuto()
                 end
                 
                 if player.Character and player.Character.PrimaryPart then
-                    -- ** FIX: GANTI SetPrimaryPartCFrame KE PivotTo **
+                    -- ** MENGGUNAKAN PivotTo DENGAN CFRAME DARI CP.POS **
                     local cpPos = cp.pos
                     
-                    if type(cpPos) == "userdata" and cpPos:IsA("CFrame") then
+                    if typeof(cpPos) == "CFrame" then
                         player.Character:PivotTo(cpPos)
                     else
+                        -- Sekarang semua CP adalah Vector3, aman menggunakan CFrame.new(Vector3)
                         player.Character:PivotTo(CFrame.new(cpPos))
                     end
                 end
@@ -339,15 +326,15 @@ local function startAuto()
                 if autoRepeat then
                     if autoDeath then
                         task.wait(0.5)
-                        if player.Character then pcall(function() player.Character:BreakJoints() end) end
+                        if player.Character then pcall(function() player.Character.Humanoid.Health = 0 end) end 
                         player.CharacterAdded:Wait()
                         task.wait(1.5)
                         startIndex = 1 
                     else
                         if player.Character and player.Character.PrimaryPart then
                             local cpPos = checkpoints[1].pos
-                            -- ** FIX: GANTI SetPrimaryPartCFrame KE PivotTo **
-                            if type(cpPos) == "userdata" and cpPos:IsA("CFrame") then
+                            -- ** MENGGUNAKAN PivotTo **
+                            if typeof(cpPos) == "CFrame" then
                                 player.Character:PivotTo(cpPos)
                             else
                                 player.Character:PivotTo(CFrame.new(cpPos))
@@ -548,8 +535,8 @@ for i,cp in ipairs(checkpoints) do
     b.MouseButton1Click:Connect(function()
         if player.Character and player.Character.PrimaryPart then
              local cpPos = cp.pos
-             -- ** FIX: GANTI SetPrimaryPartCFrame KE PivotTo **
-             if type(cpPos) == "userdata" and cpPos:IsA("CFrame") then
+             -- ** MENGGUNAKAN PivotTo **
+             if typeof(cpPos) == "CFrame" then
                 player.Character:PivotTo(cpPos)
             else
                 player.Character:PivotTo(CFrame.new(cpPos))
@@ -690,7 +677,9 @@ manualDeath.Position=UDim2.new(0.05,0,0,yPos)
 manualDeath.BackgroundColor3=Color3.fromRGB(80,80,80)
 manualDeath.Parent=serverPage
 manualDeath.MouseButton1Click:Connect(function()
-    if player.Character then pcall(function() player.Character:BreakJoints() end) end
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then 
+        pcall(function() player.Character.Humanoid.Health = 0 end) 
+    end
 end)
 yPos = yPos + 40
 
@@ -815,7 +804,7 @@ local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,0,0,140)
 infoText.Position=UDim2.new(0,0,0,0)
 infoText.BackgroundTransparency=1
-infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V4 (PivotTo Fix)\nMap Terintegrasi: "..#MAP_CONFIG.."\nFitur:\n- Deteksi map otomatis.\n- Menggunakan PivotTo (teleportasi modern).\n- Loop, Hop, AFK, dan Pengaturan Kecepatan."
+infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V6 (TENERIE Vector3 Fix)\nMap Terintegrasi: "..#MAP_CONFIG.."\nFitur Utama:\n- Deteksi map otomatis.\n- Menggunakan PivotTo (teleportasi modern).\n- Auto Loop, Server Hop, Anti-AFK, dan Pengaturan Kecepatan."
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
