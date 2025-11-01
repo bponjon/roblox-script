@@ -1,4 +1,5 @@
 --// BYNZZBPONJON //--
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
@@ -154,9 +155,9 @@ local currentCpIndex = 1
 local summitThread = nil
 local antiAFKThread = nil 
 
--- (Logika Fungsi [notify, findNearestCheckpoint, toggleAntiAFK, doServerHop, stopAuto, startAuto] TIDAK BERUBAH DARI V31)
+-- (Logika Fungsi [notify, findNearestCheckpoint, toggleAntiAFK, doServerHop, stopAuto, startAuto] TIDAK BERUBAH DARI V32)
 -- **********************************
--- ***** DEKLARASI FUNGSI GLOBAL (COPY PASTE DARI V31 DI SINI) ****
+-- ***** DEKLARASI FUNGSI GLOBAL (COPY PASTE DARI V32 DI SINI) ****
 -- **********************************
 
 local function notify(txt, color)
@@ -175,7 +176,7 @@ end
 
 -- PENGECEKAN AWAL 
 if not currentMapConfig or #checkpoints == 0 then
-    notify("V32 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
+    notify("V33 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
     return 
 end
 
@@ -211,12 +212,15 @@ local function findNearestCheckpoint()
 end
 
 local function toggleAntiAFK(isEnable)
-    local textBox = playerGui.UniversalV32.Main.TabMenu.SettingTab:FindFirstChild("AntiAFK_Text")
+    local textBox = playerGui.UniversalV33.Main.ContentArea.SettingTab:FindFirstChild("AntiAFK_Btn")
     
     if isEnable and not antiAFKThread then
         antiAFK = true
         notify("Anti-AFK Aktif", Color3.fromRGB(50, 200, 50))
-        if textBox then textBox.Text = "Anti-AFK: ON" end
+        if textBox then 
+            textBox.Text = "Anti-AFK: ON"
+            textBox.BackgroundColor3 = Color3.fromRGB(0,200,0)
+        end
         antiAFKThread = task.spawn(function()
             while antiAFK do
                 local input = Instance.new("InputObject")
@@ -237,7 +241,10 @@ local function toggleAntiAFK(isEnable)
         if antiAFKThread then task.cancel(antiAFKThread) end
         antiAFKThread = nil
         notify("Anti-AFK Nonaktif", Color3.fromRGB(200, 50, 50))
-        if textBox then textBox.Text = "Anti-AFK: OFF" end
+        if textBox then 
+            textBox.Text = "Anti-AFK: OFF" 
+            textBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        end
     end
 end
 
@@ -350,11 +357,11 @@ end
 -- **********************************
 
 -- **********************************
--- ***** INIT DAN GUI V32 (Custom Look) ****
+-- ***** INIT DAN GUI V33 (Presisi Tampilan Screenshot) ****
 -- **********************************
 
 local function initialize()
-    if playerGui:FindFirstChild("UniversalV32") then playerGui.UniversalV32:Destroy() end
+    if playerGui:FindFirstChild("UniversalV33") then playerGui.UniversalV33:Destroy() end
 
     -- INIT CURRENT CP INDEX
     if player.Character then
@@ -371,37 +378,54 @@ local function initialize()
         player.Character.Humanoid.WalkSpeed = walkSpeed
     end
 
-    notify("V32 Loaded! (FINAL Look). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
+    notify("V33 Loaded! (FINAL LOOK - Screenshot Matched). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
 
     -- ** GUI SETUP **
     local gui = Instance.new("ScreenGui", playerGui)
-    gui.Name = "UniversalV32"
+    gui.Name = "UniversalV33"
     gui.ResetOnSpawn = false
 
     local main = Instance.new("Frame", gui)
-    main.Size = UDim2.new(0,500,0,350) 
+    main.Size = UDim2.new(0,500,0,300) -- Ukuran Frame lebih compact (500x300)
     main.Position = UDim2.new(0.5,-250,0.2,0)
-    main.BackgroundColor3 = Color3.fromRGB(25,25,25) -- Background gelap
+    main.BackgroundColor3 = Color3.fromRGB(25,25,25) 
     main.Active = true
     main.Draggable = true
+    main.BorderSizePixel = 0 -- Hilangkan border default
 
     -- Header
     local header = Instance.new("Frame", main)
     header.Size = UDim2.new(1,0,0,30)
-    header.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    header.BackgroundColor3 = Color3.fromRGB(30,30,30) -- Lebih gelap
+    header.BorderSizePixel = 0
 
     local title = Instance.new("TextLabel", header)
-    title.Text = "Universal Auto Summit V32 - "..scriptName
-    title.Size = UDim2.new(1,-60,1,0)
+    title.Text = "Universal Auto Summit V33 - "..scriptName
+    title.Size = UDim2.new(1,-100,1,0) -- Ruang untuk Hide/Close
     title.Position = UDim2.new(0,0,0,0)
     title.BackgroundTransparency = 1
     title.TextColor3 = Color3.new(1,1,1)
     title.Font = Enum.Font.GothamBold
     title.TextScaled = true
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.TextInsets = Insets.new(5, 0, 0, 0) -- Padding kiri
+
+    -- Hide/Close Buttons (di header, seperti screenshot)
+    local hideBtn = Instance.new("TextButton", header)
+    hideBtn.Size = UDim2.new(0,50,1,0)
+    hideBtn.Position = UDim2.new(1,-100,0,0)
+    hideBtn.Text = "Hide"
+    hideBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    hideBtn.TextColor3 = Color3.new(1,1,1)
+    hideBtn.Font = Enum.Font.GothamBold
+    hideBtn.MouseButton1Click:Connect(function()
+        main.Visible = not main.Visible
+        hideBtn.Text = main.Visible and "Hide" or "Show"
+    end)
 
     local closeBtn = Instance.new("TextButton", header)
-    closeBtn.Size = UDim2.new(0,60,1,0)
-    closeBtn.Position = UDim2.new(1,-60,0,0)
+    closeBtn.Size = UDim2.new(0,50,1,0)
+    closeBtn.Position = UDim2.new(1,-50,0,0)
     closeBtn.Text = "Close"
     closeBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
     closeBtn.TextColor3 = Color3.new(1,1,1)
@@ -414,16 +438,18 @@ local function initialize()
 
     -- Tab Panel Container (Kiri)
     local tabPanel = Instance.new("Frame", main)
-    tabPanel.Size = UDim2.new(0.2,0,1,-30) -- 20% lebar, sisa tinggi - header
+    tabPanel.Size = UDim2.new(0, 100, 1, -30) -- Lebar 100, sisa tinggi
     tabPanel.Position = UDim2.new(0,0,0,30)
-    tabPanel.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    tabPanel.BackgroundColor3 = Color3.fromRGB(35,35,35) -- Warna panel tab
+    tabPanel.BorderSizePixel = 0
     
     -- Content Area Container (Kanan)
     local contentArea = Instance.new("Frame", main)
-    contentArea.Name = "TabMenu"
-    contentArea.Size = UDim2.new(0.8,0,1,-30) -- 80% lebar
-    contentArea.Position = UDim2.new(0.2,0,0,30)
-    contentArea.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    contentArea.Name = "ContentArea"
+    contentArea.Size = UDim2.new(1,-100,1,-30) -- Sisa lebar, sisa tinggi
+    contentArea.Position = UDim2.new(0,100,0,30)
+    contentArea.BackgroundColor3 = Color3.fromRGB(20,20,20) -- Warna area konten
+    contentArea.BorderSizePixel = 0
     
     -- TAB CONTENT FRAMES
     local autoTab = Instance.new("Frame", contentArea)
@@ -445,32 +471,43 @@ local function initialize()
     serverTab.Visible = false
 
     -- Fungsi untuk Mengganti Tab
-    local function setTab(tabName)
+    local currentActiveTabButton = nil
+    local function setTab(tabName, tabButton)
         for _, tab in ipairs({autoTab, settingTab, serverTab}) do
             tab.Visible = (tab.Name == tabName)
         end
+        
+        -- Reset warna semua tombol tab
+        for _, child in ipairs(tabPanel:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.BackgroundColor3 = Color3.fromRGB(35,35,35)
+                child.TextColor3 = Color3.new(1,1,1)
+            end
+        end
+        -- Highlight tombol tab yang aktif
+        if tabButton then
+            tabButton.BackgroundColor3 = Color3.fromRGB(20,20,20) -- Warna background konten
+            tabButton.TextColor3 = Color3.new(1,1,1)
+            currentActiveTabButton = tabButton
+        end
     end
     
-    -- Fungsi untuk Membuat Tombol Tab
+    -- Fungsi untuk Membuat Tombol Tab di Panel Kiri
     local tabY = 0
     local function createTabButton(text, tabName)
         local btn = Instance.new("TextButton", tabPanel)
         btn.Size = UDim2.new(1,0,0,35)
         btn.Position = UDim2.new(0,0,0,tabY)
         btn.Text = text
-        btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        btn.BackgroundColor3 = Color3.fromRGB(35,35,35)
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.GothamBold
         btn.TextScaled = true
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.TextInsets = Insets.new(5, 0, 0, 0)
+        btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(function()
-            setTab(tabName)
-            -- Highlight Tombol
-            for _, child in ipairs(tabPanel:GetChildren()) do
-                if child:IsA("TextButton") then
-                    child.BackgroundColor3 = Color3.fromRGB(40,40,40)
-                end
-            end
-            btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+            setTab(tabName, btn)
         end)
         tabY = tabY + 35
         return btn
@@ -478,48 +515,49 @@ local function initialize()
 
     -- Inisialisasi Tombol Tab
     local btnAuto = createTabButton("Auto", "AutoTab")
-    btnAuto.BackgroundColor3 = Color3.fromRGB(60,60,60) -- Default Active
-    createTabButton("Setting", "SettingTab")
-    createTabButton("Server", "ServerTab")
+    local btnSetting = createTabButton("Setting", "SettingTab")
+    local btnServer = createTabButton("Server", "ServerTab")
     
+    setTab("AutoTab", btnAuto) -- Set tab Auto sebagai default aktif
+
     -- **********************************
     -- ***** ISI TAB AUTO (Tombol Utama) ****
     -- **********************************
     local autoY = 10
     local function createAutoButton(text, color, onClick)
         local btn = Instance.new("TextButton", autoTab)
-        btn.Size = UDim2.new(0.9,0,0,45)
+        btn.Size = UDim2.new(0.9,0,0,40) -- Ukuran tombol lebih kecil
         btn.Position = UDim2.new(0.05,0,0,autoY)
         btn.Text = text
         btn.BackgroundColor3 = color
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.GothamBold
         btn.TextScaled = true
+        btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(onClick)
-        autoY = autoY + 50
+        autoY = autoY + 45 -- Spasi antar tombol
         return btn
     end
 
     createAutoButton("MULAI Auto Summit", Color3.fromRGB(0,180,0), startAuto)
     createAutoButton("STOP Auto Summit", Color3.fromRGB(180,0,0), stopAuto)
+    createAutoButton("Reset CP Index (Mulai dari Basecamp)", Color3.fromRGB(100,100,0), function()
+        currentCpIndex = 1
+        notify("Checkpoint Index Reset ke CP #1: "..checkpoints[1].name, Color3.fromRGB(255,100,0))
+    end)
     
     -- Tombol Checkpoint List (Tampilan Cek CP seperti gambar Anda)
     local cpFrame = Instance.new("Frame", autoTab)
     cpFrame.Size = UDim2.new(0.9,0,1,-autoY)
     cpFrame.Position = UDim2.new(0.05,0,0,autoY)
-    cpFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    cpFrame.BackgroundColor3 = Color3.fromRGB(30,30,30) -- Warna background daftar CP
+    cpFrame.BorderSizePixel = 0
     
     local cpList = Instance.new("ScrollingFrame", cpFrame)
-    cpList.Size = UDim2.new(1,0,1,-25)
+    cpList.Size = UDim2.new(1,0,1,0)
     cpList.BackgroundTransparency = 1
     cpList.CanvasSize = UDim2.new(0,0,0, #checkpoints * 30) -- Tinggi Canvas
-    
-    local cpTitle = Instance.new("TextLabel", cpFrame)
-    cpTitle.Size = UDim2.new(1,0,0,25)
-    cpTitle.Text = "Checkpoint List (Total: "..#checkpoints..")"
-    cpTitle.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    cpTitle.TextColor3 = Color3.new(1,1,1)
-    cpTitle.Font = Enum.Font.GothamBold
+    cpList.ScrollBarThickness = 6 -- Scrollbar lebih tipis
 
     local cpY = 0
     for i, cp in ipairs(checkpoints) do
@@ -527,11 +565,12 @@ local function initialize()
         cpBtn.Size = UDim2.new(1,0,0,28)
         cpBtn.Position = UDim2.new(0,0,0,cpY)
         cpBtn.Text = "#"..i..": "..cp.name
-        cpBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        cpBtn.BackgroundColor3 = Color3.fromRGB(40,40,40) -- Warna tombol CP
         cpBtn.TextColor3 = Color3.new(1,1,1)
         cpBtn.Font = Enum.Font.Gotham
         cpBtn.TextXAlignment = Enum.TextXAlignment.Left
         cpBtn.TextInsets = Insets.new(5, 0, 0, 0)
+        cpBtn.BorderSizePixel = 0
         
         -- Logic Teleport Manual Per CP
         cpBtn.MouseButton1Click:Connect(function()
@@ -545,7 +584,7 @@ local function initialize()
                 end
                 player.Character:SetPrimaryPartCFrame(targetCFrame)
                 notify("Teleport Manual ke CP #"..i..": "..cp.name, Color3.fromRGB(100, 100, 255))
-                stopAuto() -- Pastikan Auto Summit berhenti saat TP manual
+                stopAuto() 
             end
         end)
         
@@ -561,20 +600,23 @@ local function initialize()
         btn.Name = text:gsub("%s+", ""):gsub(":", "") .. "_Btn"
         btn.Size=UDim2.new(0.9,0,0,35)
         btn.Position=UDim2.new(0.05,0,0,settingY)
-        btn.Text=text..": OFF"
-        btn.BackgroundColor3=colorOff or Color3.fromRGB(50,50,50)
+        
+        -- V33: Menggunakan _G[varRef] untuk state awal
+        local initialState = _G[varRef] or false
+        btn.Text=text..": "..(initialState and "ON" or "OFF")
+        btn.BackgroundColor3=initialState and colorOn or colorOff
+        
         btn.TextColor3=Color3.new(1,1,1)
         btn.Font=Enum.Font.GothamBold
+        btn.TextScaled = true
+        btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(function()
-            local newState = not _G[varRef] -- Ambil state saat ini
+            local newState = not _G[varRef] 
             _G[varRef] = newState
             btn.Text=text..": "..(newState and "ON" or "OFF")
             btn.BackgroundColor3=newState and colorOn or colorOff
             if onClick then onClick(newState) end
         end)
-        
-        -- Gunakan _G[] untuk mengakses variabel lokal di luar fungsi, dan set default.
-        _G[varRef] = false 
         
         settingY = settingY + 40
         return btn
@@ -586,17 +628,18 @@ local function initialize()
         box.Size = UDim2.new(0.9, 0, 0, 30)
         box.Position = UDim2.new(0.05, 0, 0, settingY)
         
-        local defaultValue
-        if varRef == "delayTime" then defaultValue = delayTime
-        elseif varRef == "walkSpeed" then defaultValue = walkSpeed
-        elseif varRef == "summitLimit" then defaultValue = summitLimit end
+        local currentValue
+        if varRef == "delayTime" then currentValue = delayTime
+        elseif varRef == "walkSpeed" then currentValue = walkSpeed
+        elseif varRef == "summitLimit" then currentValue = summitLimit end
         
-        box.Text = text..": "..tostring(defaultValue)
+        box.Text = text..": "..tostring(currentValue)
         box.PlaceholderText = text
         box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         box.TextColor3 = Color3.new(1, 1, 1)
         box.Font = Enum.Font.Gotham
         box.TextScaled = true
+        box.BorderSizePixel = 0
         
         box.FocusLost:Connect(function(enterPressed)
             if enterPressed then
@@ -617,17 +660,22 @@ local function initialize()
                     end
                 end
             end
-            local currentValue
-            if varRef == "delayTime" then currentValue = delayTime
-            elseif varRef == "walkSpeed" then currentValue = walkSpeed
-            elseif varRef == "summitLimit" then currentValue = summitLimit end
-            box.Text = text..": "..tostring(currentValue)
+            local updatedValue
+            if varRef == "delayTime" then updatedValue = delayTime
+            elseif varRef == "walkSpeed" then updatedValue = walkSpeed
+            elseif varRef == "summitLimit" then updatedValue = summitLimit end
+            box.Text = text..": "..tostring(updatedValue)
         end)
         settingY = settingY + 35
         return box
     end
     
     -- Toggles
+    _G.autoRepeat = autoRepeat -- Pastikan _G terinisialisasi
+    _G.autoDeath = autoDeath
+    _G.serverHop = serverHop
+    _G.antiAFK = antiAFK
+    
     createToggle("Auto Repeat", "autoRepeat", Color3.fromRGB(0,200,0), Color3.fromRGB(50,50,50))
     createToggle("Auto Death", "autoDeath", Color3.fromRGB(0,100,200), Color3.fromRGB(50,50,50))
     createToggle("Server Hop", "serverHop", Color3.fromRGB(0,200,0), Color3.fromRGB(50,50,50))
@@ -651,16 +699,13 @@ local function initialize()
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.GothamBold
         btn.TextScaled = true
+        btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(onClick)
         serverY = serverY + 50
         return btn
     end
     
     createServerButton("Ganti Server Manual", Color3.fromRGB(80,80,80), doServerHop)
-    createServerButton("Reset CP Index (Mulai dari CP #1)", Color3.fromRGB(100,100,0), function()
-        currentCpIndex = 1
-        notify("Checkpoint Index Reset ke CP #1: "..checkpoints[1].name, Color3.fromRGB(255,100,0))
-    end)
     
 end
 
