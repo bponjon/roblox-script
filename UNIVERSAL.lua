@@ -1,5 +1,6 @@
---// UNIVERSAL AUTO SUMMIT GUI V30 (THE REAL FINAL FIX: typeof) //--
--- Memperbaiki kesalahan 'type()' menjadi 'typeof()' di semua fungsi.
+--// UNIVERSAL AUTO SUMMIT GUI V31 (FINAL: FIX GUI 'nil', TENERIE to Vector3) //--
+-- Semua data map, logic, dan fix nil/typeof dari V30 telah dipertahankan.
+-- Perbaikan utama: Display nilai default di GUI dan mengubah data TENERIE ke Vector3.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -12,7 +13,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local CURRENT_PLACE_ID = tostring(game.PlaceId)
 
 -- **********************************
--- ***** KONFIGURASI MAP GLOBAL (Data Final User V24) *****
+-- ***** KONFIGURASI MAP GLOBAL *****
 -- **********************************
 local MAP_CONFIG = {
     -- MOUNT KOHARU (21 CP)
@@ -131,15 +132,15 @@ local MAP_CONFIG = {
             {name="Puncak", pos=Vector3.new(107.141029,988.262573,-9015.23145)}
         }
     },
-    -- MOUNT TENERIE (6 CP - Menggunakan CFrame)
+    -- MOUNT TENERIE (6 CP - Diubah dari CFrame ke Vector3 untuk kompatibilitas)
     ["76084648389385"] = {name = "MOUNT TENERIE (6 CP)", 
         checkpoints = {
-            {name="Checkpoint 1", pos=CFrame.new(24.996, 163.296, 319.838, -0.997991, 0.024712, -0.058331, -0.000000, 0.920780, 0.390083, 0.063350, 0.389299, -0.918930)},
-            {name="Checkpoint 2", pos=CFrame.new(-830.715, 239.184, 887.750, -0.972382, -0.073546, 0.221503, -0.000009, 0.949065, 0.315080, -0.233393, 0.306376, -0.922855)},
-            {name="Checkpoint 3", pos=CFrame.new(-1081.016, 400.153, 1662.579, -0.685627, 0.345798, -0.640578, 0.000000, 0.879971, 0.475027, 0.727953, 0.325691, -0.603332)},
-            {name="Checkpoint 4", pos=CFrame.new(-638.603, 659.233, 3034.486, -0.840349, 0.156491, -0.518964, -0.000000, 0.957418, 0.288705, 0.542045, 0.242613, -0.804566)},
-            {name="Checkpoint 5", pos=CFrame.new(339.759, 820.852, 3891.180, 0.120165, 0.220135, -0.968040, -0.000000, 0.975105, 0.221742, 0.992754, -0.026646, 0.117173)},
-            {name="Puncak", pos=CFrame.new(878.573, 1019.189, 4704.508, 0.005409, 0.375075, -0.926979, 0.000348, 0.926992, 0.375082, 0.999985, -0.002352, 0.004884)}
+            {name="Checkpoint 1", pos=Vector3.new(24.996, 163.296, 319.838)},
+            {name="Checkpoint 2", pos=Vector3.new(-830.715, 239.184, 887.750)},
+            {name="Checkpoint 3", pos=Vector3.new(-1081.016, 400.153, 1662.579)},
+            {name="Checkpoint 4", pos=Vector3.new(-638.603, 659.233, 3034.486)},
+            {name="Checkpoint 5", pos=Vector3.new(339.759, 820.852, 3891.180)},
+            {name="Puncak", pos=Vector3.new(878.573, 1019.189, 4704.508)}
         }
     },
 }
@@ -149,18 +150,17 @@ local currentMapConfig = MAP_CONFIG[CURRENT_PLACE_ID]
 local scriptName = currentMapConfig and currentMapConfig.name or "UNIVERSAL (Map Tdk Dikenal)"
 local checkpoints = currentMapConfig and currentMapConfig.checkpoints or {}
 
--- Variabel Status
+-- Variabel Status (Global Scope agar bisa diakses di GUI)
 local autoSummit, autoDeath, serverHop, autoRepeat, antiAFK = false, false, false, false, false
-local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16
+local summitCount, summitLimit, delayTime, walkSpeed = 0, 20, 5, 16 -- Nilai Default
 local currentCpIndex = 1 
 local summitThread = nil
 local antiAFKThread = nil 
 
 -- **********************************
--- ***** DEKLARASI FUNGSI GLOBAL (DI ATAS) ****
+-- ***** DEKLARASI FUNGSI GLOBAL ****
 -- **********************************
 
--- Fungsi NOTIFY dideklarasikan paling atas
 local function notify(txt, color)
     pcall(function() 
         local n = Instance.new("TextLabel", playerGui)
@@ -175,9 +175,9 @@ local function notify(txt, color)
     end)
 end
 
--- PENGECEKAN AWAL (SEKARANG AMAN KARENA 'notify' SUDAH ADA)
+-- PENGECEKAN AWAL 
 if not currentMapConfig or #checkpoints == 0 then
-    notify("V30 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
+    notify("V31 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
     return 
 end
 
@@ -191,7 +191,7 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
-        -- FIX V30: Menggunakan typeof() yang benar
+        -- V31: Semua data sekarang dianggap Vector3 (kecuali ada data CFrame baru dimasukkan)
         local cpPos = (typeof(cp.pos) == "Vector3" and cp.pos) or cp.pos.p 
         
         local cpPosXZ = Vector3.new(cpPos.X, 0, cpPos.Z)
@@ -204,8 +204,10 @@ local function findNearestCheckpoint()
         end
     end
     
+    -- Jarak lebih dari 300 stud dari CP manapun dianggap mulai dari CP 1 (kecuali sudah di puncak)
     if minDistance > 300 and nearestIndex ~= #checkpoints then return 1 end
     
+    -- Jarak kurang dari 50 stud (sudah di CP) -> lanjutkan ke CP berikutnya (kecuali di puncak)
     if minDistance < 50 and nearestIndex < #checkpoints then
         return nearestIndex + 1
     end
@@ -281,8 +283,8 @@ local function startAuto()
                 local character = player.Character or player.CharacterAdded:Wait()
                 if character and character.PrimaryPart then
                     
-                    -- FIX V30: Menggunakan typeof() yang benar
                     local targetCFrame
+                    -- V31: Asumsikan Vector3. Gunakan CFrame.new(Vector3) untuk teleportasi.
                     if typeof(cp.pos) == "Vector3" then
                         targetCFrame = CFrame.new(cp.pos)
                     elseif typeof(cp.pos) == "CFrame" then
@@ -319,7 +321,6 @@ local function startAuto()
                     else
                         local character = player.Character or player.CharacterAdded:Wait()
                         if character and character.PrimaryPart then
-                            -- FIX V30: Menggunakan typeof() yang benar
                             local startCFrame
                             if typeof(checkpoints[1].pos) == "Vector3" then
                                 startCFrame = CFrame.new(checkpoints[1].pos)
@@ -354,7 +355,7 @@ end
 -- **********************************
 
 local function initialize()
-    if playerGui:FindFirstChild("UniversalV30") then playerGui.UniversalV30:Destroy() end
+    if playerGui:FindFirstChild("UniversalV31") then playerGui.UniversalV31:Destroy() end
 
     -- INIT CURRENT CP INDEX
     if player.Character then
@@ -367,15 +368,16 @@ local function initialize()
         local humanoid = char:FindFirstChildOfClass("Humanoid")
         if humanoid then humanoid.WalkSpeed = walkSpeed end
     end)
+    -- Terapkan WalkSpeed sekarang jika karakter sudah ada
     if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
         player.Character.Humanoid.WalkSpeed = walkSpeed
     end
 
-    notify("V30 Loaded! (typeof Fix). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
+    notify("V31 Loaded! (FINAL FIX). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
 
-    -- (GUI V25 Sederhana)
+    -- (GUI V31)
     local gui = Instance.new("ScreenGui", playerGui)
-    gui.Name = "UniversalV30"
+    gui.Name = "UniversalV31"
     gui.ResetOnSpawn = false
 
     local main = Instance.new("Frame", gui)
@@ -390,7 +392,7 @@ local function initialize()
     header.BackgroundColor3 = Color3.fromRGB(40,40,40)
 
     local title = Instance.new("TextLabel", header)
-    title.Text = "Universal Auto GUI V30 - Map: "..scriptName
+    title.Text = "Universal Auto GUI V31 - Map: "..scriptName
     title.Size = UDim2.new(1,-50,1,0)
     title.Position = UDim2.new(0,0,0,0)
     title.BackgroundTransparency = 1
@@ -473,13 +475,17 @@ local function initialize()
     end)
     yOffset = yOffset + 5
     
-    local function createTextBox(text, varName, isNumber)
+    local function createTextBox(text, varRef, isNumber)
         local box = Instance.new("TextBox", main)
         box.Size = UDim2.new(0.9, 0, 0, 25)
         box.Position = UDim2.new(0.05, 0, 0, yOffset)
         
-        -- Gunakan _G (Global) untuk mengakses variabel yang didefinisikan di luar fungsi
-        local defaultValue = _G[varName]
+        -- V31 FIX: Menampilkan nilai awal yang benar
+        local defaultValue
+        if varRef == "delayTime" then defaultValue = delayTime
+        elseif varRef == "walkSpeed" then defaultValue = walkSpeed
+        elseif varRef == "summitLimit" then defaultValue = summitLimit end
+
         box.Text = text..": "..tostring(defaultValue)
         box.PlaceholderText = text
         box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -491,22 +497,27 @@ local function initialize()
             if enterPressed then
                 local v = tonumber(box.Text)
                 if isNumber and v then
-                    if varName == "delayTime" and v >= 0.5 then
+                    if varRef == "delayTime" and v >= 0.5 then
                         delayTime = v
                         notify("Delay diatur ke "..delayTime.." detik", Color3.fromRGB(255, 165, 0))
-                    elseif varName == "walkSpeed" then
+                    elseif varRef == "walkSpeed" then
                         walkSpeed = v
                         if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
                             player.Character.Humanoid.WalkSpeed = walkSpeed
                         end
                         notify("WalkSpeed diatur ke "..walkSpeed, Color3.fromRGB(255, 165, 0))
-                    elseif varName == "summitLimit" and v >= 1 then
+                    elseif varRef == "summitLimit" and v >= 1 then
                         summitLimit = v
                         notify("Summit Limit diatur ke "..summitLimit, Color3.fromRGB(255, 165, 0))
                     end
                 end
             end
-            box.Text = text..": "..tostring(_G[varName])
+            -- V31 FIX: Memperbarui teks setelah input, menggunakan variabel global
+            local currentValue
+            if varRef == "delayTime" then currentValue = delayTime
+            elseif varRef == "walkSpeed" then currentValue = walkSpeed
+            elseif varRef == "summitLimit" then currentValue = summitLimit end
+            box.Text = text..": "..tostring(currentValue)
         end)
         yOffset = yOffset + 30
         return box
@@ -536,10 +547,15 @@ local function initialize()
     end)
 end
 
--- Panggil inisialisasi hanya setelah karakter dimuat
-if player.Character then
+-- Panggil inisialisasi dan tunggu karakter dimuat
+local charConnection
+charConnection = player.CharacterAdded:Connect(function()
+    if charConnection then charConnection:Disconnect() end
     initialize()
-else
-    player.CharacterAdded:Wait()
+end)
+
+-- Panggil langsung jika karakter sudah ada
+if player.Character then
+    if charConnection then charConnection:Disconnect() end
     initialize()
 end
