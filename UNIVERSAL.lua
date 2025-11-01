@@ -40,7 +40,7 @@ local MAP_CONFIG = {
     ["140014177882408"] = {name = "MOUNT GEMI (2 CP)", 
         checkpoints = {
             {name="Awal (Start)", pos=Vector3.new(1947.5, 417.8, 1726.8)},
-            {name="Finish GEMI", pos=Vector3.new(2080.7, 437.2, 1789.7)}
+            {name="Finish GEMI", pos=Vector3.new(-6665.046, 3151.532, -799.116)}
         }
     },
     ["127557455707420"] = {name = "MOUNT JALUR TAKDIR", checkpoints = {{name="Basecamp", pos=Vector3.new(-942.227, 14.021, -954.444)}, {name="Puncak", pos=Vector3.new(292.418, 1274.021, 374.069)}}},
