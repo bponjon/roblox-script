@@ -1,6 +1,7 @@
 --// UNIVERSAL AUTO SUMMIT GUI V35 (FINAL TAMPILAN LEBAR: Tab Kiri - Konten Kanan) //--
--- Logic: Menggunakan semua perbaikan V34 (fix nil value, fix Vector3, stabil).
+-- Logic: Menggunakan semua perbaikan V34 (fix nil value, fix Vector3, stabil) dan Logic Resume Implicit.
 -- Tampilan: Menggunakan layout Tab Kiri dan Konten Kanan yang LEBAR (700x400) agar elemen terlihat jelas.
+-- Checkpoint List: Menggunakan daftar checkpoint universal yang lengkap.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -12,10 +13,10 @@ local playerGui = player:WaitForChild("PlayerGui")
 local CURRENT_PLACE_ID = tostring(game.PlaceId)
 
 -- **********************************
--- ***** KONFIGURASI MAP GLOBAL (TIDAK BERUBAH DARI V31) *****
+-- ***** KONFIGURASI MAP UNIVERSAL (LENGKAP) *****
 -- **********************************
 local MAP_CONFIG = {
-    -- MOUNT KOHARU (21 CP)
+    -- MOUNT KOHARU (21 CP) - ID: 94261028489288 (Sesuai dengan BYNZZBPONJON)
     ["94261028489288"] = {name = "MOUNT KOHARU (21 CP)", 
         checkpoints = {
             {name="Basecamp", pos=Vector3.new(-883.288,43.358,933.698)},
@@ -41,7 +42,7 @@ local MAP_CONFIG = {
             {name="Puncak", pos=Vector3.new(-1534.938,933.116,-2176.096)}
         }
     },
-    -- MOUNT GEMI (2 CP)
+    -- MOUNT GEMI (2 CP) - ID: 140014177882408 (Sesuai Permintaan Tersimpan Anda)
     ["140014177882408"] = {name = "MOUNT GEMI (2 CP)", 
         checkpoints = {
             {name="Basecamp", pos=Vector3.new(1269.030, 639.076, 1793.997)},
@@ -84,7 +85,7 @@ local MAP_CONFIG = {
             {name="Checkpoint 18", pos=Vector3.new(880.015, 710.149, -675.175)},
             {name="Checkpoint 19", pos=Vector3.new(1187.287, 694.149, -661.098)},
             {name="Checkpoint 20", pos=Vector3.new(1187.453, 718.149, -332.297)},
-            {name="Checkpoint 21", pos=Vector3.new(799.696, 1001.949, 207.303)}
+            {name="Puncak", pos=Vector3.new(799.696, 1001.949, 207.303)}
         }
     },
     -- MOUNT AHPAYAH (12 CP)
@@ -131,9 +132,10 @@ local MAP_CONFIG = {
             {name="Puncak", pos=Vector3.new(107.141029,988.262573,-9015.23145)}
         }
     },
-    -- MOUNT TENERIE (6 CP - Vector3)
+    -- MOUNT TENERIE (6 CP)
     ["76084648389385"] = {name = "MOUNT TENERIE (6 CP)", 
         checkpoints = {
+            {name="Basecamp", pos=Vector3.new(-9999, -9999, -9999)}, -- Basecamp default jika tidak ada CP1
             {name="Checkpoint 1", pos=Vector3.new(24.996, 163.296, 319.838)},
             {name="Checkpoint 2", pos=Vector3.new(-830.715, 239.184, 887.750)},
             {name="Checkpoint 3", pos=Vector3.new(-1081.016, 400.153, 1662.579)},
@@ -157,7 +159,7 @@ local summitThread = nil
 local antiAFKThread = nil 
 
 -- **********************************
--- ***** DEKLARASI FUNGSI GLOBAL (Logika V34) *****
+-- ***** DEKLARASI FUNGSI GLOBAL (Logika V35) *****
 -- **********************************
 
 local function notify(txt, color)
@@ -176,7 +178,7 @@ end
 
 -- PENGECEKAN AWAL 
 if not currentMapConfig or #checkpoints == 0 then
-    notify("V35 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan.", Color3.fromRGB(255, 0, 0))
+    notify("V35 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan. Hanya berfungsi di map yang didukung.", Color3.fromRGB(255, 0, 0))
     return 
 end
 
@@ -202,8 +204,10 @@ local function findNearestCheckpoint()
         end
     end
     
+    -- JIKA TERLALU JAUH DARI CP MANAPUN, MULAI DARI BASECAMP (KECUALI SUDAH DI PUNCAK)
     if minDistance > 300 and nearestIndex ~= #checkpoints then return 1 end
     
+    -- JIKA DEKAT DENGAN CP, LANJUT KE CP BERIKUTNYA
     if minDistance < 50 and nearestIndex < #checkpoints then
         return nearestIndex + 1
     end
@@ -212,7 +216,7 @@ local function findNearestCheckpoint()
 end
 
 local function toggleAntiAFK(isEnable)
-    local btn = playerGui.UniversalV35.Main.TabPanel:FindFirstChild("AntiAFK_Btn")
+    local btn = playerGui.UniversalV35 and playerGui.UniversalV35.Main.SettingTab:FindFirstChild("AntiAFK_Btn")
     
     if isEnable and not antiAFKThread then
         antiAFK = true
@@ -232,7 +236,7 @@ local function toggleAntiAFK(isEnable)
                 input.UserInputState = Enum.UserInputState.End
                 UserInputService:SimulateMouseClick(input)
                 
-                task.wait(15) 
+                task.wait(15) -- Klik mouse setiap 15 detik
             end
             antiAFKThread = nil
         end)
@@ -324,6 +328,7 @@ local function startAuto()
                         player.CharacterAdded:Wait()
                         task.wait(1.5)
                     else
+                        -- Teleport kembali ke Basecamp
                         local character = player.Character or player.CharacterAdded:Wait()
                         if character and character.PrimaryPart then
                             local startCFrame
@@ -379,7 +384,7 @@ local function initialize()
         player.Character.Humanoid.WalkSpeed = walkSpeed
     end
 
-    notify("V35 Loaded! (FINAL WIDE LOOK). Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
+    notify("V35 Loaded! (FINAL WIDE LOOK). Map: "..scriptName..". Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
 
     -- ** GUI SETUP **
     local gui = Instance.new("ScreenGui", playerGui)
@@ -469,7 +474,7 @@ local function initialize()
     settingTab.BackgroundTransparency = 1
     settingTab.Visible = false
     
-    local utilityTab = Instance.new("Frame", contentArea) -- Ganti "Server" menjadi "Utility"
+    local utilityTab = Instance.new("Frame", contentArea) 
     utilityTab.Name = "UtilityTab"
     utilityTab.Size = UDim2.new(1,0,1,0)
     utilityTab.BackgroundTransparency = 1
@@ -499,7 +504,7 @@ local function initialize()
     local tabY = 0
     local function createTabButton(text, tabName)
         local btn = Instance.new("TextButton", tabPanel)
-        btn.Size = UDim2.new(1,0,0,50) -- Tombol Tab LEBAR
+        btn.Size = UDim2.new(1,0,0,50) 
         btn.Position = UDim2.new(0,0,0,tabY)
         btn.Text = text
         btn.BackgroundColor3 = Color3.fromRGB(35,35,35)
@@ -526,22 +531,6 @@ local function initialize()
     -- **********************************
     -- ***** ISI TAB AUTO ****
     -- **********************************
-    local autoY = 10
-    local function createAutoButton(text, color, onClick)
-        local btn = Instance.new("TextButton", autoTab)
-        btn.Size = UDim2.new(0.48,0,0,45) 
-        btn.Position = UDim2.new(0.01,0,0,autoY)
-        btn.Text = text
-        btn.BackgroundColor3 = color
-        btn.TextColor3 = Color3.new(1,1,1)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextScaled = true
-        btn.BorderSizePixel = 0
-        btn.MouseButton1Click:Connect(onClick)
-        autoY = autoY + 50 
-        return btn
-    end
-
     -- Tombol Start dan Stop (Lebar penuh, di atas)
     local startBtn = Instance.new("TextButton", autoTab)
     startBtn.Size = UDim2.new(0.98,0,0,50)
@@ -617,7 +606,7 @@ local function initialize()
     local cpList = Instance.new("ScrollingFrame", cpFrame)
     cpList.Size = UDim2.new(1,0,1,0)
     cpList.BackgroundTransparency = 1
-    cpList.CanvasSize = UDim2.new(0,0,0, #checkpoints * 30) 
+    cpList.CanvasSize = UDim2.new(0,0,0, math.max(0.01, #checkpoints) * 30) 
     cpList.ScrollBarThickness = 6 
 
     local cpY = 0
@@ -642,9 +631,11 @@ local function initialize()
                 elseif typeof(cp.pos) == "CFrame" then
                     targetCFrame = cp.pos
                 end
-                player.Character:SetPrimaryPartCFrame(targetCFrame)
-                notify("Teleport Manual ke CP #"..i..": "..cp.name, Color3.fromRGB(100, 100, 255))
-                stopAuto() 
+                if targetCFrame then
+                    player.Character:SetPrimaryPartCFrame(targetCFrame)
+                    notify("Teleport Manual ke CP #"..i..": "..cp.name, Color3.fromRGB(100, 100, 255))
+                    stopAuto() 
+                end
             end
         end)
         
@@ -652,7 +643,7 @@ local function initialize()
     end
     
     -- **********************************
-    -- ***** ISI TAB SETTING ****
+    -- ***** ISI TAB SETTING (Fixed) ****
     -- **********************************
     local settingY = 10
     local function createToggle(text, varRef, colorOn, colorOff, onClick)
@@ -677,6 +668,7 @@ local function initialize()
             if onClick then onClick(newState) end
         end)
         
+        -- Penentuan posisi (Kolom 1 atau Kolom 2)
         if settingY % 55 == 10 then 
             settingY = settingY + 55 
         else
@@ -705,8 +697,16 @@ local function initialize()
         box.BorderSizePixel = 0
         
         box.FocusLost:Connect(function(enterPressed)
+            local updateText = function()
+                local updatedValue
+                if varRef == "delayTime" then updatedValue = delayTime
+                elseif varRef == "walkSpeed" then updatedValue = walkSpeed
+                elseif varRef == "summitLimit" then updatedValue = summitLimit end
+                box.Text = text..": "..tostring(updatedValue)
+            end
+            
             if enterPressed then
-                local v = tonumber(box.Text:match(": (%d+%.?%d*)"))
+                local v = tonumber(box.Text:match(": (%d+%.?%d*)") or box.Text) -- Coba ambil angka dari format 'Label: Value' atau seluruh teks
                 if isNumber and v then
                     if varRef == "delayTime" and v >= 0.5 then
                         delayTime = v
@@ -720,45 +720,40 @@ local function initialize()
                     elseif varRef == "summitLimit" and v >= 1 then
                         summitLimit = v
                         notify("Summit Limit diatur ke "..summitLimit, Color3.fromRGB(255, 165, 0))
+                    else
+                        notify("Input tidak valid. Min Delay 0.5, Min Speed 16, Min Limit 1.", Color3.fromRGB(255, 50, 50))
                     end
                 else
                     notify("Input harus angka.", Color3.fromRGB(255, 50, 50))
                 end
             end
-            local updatedValue
-            if varRef == "delayTime" then updatedValue = delayTime
-            elseif varRef == "walkSpeed" then updatedValue = walkSpeed
-            elseif varRef == "summitLimit" then updatedValue = summitLimit end
-            box.Text = text..": "..tostring(updatedValue)
+            updateText()
         end)
         
+        -- Penentuan posisi (Kolom 1 atau Kolom 2)
         if settingY % 55 == 10 then 
             settingY = settingY + 55 
         else
             box.Position = UDim2.new(0.5,0,0,settingY-55)
+            settingY = settingY + 55 
         end
         return box
     end
-    
-    -- Inisialisasi _G untuk Toggles
-    _G.autoRepeat = autoRepeat 
-    _G.autoDeath = autoDeath
-    _G.serverHop = serverHop
-    _G.antiAFK = antiAFK
-    
-    createToggle("Auto Repeat", "autoRepeat", Color3.fromRGB(0,180,0), Color3.fromRGB(180,0,0))
-    createToggle("Auto Death", "autoDeath", Color3.fromRGB(0,100,200), Color3.fromRGB(180,0,0))
-    createToggle("Server Hop", "serverHop", Color3.fromRGB(0,200,0), Color3.fromRGB(180,0,0))
-    createToggle("Anti-AFK", "antiAFK", Color3.fromRGB(0,200,0), Color3.fromRGB(180,0,0), toggleAntiAFK)
 
-    -- Text Inputs
-    createTextBox("Delay (detik)", "delayTime", true)
-    createTextBox("WalkSpeed", "walkSpeed", true)
-    createTextBox("Summit Limit", "summitLimit", true)
-
+    -- TOGGLES (settingY: 10, 65, 120, 175)
+    createToggle("Auto Repeat", "autoRepeat", Color3.fromRGB(0, 150, 255), Color3.fromRGB(50, 50, 50))
+    createToggle("Auto Death (Respawn)", "autoDeath", Color3.fromRGB(0, 150, 255), Color3.fromRGB(50, 50, 50))
+    createToggle("Server Hop", "serverHop", Color3.fromRGB(200, 100, 0), Color3.fromRGB(50, 50, 50))
+    createToggle("Anti-AFK", "antiAFK", Color3.fromRGB(0, 150, 0), Color3.fromRGB(50, 50, 50), toggleAntiAFK)
+    
+    -- TEXT BOXES (Lanjutkan settingY: 230, 285, 340)
+    createTextBox("Delay per CP (detik)", "delayTime", true) 
+    createTextBox("WalkSpeed (min 16)", "walkSpeed", true)
+    createTextBox("Server Hop Limit (x)", "summitLimit", true)
+    
     -- **********************************
-    -- ***** ISI TAB UTILITY ****
-    -- **********************************
+    -- ***** ISI TAB UTILITY **** -- **********************************
+    
     local utilityY = 10
     local function createUtilityButton(text, color, onClick)
         local btn = Instance.new("TextButton", utilityTab)
@@ -771,64 +766,26 @@ local function initialize()
         btn.TextScaled = true
         btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(onClick)
-        utilityY = utilityY + 55
+        utilityY = utilityY + 60 
         return btn
     end
     
-    createUtilityButton("Ganti Server Manual", Color3.fromRGB(80,80,80), doServerHop)
+    createUtilityButton("Teleport ke Basecamp", Color3.fromRGB(150, 50, 150), function()
+        local basecampCp = checkpoints[1]
+        if basecampCp and player.Character and player.Character.PrimaryPart then
+            local targetCFrame = CFrame.new(basecampCp.pos)
+            player.Character:SetPrimaryPartCFrame(targetCFrame)
+            notify("Teleport ke Basecamp: "..basecampCp.name, Color3.fromRGB(200, 150, 255))
+            stopAuto()
+        end
+    end)
     
-    local mapListLabel = Instance.new("TextLabel", utilityTab)
-    mapListLabel.Size = UDim2.new(0.98,0,0,20)
-    mapListLabel.Position = UDim2.new(0.01,0,0,utilityY)
-    mapListLabel.Text = "Map Dikenal (Hanya Info)"
-    mapListLabel.BackgroundColor3 = Color3.fromRGB(30,30,30) 
-    mapListLabel.TextColor3 = Color3.new(1,1,1)
-    mapListLabel.Font = Enum.Font.GothamBold
-    mapListLabel.TextScaled = true
-    mapListLabel.TextXAlignment = Enum.TextXAlignment.Left
-    mapListLabel.TextInsets = Insets.new(5, 0, 0, 0)
-    
-    utilityY = utilityY + 25
-    
-    local mapFrame = Instance.new("Frame", utilityTab)
-    mapFrame.Size = UDim2.new(0.98,0,1,-utilityY) 
-    mapFrame.Position = UDim2.new(0.01,0,0,utilityY)
-    mapFrame.BackgroundColor3 = Color3.fromRGB(30,30,30) 
-    mapFrame.BorderSizePixel = 0
-    
-    local mapList = Instance.new("ScrollingFrame", mapFrame)
-    mapList.Size = UDim2.new(1,0,1,0)
-    mapList.BackgroundTransparency = 1
-    mapList.CanvasSize = UDim2.new(0,0,0, #MAP_CONFIG * 25) 
-    mapList.ScrollBarThickness = 6 
-    
-    local mapY = 0
-    for id, mapData in pairs(MAP_CONFIG) do
-        local mapLabel = Instance.new("TextLabel", mapList)
-        mapLabel.Size = UDim2.new(1,0,0,23)
-        mapLabel.Position = UDim2.new(0,0,0,mapY)
-        mapLabel.Text = mapData.name .. " (ID: " .. id .. ")"
-        mapLabel.BackgroundTransparency = 1
-        mapLabel.TextColor3 = (tostring(id) == CURRENT_PLACE_ID) and Color3.fromRGB(0, 255, 0) or Color3.new(0.8,0.8,0.8)
-        mapLabel.Font = Enum.Font.Gotham
-        mapLabel.TextScaled = true
-        mapLabel.TextXAlignment = Enum.TextXAlignment.Left
-        mapLabel.TextInsets = Insets.new(5, 0, 0, 0)
-        mapY = mapY + 25
-    end
+    createUtilityButton("Forced Server Hop", Color3.fromRGB(0, 100, 200), doServerHop)
 
+    -- **********************************
+    -- ***** AKHIR INIT *****
+    -- **********************************
 
 end
 
--- Panggil inisialisasi dan tunggu karakter dimuat
-local charConnection
-charConnection = player.CharacterAdded:Connect(function()
-    if charConnection then charConnection:Disconnect() end
-    initialize()
-end)
-
--- Panggil langsung jika karakter sudah ada
-if player.Character then
-    if charConnection then charConnection:Disconnect() end
-    initialize()
-end
+initialize()
