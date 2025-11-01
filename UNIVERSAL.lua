@@ -1,4 +1,5 @@
 --// BYNZZBPONJON //--
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -10,12 +11,12 @@ local HttpService = game:GetService("HttpService")
 local CURRENT_PLACE_ID = tostring(game.PlaceId)
 
 -- **********************************
--- ***** KONFIGURASI MAP GLOBAL FINAL *****
+-- ***** KONFIGURASI MAP GLOBAL FINAL (7 MAPS) *****
 -- **********************************
 local MAP_CONFIG = {
-    -- ID MOUNT KOHARU (21 CP)
+    -- 1. MOUNT KOHARU (21 CP) - ID LAMA
     ["94261028489288"] = {
-        name = "MOUNT KOHARU", 
+        name = "MOUNT KOHARU (21 CP)", 
         checkpoints = {
             {name="Basecamp", pos=Vector3.new(-883.288,43.358,933.698)},
             {name="CP1", pos=Vector3.new(-473.240,49.167,624.194)},
@@ -41,20 +42,123 @@ local MAP_CONFIG = {
         }
     },
 
-    -- ID MOUNT GEMI (2 CP)
+    -- 2. MOUNT GEMI (2 CP) - ID LAMA
     ["140014177882408"] = {
-        name = "MOUNT GEMI", 
+        name = "MOUNT GEMI (2 CP)", 
         checkpoints = {
             {name="Awal (Start)", pos=Vector3.new(1947.5, 417.8, 1726.8)},
             {name="Finish GEMI", pos=Vector3.new(2080.7, 437.2, 1789.7)}
         }
     },
     
-    -- Tambahkan Map lain di sini jika ada Map ID dan CP baru
+    -- 3. MOUNT JALUR TAKDIR (7 CP) - ID BARU
+    ["127557455707420"] = {
+        name = "MOUNT JALUR TAKDIR",
+        checkpoints = {
+            {name="Basecamp", pos=Vector3.new(-942.227, 14.021, -954.444)},
+            {name="CP1", pos=Vector3.new(-451.266, 78.021, -662.000)},
+            {name="CP2", pos=Vector3.new(-484.121, 78.015, 119.971)},
+            {name="CP3", pos=Vector3.new(576.478, 242.021, 852.784)},
+            {name="CP4", pos=Vector3.new(779.530, 606.021, -898.384)},
+            {name="CP5", pos=Vector3.new(-363.401, 1086.021, 705.354)},
+            {name="Puncak", pos=Vector3.new(292.418, 1274.021, 374.069)}
+        }
+    },
+
+    -- 4. MOUNT LIRVANA (22 CP) - ID BARU
+    ["79272087242323"] = {
+        name = "MOUNT LIRVANA",
+        checkpoints = {
+            {name="Checkpoint 0", pos=Vector3.new(-33.023, 86.149, 7.025)},
+            {name="Checkpoint 1", pos=Vector3.new(35.501, 200.700, -559.027)},
+            {name="Checkpoint 2", pos=Vector3.new(-381.037, 316.700, -560.712)},
+            {name="Checkpoint 3", pos=Vector3.new(-401.126, 456.700, -1014.478)},
+            {name="Checkpoint 4", pos=Vector3.new(-35.014, 548.700, -1028.476)},
+            {name="Checkpoint 5", pos=Vector3.new(-50.832, 542.149, -1371.412)},
+            {name="Checkpoint 6", pos=Vector3.new(-68.830, 582.149, -1615.556)},
+            {name="Checkpoint 7", pos=Vector3.new(262.292, 610.149, -1647.285)},
+            {name="Checkpoint 8", pos=Vector3.new(270.919, 678.149, -1378.510)},
+            {name="Checkpoint 9", pos=Vector3.new(278.914, 622.149, -1025.756)},
+            {name="Checkpoint 10", pos=Vector3.new(292.020, 638.149, -676.378)},
+            {name="Checkpoint 11", pos=Vector3.new(601.175, 678.149, -680.490)},
+            {name="Checkpoint 12", pos=Vector3.new(617.442, 626.149, -1028.689)},
+            {name="Checkpoint 13", pos=Vector3.new(600.942, 678.149, -1370.222)},
+            {name="Checkpoint 14", pos=Vector3.new(594.054, 670.149, -1626.474)},
+            {name="Checkpoint 15", pos=Vector3.new(917.511, 690.149, -1644.750)},
+            {name="Checkpoint 16", pos=Vector3.new(899.131, 702.149, -1362.030)},
+            {name="Checkpoint 17", pos=Vector3.new(971.016, 674.149, -941.262)},
+            {name="Checkpoint 18", pos=Vector3.new(880.015, 710.149, -675.175)},
+            {name="Checkpoint 19", pos=Vector3.new(1187.287, 694.149, -661.098)},
+            {name="Checkpoint 20", pos=Vector3.new(1187.453, 718.149, -332.297)},
+            {name="Checkpoint 21", pos=Vector3.new(799.696, 1001.949, 207.303)}
+        }
+    },
+
+    -- 5. MOUNT AHPAYAH (12 CP) - ID BARU
+    ["129916920179384"] = {
+        name = "MOUNT AHPAYAH",
+        checkpoints = {
+            {name="Basecamp", pos=Vector3.new(-405.208, 46.021, -540.538)},
+            {name="CP1", pos=Vector3.new(-397.862, 46.386, -225.315)},
+            {name="CP2", pos=Vector3.new(446.973, 310.386, -454.457)},
+            {name="CP3", pos=Vector3.new(389.741, 415.219, -38.504)},
+            {name="CP4", pos=Vector3.new(228.787, 358.386, 420.735)},
+            {name="CP5", pos=Vector3.new(-248.196, 546.015, 537.969)},
+            {name="CP6", pos=Vector3.new(-707.398, 478.386, 471.019)},
+            {name="CP7", pos=Vector3.new(-823.563, 598.903, -193.940)},
+            {name="CP8", pos=Vector3.new(-1539.058, 682.267, -643.505)},
+            {name="CP9", pos=Vector3.new(-1581.844, 650.396, 448.762)},
+            {name="CP10", pos=Vector3.new(-2566.289, 662.396, 450.378)},
+            {name="Puncak", pos=Vector3.new(-2921.433, 844.065, 18.757)}
+        }
+    },
+
+    -- 6. MOUNT BINGUNG (21 CP) - ID BARU
+    ["111417482709154"] = {
+        name = "MOUNT BINGUNG",
+        checkpoints = {
+            {name="Basecamp", pos=Vector3.new(166.00293,14.9578,822.9834)},
+            {name="CP1", pos=Vector3.new(198.238098,10.1375217,128.423187)},
+            {name="CP2", pos=Vector3.new(228.194977,128.879974,-211.192383)},
+            {name="CP3", pos=Vector3.new(231.817947,146.768204,-558.723816)},
+            {name="CP4", pos=Vector3.new(340.004669,132.319489,-987.244446)},
+            {name="CP5", pos=Vector3.new(393.582062,119.624352,-1415.08472)},
+            {name="CP6", pos=Vector3.new(344.682739,190.306702,-2695.90625)},
+            {name="CP7", pos=Vector3.new(353.37085,243.564514,-3065.35181)},
+            {name="CP8", pos=Vector3.new(-1.62862873,259.373474,-3431.15869)},
+            {name="CP9", pos=Vector3.new(54.7402382,373.025543,-3835.73633)},
+            {name="CP10", pos=Vector3.new(-347.480225,505.230347,-4970.26514)},
+            {name="CP11", pos=Vector3.new(-841.818359,506.035736,-4984.36621)},
+            {name="CP12", pos=Vector3.new(-825.191345,571.779053,-5727.79297)},
+            {name="CP13", pos=Vector3.new(-831.682068,575.300842,-6424.26855)},
+            {name="CP14", pos=Vector3.new(-288.520508,661.583984,-6804.15234)},
+            {name="CP15", pos=Vector3.new(675.513794,743.510742,-7249.33496)},
+            {name="CP16", pos=Vector3.new(816.311768,833.685852,-7606.22998)},
+            {name="CP17", pos=Vector3.new(805.29248,821.01062,-8516.9082)},
+            {name="CP18", pos=Vector3.new(473.562775,879.063538,-8585.45312)},
+            {name="CP19", pos=Vector3.new(268.831238,897.108215,-8576.44922)},
+            {name="CP20", pos=Vector3.new(285.314331,933.954651,-8983.91992)},
+            {name="Puncak", pos=Vector3.new(107.141029,988.262573,-9015.23145)}
+        }
+    },
+
+    -- 7. MOUNT TENERIE (6 CP) - ID BARU
+    -- CATATAN: Menggunakan .p untuk mendapatkan posisi X,Y,Z dari CFrame.
+    ["76084648389385"] = {
+        name = "MOUNT TENERIE", 
+        checkpoints = {
+            {name="CP1", pos=CFrame.new(24.996, 163.296, 319.838, -0.997991, 0.024712, -0.058331, -0.000000, 0.920780, 0.390083, 0.063350, 0.389299, -0.918930).p},
+            {name="CP2", pos=CFrame.new(-830.715, 239.184, 887.750, -0.972382, -0.073546, 0.221503, -0.000009, 0.949065, 0.315080, -0.233393, 0.306376, -0.922855).p},
+            {name="CP3", pos=CFrame.new(-1081.016, 400.153, 1662.579, -0.685627, 0.345798, -0.640578, 0.000000, 0.879971, 0.475027, 0.727953, 0.325691, -0.603332).p},
+            {name="CP4", pos=CFrame.new(-638.603, 659.233, 3034.486, -0.840349, 0.156491, -0.518964, -0.000000, 0.957418, 0.288705, 0.542045, 0.242613, -0.804566).p},
+            {name="CP5", pos=CFrame.new(339.759, 820.852, 3891.180, 0.120165, 0.220135, -0.968040, -0.000000, 0.975105, 0.221742, 0.992754, -0.026646, 0.117173).p},
+            {name="Puncak", pos=CFrame.new(878.573, 1019.189, 4704.508, 0.005409, 0.375075, -0.926979, 0.000348, 0.926992, 0.375082, 0.999985, -0.002352, 0.004884).p}
+        }
+    },
 }
 -- **********************************
 
--- Cek apakah Map saat ini ada di konfigurasi
+-- Cek apakah Map saat ini ada di konfigurasi (Sisanya sama seperti V2, hanya ganti CURRENT_PLACE_ID)
 local currentMapConfig = MAP_CONFIG[CURRENT_PLACE_ID]
 local scriptName = currentMapConfig and currentMapConfig.name or "UNIVERSAL (Map Tidak Dikenal)"
 local checkpoints = currentMapConfig and currentMapConfig.checkpoints or {}
@@ -109,9 +213,10 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
-        -- HANYA BANDINGKAN JARAK DI SUMBU X DAN Z
-        local cpPosXZ = Vector3.new(cp.pos.X, 0, cp.pos.Z)
+        -- Pastikan cp.pos adalah Vector3, khusus untuk TENERIE kita harus ekstrak.
+        local cpPos = (type(cp.pos) == "userdata" and cp.pos.X and cp.pos or CFrame.new(cp.pos)).p
         local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
+        local cpPosXZ = Vector3.new(cpPos.X, 0, cpPos.Z)
         local distance = (playerPosXZ - cpPosXZ).Magnitude
         
         if distance < minDistance then
@@ -213,7 +318,14 @@ local function startAuto()
                 end
                 
                 if player.Character and player.Character.PrimaryPart then
-                    player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
+                    -- Penanganan khusus untuk CP yang mungkin CFrame (seperti TENERIE)
+                    local cpPos = (type(cp.pos) == "userdata" and cp.pos.X and cp.pos or CFrame.new(cp.pos))
+                    
+                    if cpPos:IsA("CFrame") then
+                        player.Character:SetPrimaryPartCFrame(cpPos)
+                    else
+                        player.Character:SetPrimaryPartCFrame(CFrame.new(cpPos))
+                    end
                 end
                 
                 currentCpIndex = i + 1 
@@ -234,7 +346,12 @@ local function startAuto()
                         startIndex = 1 
                     else
                         if player.Character and player.Character.PrimaryPart then
-                            player.Character:SetPrimaryPartCFrame(CFrame.new(checkpoints[1].pos))
+                            local cpPos = (type(checkpoints[1].pos) == "userdata" and checkpoints[1].pos.X and checkpoints[1].pos or CFrame.new(checkpoints[1].pos))
+                            if cpPos:IsA("CFrame") then
+                                player.Character:SetPrimaryPartCFrame(cpPos)
+                            else
+                                player.Character:SetPrimaryPartCFrame(CFrame.new(cpPos))
+                            end
                         end
                         task.wait(delayTime)
                         startIndex = 1 
@@ -430,7 +547,12 @@ for i,cp in ipairs(checkpoints) do
     b.Font=Enum.Font.Gotham
     b.MouseButton1Click:Connect(function()
         if player.Character and player.Character.PrimaryPart then
-            player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos))
+             local cpPos = (type(cp.pos) == "userdata" and cp.pos.X and cp.pos or CFrame.new(cp.pos))
+             if cpPos:IsA("CFrame") then
+                player.Character:SetPrimaryPartCFrame(cpPos)
+            else
+                player.Character:SetPrimaryPartCFrame(CFrame.new(cpPos))
+            end
             notify("Teleported to "..cp.name,Color3.fromRGB(0,200,100))
         end
     end)
@@ -691,7 +813,7 @@ local infoText=Instance.new("TextLabel",infoPage)
 infoText.Size=UDim2.new(1,-20,1,-20)
 infoText.Position=UDim2.new(0,10,0,10)
 infoText.BackgroundTransparency=1
-infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V2 (Final Universal Map Loader)\nFitur:\n- Deteksi map otomatis ('MOUNT GEMI' & 'MOUNT KOHARU').\n- Implicit Resume yang sudah diperbaiki.\n- Fitur Loop, Hop, AFK, dan Pengaturan Kecepatan."
+infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V3 (7 Map Final Integration)\nMap Terintegrasi: "..#MAP_CONFIG.."\nFitur:\n- Deteksi map otomatis.\n- Implicit Resume.\n- Loop, Hop, AFK, dan Pengaturan Kecepatan."
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
