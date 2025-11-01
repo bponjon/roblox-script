@@ -1,5 +1,4 @@
 --// BYNZZBPONJON //--
-
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
@@ -143,7 +142,7 @@ local MAP_CONFIG = {
     },
 
     -- 7. MOUNT TENERIE (6 CP) - ID BARU
-    -- CATATAN: Menggunakan .p untuk mendapatkan posisi X,Y,Z dari CFrame.
+    -- NOTE: CFrame.p akan otomatis diubah menjadi Vector3
     ["76084648389385"] = {
         name = "MOUNT TENERIE", 
         checkpoints = {
@@ -213,7 +212,7 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
-        -- Pastikan cp.pos adalah Vector3, khusus untuk TENERIE kita harus ekstrak.
+        -- Pastikan cp.pos adalah Vector3
         local cpPos = (type(cp.pos) == "userdata" and cp.pos.X and cp.pos or CFrame.new(cp.pos)).p
         local playerPosXZ = Vector3.new(playerPos.X, 0, playerPos.Z)
         local cpPosXZ = Vector3.new(cpPos.X, 0, cpPos.Z)
@@ -318,13 +317,13 @@ local function startAuto()
                 end
                 
                 if player.Character and player.Character.PrimaryPart then
-                    -- Penanganan khusus untuk CP yang mungkin CFrame (seperti TENERIE)
-                    local cpPos = (type(cp.pos) == "userdata" and cp.pos.X and cp.pos or CFrame.new(cp.pos))
+                    -- ** FIX: GANTI SetPrimaryPartCFrame KE PivotTo **
+                    local cpPos = cp.pos
                     
-                    if cpPos:IsA("CFrame") then
-                        player.Character:SetPrimaryPartCFrame(cpPos)
+                    if type(cpPos) == "userdata" and cpPos:IsA("CFrame") then
+                        player.Character:PivotTo(cpPos)
                     else
-                        player.Character:SetPrimaryPartCFrame(CFrame.new(cpPos))
+                        player.Character:PivotTo(CFrame.new(cpPos))
                     end
                 end
                 
@@ -346,11 +345,12 @@ local function startAuto()
                         startIndex = 1 
                     else
                         if player.Character and player.Character.PrimaryPart then
-                            local cpPos = (type(checkpoints[1].pos) == "userdata" and checkpoints[1].pos.X and checkpoints[1].pos or CFrame.new(checkpoints[1].pos))
-                            if cpPos:IsA("CFrame") then
-                                player.Character:SetPrimaryPartCFrame(cpPos)
+                            local cpPos = checkpoints[1].pos
+                            -- ** FIX: GANTI SetPrimaryPartCFrame KE PivotTo **
+                            if type(cpPos) == "userdata" and cpPos:IsA("CFrame") then
+                                player.Character:PivotTo(cpPos)
                             else
-                                player.Character:SetPrimaryPartCFrame(CFrame.new(cpPos))
+                                player.Character:PivotTo(CFrame.new(cpPos))
                             end
                         end
                         task.wait(delayTime)
@@ -547,11 +547,12 @@ for i,cp in ipairs(checkpoints) do
     b.Font=Enum.Font.Gotham
     b.MouseButton1Click:Connect(function()
         if player.Character and player.Character.PrimaryPart then
-             local cpPos = (type(cp.pos) == "userdata" and cp.pos.X and cp.pos or CFrame.new(cp.pos))
-             if cpPos:IsA("CFrame") then
-                player.Character:SetPrimaryPartCFrame(cpPos)
+             local cpPos = cp.pos
+             -- ** FIX: GANTI SetPrimaryPartCFrame KE PivotTo **
+             if type(cpPos) == "userdata" and cpPos:IsA("CFrame") then
+                player.Character:PivotTo(cpPos)
             else
-                player.Character:SetPrimaryPartCFrame(CFrame.new(cpPos))
+                player.Character:PivotTo(CFrame.new(cpPos))
             end
             notify("Teleported to "..cp.name,Color3.fromRGB(0,200,100))
         end
@@ -785,7 +786,7 @@ local function updateOpacity(x)
     closeBtn.BackgroundTransparency = transparency
     
     sliderHandle.Position = UDim2.new(newOpacity, -10, 0, 0)
-end
+}
 
 local isDragging = false
 sliderHandle.MouseButton1Down:Connect(function() isDragging = true end)
@@ -803,17 +804,18 @@ end)
 -- INFO PAGE (ScrollingFrame)
 local infoPage=Instance.new("ScrollingFrame",content)
 infoPage.Name="Info"
-infoPage.Size=UDim2.new(1,0,1,0)
+infoPage.Size=UDim2.new(1,-20,1,-20)
+infoPage.Position=UDim2.new(0,10,0,10)
 infoPage.BackgroundTransparency=1
 infoPage.ScrollBarThickness=6
 infoPage.CanvasSize = UDim2.new(0,0,0, 150) 
 infoPage.Visible=false 
 
 local infoText=Instance.new("TextLabel",infoPage)
-infoText.Size=UDim2.new(1,-20,1,-20)
-infoText.Position=UDim2.new(0,10,0,10)
+infoText.Size=UDim2.new(1,0,0,140)
+infoText.Position=UDim2.new(0,0,0,0)
 infoText.BackgroundTransparency=1
-infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V3 (7 Map Final Integration)\nMap Terintegrasi: "..#MAP_CONFIG.."\nFitur:\n- Deteksi map otomatis.\n- Implicit Resume.\n- Loop, Hop, AFK, dan Pengaturan Kecepatan."
+infoText.Text="Universal Auto GUI\nMap Saat Ini: "..scriptName.."\nTotal Checkpoint: "..#checkpoints.."\n\nVersi: V4 (PivotTo Fix)\nMap Terintegrasi: "..#MAP_CONFIG.."\nFitur:\n- Deteksi map otomatis.\n- Menggunakan PivotTo (teleportasi modern).\n- Loop, Hop, AFK, dan Pengaturan Kecepatan."
 infoText.TextColor3=Color3.new(1,1,1)
 infoText.Font=Enum.Font.Gotham
 infoText.TextWrapped=true
