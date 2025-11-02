@@ -1,6 +1,6 @@
---// UNIVERSAL AUTO SUMMIT GUI V35 (FINAL TAMPILAN LEBAR: Tab Kiri - Konten Kanan) //--
--- Logic: Menggunakan semua perbaikan V34 (fix nil value, fix Vector3, stabil) dan Logic Resume Implicit.
--- Tampilan: Menggunakan layout Tab Kiri dan Konten Kanan yang LEBAR (700x400) agar elemen terlihat jelas.
+--// UNIVERSAL AUTO SUMMIT GUI V36 (FINAL V27 LOOK) //--
+-- Logic: Menggunakan Logic V35 (Implict Resume, AutoDeath/Hop/AFK, Delay/Speed/Limit).
+-- Tampilan: Menggunakan layout V27 (Tab Kiri, Content Kanan Lebar) yang diminta Boss.
 -- Checkpoint List: Menggunakan daftar checkpoint universal yang lengkap.
 
 local Players = game:GetService("Players")
@@ -16,7 +16,7 @@ local CURRENT_PLACE_ID = tostring(game.PlaceId)
 -- ***** KONFIGURASI MAP UNIVERSAL (LENGKAP) *****
 -- **********************************
 local MAP_CONFIG = {
-    -- MOUNT KOHARU (21 CP) - ID: 94261028489288 (Sesuai dengan BYNZZBPONJON)
+    -- MOUNT KOHARU (21 CP) 
     ["94261028489288"] = {name = "MOUNT KOHARU (21 CP)", 
         checkpoints = {
             {name="Basecamp", pos=Vector3.new(-883.288,43.358,933.698)},
@@ -42,7 +42,7 @@ local MAP_CONFIG = {
             {name="Puncak", pos=Vector3.new(-1534.938,933.116,-2176.096)}
         }
     },
-    -- MOUNT GEMI (2 CP) - ID: 140014177882408 (Sesuai Permintaan Tersimpan Anda)
+    -- MOUNT GEMI (2 CP) 
     ["140014177882408"] = {name = "MOUNT GEMI (2 CP)", 
         checkpoints = {
             {name="Basecamp", pos=Vector3.new(1269.030, 639.076, 1793.997)},
@@ -135,7 +135,7 @@ local MAP_CONFIG = {
     -- MOUNT TENERIE (6 CP)
     ["76084648389385"] = {name = "MOUNT TENERIE (6 CP)", 
         checkpoints = {
-            {name="Basecamp", pos=Vector3.new(-9999, -9999, -9999)}, -- Basecamp default jika tidak ada CP1
+            {name="Basecamp", pos=Vector3.new(24.996, 163.296, 319.838)}, -- Menggunakan CP1 sebagai Basecamp default
             {name="Checkpoint 1", pos=Vector3.new(24.996, 163.296, 319.838)},
             {name="Checkpoint 2", pos=Vector3.new(-830.715, 239.184, 887.750)},
             {name="Checkpoint 3", pos=Vector3.new(-1081.016, 400.153, 1662.579)},
@@ -176,9 +176,9 @@ local function notify(txt, color)
     end)
 end
 
--- PENGECEKAN AWAL 
+-- PENGECEKAN AWAL (Penting untuk mengatasi "nil value" seperti di IMG_20251101_132529.jpg)
 if not currentMapConfig or #checkpoints == 0 then
-    notify("V35 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan. Hanya berfungsi di map yang didukung.", Color3.fromRGB(255, 0, 0))
+    notify("V36 FAILED: Map ID ("..CURRENT_PLACE_ID..") TIDAK ditemukan. Script dinonaktifkan.", Color3.fromRGB(255, 0, 0))
     return 
 end
 
@@ -192,6 +192,7 @@ local function findNearestCheckpoint()
     local minDistance = math.huge
     
     for i, cp in ipairs(checkpoints) do
+        -- FIX: memastikan cp.pos adalah Vector3 yang valid
         local cpPos = (typeof(cp.pos) == "Vector3" and cp.pos) or Vector3.new(0,0,0) 
         
         local cpPosXZ = Vector3.new(cpPos.X, 0, cpPos.Z)
@@ -204,10 +205,10 @@ local function findNearestCheckpoint()
         end
     end
     
-    -- JIKA TERLALU JAUH DARI CP MANAPUN, MULAI DARI BASECAMP (KECUALI SUDAH DI PUNCAK)
+    -- JIKA TERLALU JAUH DARI CP MANAPUN, MULAI DARI BASECAMP
     if minDistance > 300 and nearestIndex ~= #checkpoints then return 1 end
     
-    -- JIKA DEKAT DENGAN CP, LANJUT KE CP BERIKUTNYA
+    -- JIKA DEKAT DENGAN CP, LANJUT KE CP BERIKUTNYA (LOGIC IMPLICIT RESUME)
     if minDistance < 50 and nearestIndex < #checkpoints then
         return nearestIndex + 1
     end
@@ -216,7 +217,7 @@ local function findNearestCheckpoint()
 end
 
 local function toggleAntiAFK(isEnable)
-    local btn = playerGui.UniversalV35 and playerGui.UniversalV35.Main.SettingTab:FindFirstChild("AntiAFK_Btn")
+    local btn = playerGui.UniversalV36 and playerGui.UniversalV36.Main.SettingTab:FindFirstChild("AntiAFK_Btn")
     
     if isEnable and not antiAFKThread then
         antiAFK = true
@@ -227,6 +228,7 @@ local function toggleAntiAFK(isEnable)
         end
         antiAFKThread = task.spawn(function()
             while antiAFK do
+                -- Simulasi klik mouse untuk mencegah AFK
                 local input = Instance.new("InputObject")
                 input.UserInputType = Enum.UserInputType.MouseButton1
                 input.UserInputState = Enum.UserInputState.Begin
@@ -236,7 +238,7 @@ local function toggleAntiAFK(isEnable)
                 input.UserInputState = Enum.UserInputState.End
                 UserInputService:SimulateMouseClick(input)
                 
-                task.wait(15) -- Klik mouse setiap 15 detik
+                task.wait(15) 
             end
             antiAFKThread = nil
         end)
@@ -271,6 +273,8 @@ local function startAuto()
     if autoSummit then return end
     autoSummit = true
     
+    -- Memastikan currentCpIndex diupdate sebelum start
+    currentCpIndex = findNearestCheckpoint()
     local startIndex = currentCpIndex
     
     notify("Auto Summit Started! Map: "..scriptName..". Mulai dari CP #"..startIndex..": "..checkpoints[startIndex].name,Color3.fromRGB(0,150,255))
@@ -363,11 +367,11 @@ end
 
 
 -- **********************************
--- ***** INIT DAN GUI V35 (Tab Kiri, Konten Kanan Lebar) ****
+-- ***** INIT DAN GUI V36 (V27 Style) ****
 -- **********************************
 
 local function initialize()
-    if playerGui:FindFirstChild("UniversalV35") then playerGui.UniversalV35:Destroy() end
+    if playerGui:FindFirstChild("UniversalV36") then playerGui.UniversalV36:Destroy() end
 
     -- INIT CURRENT CP INDEX
     if player.Character then
@@ -384,11 +388,11 @@ local function initialize()
         player.Character.Humanoid.WalkSpeed = walkSpeed
     end
 
-    notify("V35 Loaded! (FINAL WIDE LOOK). Map: "..scriptName..". Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
+    notify("V36 Loaded! (FINAL V27 LOOK). Map: "..scriptName..". Siap dari CP #"..currentCpIndex..": "..nextCpName,Color3.fromRGB(0,200,100))
 
-    -- ** GUI SETUP **
+    -- ** GUI SETUP (Mengikuti V27 Layout) **
     local gui = Instance.new("ScreenGui", playerGui)
-    gui.Name = "UniversalV35"
+    gui.Name = "UniversalV36"
     gui.ResetOnSpawn = false
 
     local main = Instance.new("Frame", gui)
@@ -400,7 +404,7 @@ local function initialize()
     main.Draggable = true
     main.BorderSizePixel = 0 
     main.ZIndex = 5
-
+    
     -- Header
     local header = Instance.new("Frame", main)
     header.Size = UDim2.new(1,0,0,30)
@@ -408,7 +412,7 @@ local function initialize()
     header.BorderSizePixel = 0
 
     local title = Instance.new("TextLabel", header)
-    title.Text = "Universal Auto Summit V35 - "..scriptName
+    title.Text = "Universal Auto Summit V36 - "..scriptName
     title.Size = UDim2.new(1,-100,1,0) 
     title.Position = UDim2.new(0,0,0,0)
     title.BackgroundTransparency = 1
@@ -418,7 +422,6 @@ local function initialize()
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.TextInsets = Insets.new(5, 0, 0, 0) 
 
-    -- Hide/Close Buttons (di header)
     local hideBtn = Instance.new("TextButton", header)
     hideBtn.Size = UDim2.new(0,50,1,0)
     hideBtn.Position = UDim2.new(1,-100,0,0)
@@ -449,7 +452,7 @@ local function initialize()
     -- Tab Panel Container (Kiri)
     local tabPanel = Instance.new("Frame", main)
     tabPanel.Name = "TabPanel"
-    tabPanel.Size = UDim2.new(0, 150, 1, -30) -- Lebar 150 (Lebih besar)
+    tabPanel.Size = UDim2.new(0, 100, 1, -30) -- Lebar 100 (Sesuai V27 Style)
     tabPanel.Position = UDim2.new(0,0,0,30)
     tabPanel.BackgroundColor3 = Color3.fromRGB(35,35,35) 
     tabPanel.BorderSizePixel = 0
@@ -457,8 +460,8 @@ local function initialize()
     -- Content Area Container (Kanan)
     local contentArea = Instance.new("Frame", main)
     contentArea.Name = "ContentArea"
-    contentArea.Size = UDim2.new(1,-150,1,-30) 
-    contentArea.Position = UDim2.new(0,150,0,30)
+    contentArea.Size = UDim2.new(1,-100,1,-30) 
+    contentArea.Position = UDim2.new(0,100,0,30)
     contentArea.BackgroundColor3 = Color3.fromRGB(20,20,20) 
     contentArea.BorderSizePixel = 0
     
@@ -474,26 +477,31 @@ local function initialize()
     settingTab.BackgroundTransparency = 1
     settingTab.Visible = false
     
-    local utilityTab = Instance.new("Frame", contentArea) 
-    utilityTab.Name = "UtilityTab"
-    utilityTab.Size = UDim2.new(1,0,1,0)
-    utilityTab.BackgroundTransparency = 1
-    utilityTab.Visible = false
+    local infoTab = Instance.new("Frame", contentArea) 
+    infoTab.Name = "InfoTab"
+    infoTab.Size = UDim2.new(1,0,1,0)
+    infoTab.BackgroundTransparency = 1
+    infoTab.Visible = false
+
+    local serverTab = Instance.new("Frame", contentArea) 
+    serverTab.Name = "ServerTab"
+    serverTab.Size = UDim2.new(1,0,1,0)
+    serverTab.BackgroundTransparency = 1
+    serverTab.Visible = false
 
     -- Fungsi untuk Mengganti Tab
     local function setTab(tabName, tabButton)
-        for _, tab in ipairs({autoTab, settingTab, utilityTab}) do
+        for _, tab in ipairs({autoTab, settingTab, infoTab, serverTab}) do
             tab.Visible = (tab.Name == tabName)
         end
         
-        -- Reset warna semua tombol tab
         for _, child in ipairs(tabPanel:GetChildren()) do
             if child:IsA("TextButton") then
                 child.BackgroundColor3 = Color3.fromRGB(35,35,35)
                 child.TextColor3 = Color3.new(1,1,1)
             end
         end
-        -- Highlight tombol tab yang aktif
+        
         if tabButton then
             tabButton.BackgroundColor3 = Color3.fromRGB(20,20,20) 
             tabButton.TextColor3 = Color3.new(1,1,1)
@@ -511,8 +519,7 @@ local function initialize()
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.GothamBold
         btn.TextScaled = true
-        btn.TextXAlignment = Enum.TextXAlignment.Left
-        btn.TextInsets = Insets.new(10, 0, 0, 0)
+        btn.TextXAlignment = Enum.TextXAlignment.Center
         btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(function()
             setTab(tabName, btn)
@@ -521,10 +528,11 @@ local function initialize()
         return btn
     end
 
-    -- Inisialisasi Tombol Tab
+    -- Inisialisasi Tombol Tab (Sesuai V27 Style: Auto, Setting, Info, Server)
     local btnAuto = createTabButton("Auto", "AutoTab")
     local btnSetting = createTabButton("Setting", "SettingTab")
-    local btnUtility = createTabButton("Utility", "UtilityTab")
+    local btnInfo = createTabButton("Info", "InfoTab")
+    local btnServer = createTabButton("Server", "ServerTab")
     
     setTab("AutoTab", btnAuto) 
 
@@ -535,7 +543,7 @@ local function initialize()
     local startBtn = Instance.new("TextButton", autoTab)
     startBtn.Size = UDim2.new(0.98,0,0,50)
     startBtn.Position = UDim2.new(0.01,0,0,10)
-    startBtn.Text = "MULAI Auto Summit"
+    startBtn.Text = "MULAI Auto Summit (Implicit Resume)"
     startBtn.BackgroundColor3 = Color3.fromRGB(0,180,0)
     startBtn.TextColor3 = Color3.new(1,1,1)
     startBtn.Font = Enum.Font.GothamBold
@@ -554,11 +562,11 @@ local function initialize()
     stopBtn.BorderSizePixel = 0
     stopBtn.MouseButton1Click:Connect(stopAuto)
     
-    -- Tombol Utility di Auto Tab
+    -- Tombol Utility di Auto Tab (Untuk Reset CP Index dan Find Nearest)
     local resetCpBtn = Instance.new("TextButton", autoTab)
     resetCpBtn.Size = UDim2.new(0.48,0,0,40)
     resetCpBtn.Position = UDim2.new(0.01,0,0,120)
-    resetCpBtn.Text = "Reset CP Index"
+    resetCpBtn.Text = "Reset CP Index (Basecamp)"
     resetCpBtn.BackgroundColor3 = Color3.fromRGB(100,100,0)
     resetCpBtn.TextColor3 = Color3.new(1,1,1)
     resetCpBtn.Font = Enum.Font.GothamBold
@@ -585,11 +593,11 @@ local function initialize()
     end)
 
 
-    -- Checkpoint List
+    -- Checkpoint List (Teleport Manual)
     local cpListLabel = Instance.new("TextLabel", autoTab)
     cpListLabel.Size = UDim2.new(0.98,0,0,20)
     cpListLabel.Position = UDim2.new(0.01,0,0,170)
-    cpListLabel.Text = "Checkpoint List (Total: "..#checkpoints..")"
+    cpListLabel.Text = "Checkpoint List (Teleport Manual: "..#checkpoints.." CP)"
     cpListLabel.BackgroundColor3 = Color3.fromRGB(30,30,30) 
     cpListLabel.TextColor3 = Color3.new(1,1,1)
     cpListLabel.Font = Enum.Font.GothamBold
@@ -598,7 +606,7 @@ local function initialize()
     cpListLabel.TextInsets = Insets.new(5, 0, 0, 0)
     
     local cpFrame = Instance.new("Frame", autoTab)
-    cpFrame.Size = UDim2.new(0.98,0,1,-195) -- Mengisi sisa ruang
+    cpFrame.Size = UDim2.new(0.98,0,1,-195) 
     cpFrame.Position = UDim2.new(0.01,0,0,195)
     cpFrame.BackgroundColor3 = Color3.fromRGB(30,30,30) 
     cpFrame.BorderSizePixel = 0
@@ -643,7 +651,7 @@ local function initialize()
     end
     
     -- **********************************
-    -- ***** ISI TAB SETTING (Fixed) ****
+    -- ***** ISI TAB SETTING ****
     -- **********************************
     local settingY = 10
     local function createToggle(text, varRef, colorOn, colorOff, onClick)
@@ -652,7 +660,7 @@ local function initialize()
         btn.Size=UDim2.new(0.48,0,0,45) 
         btn.Position=UDim2.new(0.01,0,0,settingY)
         
-        local initialState = _G[varRef] or false
+        local initialState = (varRef == "autoRepeat" and autoRepeat) or (varRef == "autoDeath" and autoDeath) or (varRef == "serverHop" and serverHop) or (varRef == "antiAFK" and antiAFK) or false
         btn.Text=text..": "..(initialState and "ON" or "OFF")
         btn.BackgroundColor3=initialState and colorOn or colorOff
         
@@ -661,8 +669,12 @@ local function initialize()
         btn.TextScaled = true
         btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(function()
-            local newState = not _G[varRef] 
-            _G[varRef] = newState
+            local newState
+            if varRef == "autoRepeat" then autoRepeat = not autoRepeat; newState = autoRepeat
+            elseif varRef == "autoDeath" then autoDeath = not autoDeath; newState = autoDeath
+            elseif varRef == "serverHop" then serverHop = not serverHop; newState = serverHop
+            elseif varRef == "antiAFK" then antiAFK = not antiAFK; newState = antiAFK end
+            
             btn.Text=text..": "..(newState and "ON" or "OFF")
             btn.BackgroundColor3=newState and colorOn or colorOff
             if onClick then onClick(newState) end
@@ -706,7 +718,7 @@ local function initialize()
             end
             
             if enterPressed then
-                local v = tonumber(box.Text:match(": (%d+%.?%d*)") or box.Text) -- Coba ambil angka dari format 'Label: Value' atau seluruh teks
+                local v = tonumber(box.Text:match(": (%d+%.?%d*)") or box.Text) 
                 if isNumber and v then
                     if varRef == "delayTime" and v >= 0.5 then
                         delayTime = v
@@ -740,25 +752,60 @@ local function initialize()
         return box
     end
 
-    -- TOGGLES (settingY: 10, 65, 120, 175)
-    createToggle("Auto Repeat", "autoRepeat", Color3.fromRGB(0, 150, 255), Color3.fromRGB(50, 50, 50))
-    createToggle("Auto Death (Respawn)", "autoDeath", Color3.fromRGB(0, 150, 255), Color3.fromRGB(50, 50, 50))
-    createToggle("Server Hop", "serverHop", Color3.fromRGB(200, 100, 0), Color3.fromRGB(50, 50, 50))
-    createToggle("Anti-AFK", "antiAFK", Color3.fromRGB(0, 150, 0), Color3.fromRGB(50, 50, 50), toggleAntiAFK)
+    -- TOGGLES 
+    local autoRepeatBtn = createToggle("Auto Repeat", "autoRepeat", Color3.fromRGB(0, 150, 255), Color3.fromRGB(50, 50, 50))
+    local autoDeathBtn = createToggle("Auto Death (Respawn)", "autoDeath", Color3.fromRGB(0, 150, 255), Color3.fromRGB(50, 50, 50))
+    local serverHopBtn = createToggle("Server Hop", "serverHop", Color3.fromRGB(200, 100, 0), Color3.fromRGB(50, 50, 50))
+    local antiAFKBtn = createToggle("Anti-AFK", "antiAFK", Color3.fromRGB(0, 150, 0), Color3.fromRGB(50, 50, 50), toggleAntiAFK)
     
-    -- TEXT BOXES (Lanjutkan settingY: 230, 285, 340)
-    createTextBox("Delay per CP (detik)", "delayTime", true) 
-    createTextBox("WalkSpeed (min 16)", "walkSpeed", true)
-    createTextBox("Server Hop Limit (x)", "summitLimit", true)
+    -- TEXT BOXES 
+    local delayText = createTextBox("Delay per CP (detik)", "delayTime", true) 
+    local speedText = createTextBox("WalkSpeed (min 16)", "walkSpeed", true)
+    local limitText = createTextBox("Server Hop Limit (x)", "summitLimit", true)
     
     -- **********************************
-    -- ***** ISI TAB UTILITY **** -- **********************************
+    -- ***** ISI TAB INFO ****
+    -- **********************************
+    local infoY = 10
+    local function createInfoLabel(text)
+        local label = Instance.new("TextLabel", infoTab)
+        label.Size = UDim2.new(0.98,0,0,30)
+        label.Position = UDim2.new(0.01,0,0,infoY)
+        label.Text = text
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.new(1,1,1)
+        label.Font = Enum.Font.GothamBold
+        label.TextScaled = true
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.TextInsets = Insets.new(5, 0, 0, 0)
+        infoY = infoY + 35
+        return label
+    end
     
-    local utilityY = 10
-    local function createUtilityButton(text, color, onClick)
-        local btn = Instance.new("TextButton", utilityTab)
+    createInfoLabel("Map Aktif: "..scriptName)
+    local cpCountLabel = createInfoLabel("Total Checkpoint: "..#checkpoints)
+    local currentCpLabel = createInfoLabel("Current CP Index: #"..currentCpIndex)
+    local summitCountLabel = createInfoLabel("Summit Berhasil: "..summitCount)
+    
+    RunService.Heartbeat:Connect(function()
+        cpCountLabel.Text = "Total Checkpoint: "..#checkpoints
+        currentCpLabel.Text = "Current CP Index: #"..math.min(currentCpIndex, #checkpoints)
+        summitCountLabel.Text = "Summit Berhasil: "..summitCount
+        -- Update textboxes agar menampilkan nilai terbaru
+        delayText.Text = "Delay per CP (detik): "..tostring(delayTime)
+        speedText.Text = "WalkSpeed (min 16): "..tostring(walkSpeed)
+        limitText.Text = "Server Hop Limit (x): "..tostring(summitLimit)
+    end)
+    
+    -- **********************************
+    -- ***** ISI TAB SERVER ****
+    -- **********************************
+    
+    local serverY = 10
+    local function createServerButton(text, color, onClick)
+        local btn = Instance.new("TextButton", serverTab)
         btn.Size = UDim2.new(0.98,0,0,50)
-        btn.Position = UDim2.new(0.01,0,0,utilityY)
+        btn.Position = UDim2.new(0.01,0,0,serverY)
         btn.Text = text
         btn.BackgroundColor3 = color
         btn.TextColor3 = Color3.new(1,1,1)
@@ -766,11 +813,11 @@ local function initialize()
         btn.TextScaled = true
         btn.BorderSizePixel = 0
         btn.MouseButton1Click:Connect(onClick)
-        utilityY = utilityY + 60 
+        serverY = serverY + 60 
         return btn
     end
     
-    createUtilityButton("Teleport ke Basecamp", Color3.fromRGB(150, 50, 150), function()
+    createServerButton("Teleport ke Basecamp", Color3.fromRGB(150, 50, 150), function()
         local basecampCp = checkpoints[1]
         if basecampCp and player.Character and player.Character.PrimaryPart then
             local targetCFrame = CFrame.new(basecampCp.pos)
@@ -780,7 +827,7 @@ local function initialize()
         end
     end)
     
-    createUtilityButton("Forced Server Hop", Color3.fromRGB(0, 100, 200), doServerHop)
+    createServerButton("Forced Server Hop", Color3.fromRGB(0, 100, 200), doServerHop)
 
     -- **********************************
     -- ***** AKHIR INIT *****
