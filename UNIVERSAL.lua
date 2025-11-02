@@ -1,10 +1,10 @@
--- UNIVERSAL AUTO SUMMIT V37 (HIDE FIXED) - Ready to paste
--- Hide now leaves header visible (only header remains). ZIndex & stability tweaks included.
+-- UNIVERSAL AUTO SUMMIT V37 (FINAL - UI TIDY + HIDE FIX + TRANSPARENCY SLIDER)
+-- Paste ke LocalScript (client). Menggunakan MAP_CONFIG yang dikirim pengguna.
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local ok, playerGui = pcall(function() return player:WaitForChild("PlayerGui",5) end)
@@ -12,6 +12,7 @@ if not ok or not playerGui then warn("PlayerGui not ready. Abort."); return end
 
 local CURRENT_PLACE_ID = tostring(game.PlaceId)
 
+-- MAP_CONFIG (gunakan data yang lo kirim; singkatkan penamaan)
 local MAP_CONFIG = {
     ["94261028489288"] = {name="MOUNT KOHARU (21 CP)", checkpoints = {
         {name="Basecamp", pos=Vector3.new(-883.288,43.358,933.698)},
@@ -126,73 +127,75 @@ local currentMapConfig = MAP_CONFIG[CURRENT_PLACE_ID]
 local scriptName = currentMapConfig and currentMapConfig.name or "UNIVERSAL (Map Tdk Dikenal)"
 local checkpoints = currentMapConfig and currentMapConfig.checkpoints or {}
 
+-- safety: if no map found, show small notif and stop
 if not currentMapConfig or #checkpoints == 0 then
-    local function tinyNotify(msg)
-        pcall(function()
-            local t = Instance.new("TextLabel", playerGui)
-            t.Size = UDim2.new(0,350,0,30)
-            t.Position = UDim2.new(0.5,-175,0.05,0)
-            t.BackgroundColor3 = Color3.fromRGB(200,50,50)
-            t.TextColor3 = Color3.new(1,1,1)
-            t.Text = msg
-            t.Font = Enum.Font.GothamBold
-            t.TextScaled = true
-            game:GetService("Debris"):AddItem(t,3)
-        end)
-    end
-    tinyNotify("Map ID "..CURRENT_PLACE_ID.." tidak dikenali. Hentikan.")
+    pcall(function()
+        local t = Instance.new("TextLabel", playerGui)
+        t.Size = UDim2.new(0,360,0,30)
+        t.Position = UDim2.new(0.5,-180,0.06,0)
+        t.BackgroundColor3 = Color3.fromRGB(200,60,60)
+        t.TextColor3 = Color3.new(1,1,1)
+        t.Text = "Map ID "..CURRENT_PLACE_ID.." tidak dikenali. Script nonaktif."
+        t.Font = Enum.Font.GothamBold
+        t.TextScaled = true
+        game:GetService("Debris"):AddItem(t,4)
+    end)
     return
 end
 
 -- state
 local autoSummit, autoDeath, serverHop, autoRepeat, antiAFK = false,false,false,false,false
-local summitCount, summitLimit, delayTime, walkSpeed = 0, 5, 5, 16
+local summitCount, summitLimit, delayTime, walkSpeed = 0, 5, 4, 16
 local currentCpIndex = 1
 local summitThread, antiAFKThread = nil, nil
 
-local function notify(txt, color)
+-- small notif util
+local function notify(msg, color)
     pcall(function()
         local n = Instance.new("TextLabel", playerGui)
-        n.Size = UDim2.new(0,420,0,36)
+        n.Size = UDim2.new(0,420,0,34)
         n.Position = UDim2.new(0.5,-210,0.04,0)
-        n.BackgroundColor3 = color or Color3.fromRGB(30,30,30)
+        n.BackgroundColor3 = color or Color3.fromRGB(40,40,40)
         n.TextColor3 = Color3.new(1,1,1)
         n.Font = Enum.Font.GothamBold
-        n.TextScaled = true
-        n.Text = txt
-        n.ZIndex = 50
-        game:GetService("Debris"):AddItem(n,2)
+        n.TextScaled = false
+        n.TextSize = 14
+        n.Text = msg
+        n.ZIndex = 80
+        game:GetService("Debris"):AddItem(n,2.2)
     end)
 end
 
+-- find nearest cp (resume logic)
 local function findNearestCheckpoint()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart",5)
-    if not rootPart then return 1 end
-    local playerPos = rootPart.Position
-    local nearestIndex, minDist = 1, math.huge
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart",5)
+    if not root then return 1 end
+    local p = root.Position
+    local near, minD = 1, math.huge
     for i,cp in ipairs(checkpoints) do
-        local cpPos = cp.pos
-        if cpPos and typeof(cpPos) == "Vector3" then
-            local d = (Vector3.new(playerPos.X,0,playerPos.Z) - Vector3.new(cpPos.X,0,cpPos.Z)).Magnitude
-            if d < minDist then minDist, nearestIndex = d, i end
+        local pos = cp.pos
+        if pos and typeof(pos) == "Vector3" then
+            local d = (Vector3.new(p.X,0,p.Z) - Vector3.new(pos.X,0,pos.Z)).Magnitude
+            if d < minD then minD, near = d, i end
         end
     end
-    if minDist > 300 and nearestIndex ~= #checkpoints then return 1 end
-    if minDist < 50 and nearestIndex < #checkpoints then return nearestIndex + 1 end
-    return nearestIndex
+    if minD > 300 and near ~= #checkpoints then return 1 end
+    if minD < 50 and near < #checkpoints then return near + 1 end
+    return near
 end
 
-local function toggleAntiAFK(isEnable)
-    antiAFK = isEnable
+-- anti AFK simpler (jump)
+local function toggleAntiAFK(enable)
+    antiAFK = enable
     if antiAFK and not antiAFKThread then
-        notify("Anti-AFK ON", Color3.fromRGB(0,200,0))
+        notify("Anti-AFK ON", Color3.fromRGB(0,180,90))
         antiAFKThread = task.spawn(function()
             while antiAFK do
-                pcall(function() 
-                    -- fallback: simple jump to avoid using deprecated simulate
-                    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+                pcall(function()
+                    local char = player.Character
+                    if char and char:FindFirstChildOfClass("Humanoid") then
+                        char:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
                     end
                 end)
                 task.wait(12)
@@ -200,22 +203,25 @@ local function toggleAntiAFK(isEnable)
             antiAFKThread = nil
         end)
     elseif not antiAFK and antiAFKThread then
-        task.cancel(antiAFKThread); antiAFKThread=nil
-        notify("Anti-AFK OFF", Color3.fromRGB(200,50,50))
+        task.cancel(antiAFKThread); antiAFKThread = nil
+        notify("Anti-AFK OFF", Color3.fromRGB(200,60,60))
     end
 end
 
 local function doServerHop()
-    notify("Server Hop triggered...", Color3.fromRGB(0,120,220))
+    notify("Server Hop -> teleporting...", Color3.fromRGB(0,140,220))
     pcall(function() TeleportService:Teleport(game.PlaceId, player) end)
     autoSummit = false
 end
 
 local function stopAuto()
-    if summitThread then task.cancel(summitThread); summitThread = nil end
+    if summitThread then 
+        pcall(function() task.cancel(summitThread) end)
+        summitThread = nil
+    end
     autoSummit = false
     local nextCp = math.min(currentCpIndex, #checkpoints)
-    notify("Auto Summit stopped. Next CP #"..nextCp..": "..checkpoints[nextCp].name, Color3.fromRGB(255,165,0))
+    notify("Auto stopped. Next CP #"..nextCp..": "..checkpoints[nextCp].name, Color3.fromRGB(255,170,0))
 end
 
 local function startAuto()
@@ -223,7 +229,7 @@ local function startAuto()
     autoSummit = true
     currentCpIndex = findNearestCheckpoint()
     local startIndex = currentCpIndex
-    notify("Auto Summit start from CP #"..startIndex..": "..checkpoints[startIndex].name, Color3.fromRGB(0,150,255))
+    notify("Auto start from CP #"..startIndex..": "..checkpoints[startIndex].name, Color3.fromRGB(0,160,255))
     summitThread = task.spawn(function()
         while autoSummit do
             if serverHop and summitCount >= (summitLimit or 5) then
@@ -237,25 +243,26 @@ local function startAuto()
                     local t = checkpoints[i].pos
                     if t and typeof(t) == "Vector3" then
                         pcall(function() char:SetPrimaryPartCFrame(CFrame.new(t)) end)
-                        notify("Teleport to CP #"..i..": "..checkpoints[i].name, Color3.fromRGB(0,255,120))
+                        notify("CP #"..i..": "..checkpoints[i].name, Color3.fromRGB(0,220,120))
                     else
-                        notify("Invalid CP #"..i.." pos, skip", Color3.fromRGB(255,80,80))
+                        notify("CP #"..i.." invalid pos, skip", Color3.fromRGB(255,80,80))
                     end
                 else
-                    notify("Character missing. Stop Auto.", Color3.fromRGB(255,80,80))
+                    notify("Character missing, stopping", Color3.fromRGB(255,80,80))
                     autoSummit=false; completedAll=false; break
                 end
                 currentCpIndex = i + 1
-                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                    player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
-                end
+                pcall(function()
+                    local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                    if h then h.WalkSpeed = walkSpeed end
+                end)
                 task.wait(delayTime)
             end
             if completedAll then
                 summitCount = summitCount + 1
                 currentCpIndex = 1
                 if autoRepeat then
-                    notify("Summit #"..summitCount.." complete. AutoRepeat ON", Color3.fromRGB(0,255,100))
+                    notify("Summit #"..summitCount.." complete. AutoRepeat ON", Color3.fromRGB(0,255,120))
                     if autoDeath then
                         task.wait(0.5)
                         pcall(function() if player.Character then player.Character:BreakJoints() end end)
@@ -282,258 +289,322 @@ local function startAuto()
     end)
 end
 
--- GUI INIT
+-- GUI BUILD (tidy, smaller font, slider transparency)
 if playerGui:FindFirstChild("UniversalV37") then playerGui.UniversalV37:Destroy() end
-
 local gui = Instance.new("ScreenGui", playerGui)
 gui.Name = "UniversalV37"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
-local MAIN_FULL_SIZE = UDim2.new(0,700,0,400)
-local HEADER_SIZE = UDim2.new(0,700,0,30)
-local MAIN_POS = UDim2.new(0.5,-350,0.18,0)
+local MAIN_W, MAIN_H = 660, 380
+local HEADER_H = 30
 
 local main = Instance.new("Frame", gui)
-main.Name = "Main"
-main.Size = MAIN_FULL_SIZE
-main.Position = MAIN_POS
-main.BackgroundColor3 = Color3.fromRGB(25,25,25)
-main.Active = true
-main.Draggable = true
-main.BorderSizePixel = 0
-main.ZIndex = 50
+main.Name = "Main"; main.Size = UDim2.new(0,MAIN_W,0,MAIN_H); main.Position = UDim2.new(0.5,-MAIN_W/2,0.14,0)
+main.BackgroundColor3 = Color3.fromRGB(28,28,28); main.Active=true; main.Draggable=true; main.BorderSizePixel=0; main.ZIndex=60
 
 local header = Instance.new("Frame", main)
-header.Size = HEADER_SIZE
-header.Position = UDim2.new(0,0,0,0)
-header.BackgroundColor3 = Color3.fromRGB(30,30,30)
-header.BorderSizePixel = 0
-header.ZIndex = 60
+header.Size = UDim2.new(1,0,0,HEADER_H); header.Position = UDim2.new(0,0,0,0)
+header.BackgroundColor3 = Color3.fromRGB(35,35,35); header.BorderSizePixel=0; header.ZIndex=61
 
 local title = Instance.new("TextLabel", header)
-title.Text = "Universal Auto Summit V37 - "..scriptName
-title.Size = UDim2.new(1,-120,1,0)
-title.Position = UDim2.new(0,6,0,0)
+title.Size = UDim2.new(1,-160,1,0); title.Position = UDim2.new(0,8,0,0)
 title.BackgroundTransparency = 1
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.ZIndex = 61
+title.Text = "Universal Auto Summit V37 - "..scriptName
+title.TextColor3 = Color3.new(1,1,1); title.Font = Enum.Font.GothamBold; title.TextScaled = false; title.TextSize = 14; title.TextXAlignment = Enum.TextXAlignment.Left; title.ZIndex=62
 
-local hideBtn = Instance.new("TextButton", header)
-hideBtn.Size = UDim2.new(0,60,1,0)
-hideBtn.Position = UDim2.new(1,-120,0,0)
-hideBtn.Text = "Hide"
-hideBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-hideBtn.TextColor3 = Color3.new(1,1,1)
-hideBtn.Font = Enum.Font.GothamBold
-hideBtn.ZIndex = 61
+local btnHide = Instance.new("TextButton", header)
+btnHide.Size = UDim2.new(0,70,1,0); btnHide.Position = UDim2.new(1,-150,0,0)
+btnHide.Text = "Hide"; btnHide.Font = Enum.Font.GothamBold; btnHide.TextSize = 14; btnHide.BackgroundColor3 = Color3.fromRGB(70,70,70); btnHide.TextColor3 = Color3.new(1,1,1); btnHide.ZIndex=63
 
-local closeBtn = Instance.new("TextButton", header)
-closeBtn.Size = UDim2.new(0,60,1,0)
-closeBtn.Position = UDim2.new(1,-60,0,0)
-closeBtn.Text = "Close"
-closeBtn.BackgroundColor3 = Color3.fromRGB(180,40,40)
-closeBtn.TextColor3 = Color3.new(1,1,1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.ZIndex = 61
+local btnClose = Instance.new("TextButton", header)
+btnClose.Size = UDim2.new(0,70,1,0); btnClose.Position = UDim2.new(1,-74,0,0)
+btnClose.Text = "Close"; btnClose.Font = Enum.Font.GothamBold; btnClose.TextSize = 14; btnClose.BackgroundColor3 = Color3.fromRGB(170,40,40); btnClose.TextColor3 = Color3.new(1,1,1); btnClose.ZIndex=63
 
+local leftW = 100
 local tabPanel = Instance.new("Frame", main)
-tabPanel.Name = "TabPanel"
-tabPanel.Size = UDim2.new(0,100,1,-30)
-tabPanel.Position = UDim2.new(0,0,0,30)
-tabPanel.BackgroundColor3 = Color3.fromRGB(35,35,35)
-tabPanel.BorderSizePixel = 0
-tabPanel.ZIndex = 55
+tabPanel.Name = "TabPanel"; tabPanel.Size = UDim2.new(0,leftW,1,-HEADER_H); tabPanel.Position = UDim2.new(0,0,0,HEADER_H)
+tabPanel.BackgroundColor3 = Color3.fromRGB(38,38,38); tabPanel.BorderSizePixel=0; tabPanel.ZIndex=61
 
-local contentArea = Instance.new("Frame", main)
-contentArea.Name = "ContentArea"
-contentArea.Size = UDim2.new(1,-100,1,-30)
-contentArea.Position = UDim2.new(0,100,0,30)
-contentArea.BackgroundColor3 = Color3.fromRGB(20,20,20)
-contentArea.BorderSizePixel = 0
-contentArea.ZIndex = 55
+local content = Instance.new("Frame", main)
+content.Name = "Content"; content.Size = UDim2.new(1,-leftW,1,-HEADER_H); content.Position = UDim2.new(0,leftW,0,HEADER_H)
+content.BackgroundColor3 = Color3.fromRGB(22,22,22); content.BorderSizePixel=0; content.ZIndex=61
 
--- Tabs
-local autoTab = Instance.new("Frame", contentArea); autoTab.Size = UDim2.new(1,0,1,0); autoTab.BackgroundTransparency=1
-local settingTab = Instance.new("Frame", contentArea); settingTab.Size = UDim2.new(1,0,1,0); settingTab.BackgroundTransparency=1; settingTab.Visible=false
-local infoTab = Instance.new("Frame", contentArea); infoTab.Size = UDim2.new(1,0,1,0); infoTab.BackgroundTransparency=1; infoTab.Visible=false
-local serverTab = Instance.new("Frame", contentArea); serverTab.Size = UDim2.new(1,0,1,0); serverTab.BackgroundTransparency=1; serverTab.Visible=false
-
-local function setTab(name, btn)
-    autoTab.Visible = (name=="AutoTab")
-    settingTab.Visible = (name=="SettingTab")
-    infoTab.Visible = (name=="InfoTab")
-    serverTab.Visible = (name=="ServerTab")
-    for _,c in ipairs(tabPanel:GetChildren()) do if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(35,35,35) end end
-    if btn then btn.BackgroundColor3 = Color3.fromRGB(20,20,20) end
-end
-
-local tabY = 0
-local function makeTab(text, tabName)
+-- tabs
+local tabs = {}
+local function newTabBtn(text, y)
     local b = Instance.new("TextButton", tabPanel)
-    b.Size = UDim2.new(1,0,0,50); b.Position = UDim2.new(0,0,0,tabY)
-    b.Text = text; b.Font = Enum.Font.GothamBold; b.TextScaled = true
-    b.BackgroundColor3 = Color3.fromRGB(35,35,35); b.TextColor3 = Color3.new(1,1,1); b.BorderSizePixel=0; b.ZIndex=56
-    b.MouseButton1Click:Connect(function() setTab(tabName, b) end)
-    tabY = tabY + 50
+    b.Size = UDim2.new(1,0,0,46); b.Position = UDim2.new(0,0,0,y)
+    b.Text = text; b.Font = Enum.Font.GothamBold; b.TextSize = 13; b.TextColor3 = Color3.new(1,1,1)
+    b.BackgroundColor3 = Color3.fromRGB(38,38,38); b.BorderSizePixel=0; b.ZIndex=62
     return b
 end
 
-local btnAuto = makeTab("Auto","AutoTab")
-local btnSet = makeTab("Setting","SettingTab")
-local btnInfo = makeTab("Info","InfoTab")
-local btnServer = makeTab("Server","ServerTab")
-setTab("AutoTab", btnAuto)
+local autoTabBtn = newTabBtn("Auto",0)
+local setTabBtn = newTabBtn("Setting",46)
+local infoTabBtn = newTabBtn("Info",92)
+local serverTabBtn = newTabBtn("Server",138)
 
--- AUTO TAB content
+local autoTab = Instance.new("Frame", content); autoTab.Size = UDim2.new(1,0,1,0); autoTab.BackgroundTransparency=1; autoTab.ZIndex=62
+local settingTab = Instance.new("Frame", content); settingTab.Size = UDim2.new(1,0,1,0); settingTab.BackgroundTransparency=1; settingTab.Visible=false; settingTab.ZIndex=62
+local infoTab = Instance.new("Frame", content); infoTab.Size = UDim2.new(1,0,1,0); infoTab.BackgroundTransparency=1; infoTab.Visible=false; infoTab.ZIndex=62
+local serverTab = Instance.new("Frame", content); serverTab.Size = UDim2.new(1,0,1,0); serverTab.BackgroundTransparency=1; serverTab.Visible=false; serverTab.ZIndex=62
+
+local function setTab(name, btn)
+    autoTab.Visible = (name=="Auto"); settingTab.Visible = (name=="Setting"); infoTab.Visible = (name=="Info"); serverTab.Visible = (name=="Server")
+    for _,c in ipairs(tabPanel:GetChildren()) do if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(38,38,38) end end
+    if btn then btn.BackgroundColor3 = Color3.fromRGB(28,28,28) end
+end
+setTab("Auto", autoTabBtn)
+
+autoTabBtn.MouseButton1Click:Connect(function() setTab("Auto", autoTabBtn) end)
+setTabBtn.MouseButton1Click:Connect(function() setTab("Setting", setTabBtn) end)
+infoTabBtn.MouseButton1Click:Connect(function() setTab("Info", infoTabBtn) end)
+serverTabBtn.MouseButton1Click:Connect(function() setTab("Server", serverTabBtn) end)
+
+-- AUTO tab content
 local startBtn = Instance.new("TextButton", autoTab)
-startBtn.Size = UDim2.new(0.98,0,0,46); startBtn.Position=UDim2.new(0.01,0,0,8)
-startBtn.Text="MULAI Auto Summit"; startBtn.Font=Enum.Font.GothamBold; startBtn.TextScaled=true
-startBtn.BackgroundColor3=Color3.fromRGB(0,160,0); startBtn.TextColor3=Color3.new(1,1,1)
-startBtn.ZIndex = 56
+startBtn.Size = UDim2.new(0.98,0,0,44); startBtn.Position = UDim2.new(0.01,0,0,10)
+startBtn.Text = "START Auto Summit"; startBtn.Font = Enum.Font.GothamBold; startBtn.TextSize = 14
+startBtn.BackgroundColor3 = Color3.fromRGB(0,150,0); startBtn.TextColor3 = Color3.new(1,1,1); startBtn.ZIndex=62
 startBtn.MouseButton1Click:Connect(startAuto)
 
 local stopBtn = Instance.new("TextButton", autoTab)
-stopBtn.Size = UDim2.new(0.98,0,0,40); stopBtn.Position=UDim2.new(0.01,0,0,60)
-stopBtn.Text="STOP Auto Summit"; stopBtn.Font=Enum.Font.GothamBold; stopBtn.TextScaled=true
-stopBtn.BackgroundColor3=Color3.fromRGB(160,0,0); stopBtn.TextColor3=Color3.new(1,1,1)
-stopBtn.ZIndex = 56
+stopBtn.Size = UDim2.new(0.98,0,0,36); stopBtn.Position = UDim2.new(0.01,0,0,60)
+stopBtn.Text = "STOP Auto Summit"; stopBtn.Font = Enum.Font.GothamBold; stopBtn.TextSize = 13
+stopBtn.BackgroundColor3 = Color3.fromRGB(150,30,30); stopBtn.TextColor3 = Color3.new(1,1,1); stopBtn.ZIndex=62
 stopBtn.MouseButton1Click:Connect(stopAuto)
 
 local cpLabel = Instance.new("TextLabel", autoTab)
-cpLabel.Size = UDim2.new(0.98,0,0,20); cpLabel.Position = UDim2.new(0.01,0,0,110)
-cpLabel.Text = "Checkpoint List ("..#checkpoints.." CP)"; cpLabel.BackgroundColor3=Color3.fromRGB(30,30,30)
-cpLabel.TextColor3 = Color3.new(1,1,1); cpLabel.Font = Enum.Font.GothamBold; cpLabel.TextScaled = true; cpLabel.ZIndex = 56
-cpLabel.TextXAlignment = Enum.TextXAlignment.Left
+cpLabel.Size = UDim2.new(0.98,0,0,20); cpLabel.Position = UDim2.new(0.01,0,0,106); cpLabel.BackgroundColor3 = Color3.fromRGB(28,28,28)
+cpLabel.Text = "Checkpoint List ("..#checkpoints.." CP)"; cpLabel.Font = Enum.Font.GothamBold; cpLabel.TextSize = 13; cpLabel.TextColor3 = Color3.new(1,1,1)
+cpLabel.TextXAlignment = Enum.TextXAlignment.Left; cpLabel.ZIndex=62
 
 local cpFrame = Instance.new("Frame", autoTab)
-cpFrame.Size = UDim2.new(0.98,0,1,-150); cpFrame.Position = UDim2.new(0.01,0,0,140)
-cpFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); cpFrame.BorderSizePixel = 0; cpFrame.ZIndex = 56
+cpFrame.Size = UDim2.new(0.98,0,1,-150); cpFrame.Position = UDim2.new(0.01,0,0,140); cpFrame.BackgroundColor3 = Color3.fromRGB(28,28,28); cpFrame.BorderSizePixel=0; cpFrame.ZIndex=62
 
 local cpList = Instance.new("ScrollingFrame", cpFrame)
-cpList.Size = UDim2.new(1,0,1,0); cpList.BackgroundTransparency = 1; cpList.CanvasSize = UDim2.new(0,0,#checkpoints*30); cpList.ScrollBarThickness = 6; cpList.ZIndex = 56
+cpList.Size = UDim2.new(1,0,1,0); cpList.CanvasSize = UDim2.new(0,0,#checkpoints*30); cpList.ScrollBarThickness = 6
+cpList.BackgroundTransparency = 1; cpList.ZIndex = 62
 
-local y = 0
-for i,cp in ipairs(checkpoints) do
-    local btn = Instance.new("TextButton", cpList)
-    btn.Size = UDim2.new(1,0,0,28); btn.Position = UDim2.new(0,0,0,y)
-    btn.Text = "#" .. i .. ": " .. cp.name; btn.Font = Enum.Font.SourceSans; btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.BackgroundColor3 = Color3.fromRGB(40,40,40); btn.TextColor3 = Color3.new(1,1,1); btn.BorderSizePixel = 0; btn.ZIndex = 56
-    btn.MouseButton1Click:Connect(function()
-        if player.Character and player.Character.PrimaryPart and typeof(cp.pos)=="Vector3" then
-            pcall(function() player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos)) end)
-            notify("Teleport to CP #"..i..": "..cp.name, Color3.fromRGB(120,170,255))
-            stopAuto()
+-- populate cp list
+do
+    local y = 0
+    for i,cp in ipairs(checkpoints) do
+        local b = Instance.new("TextButton", cpList)
+        b.Size = UDim2.new(1,0,0,28); b.Position = UDim2.new(0,0,0,y)
+        b.Text = ("#%d: %s"):format(i, cp.name); b.Font = Enum.Font.Gotham; b.TextSize = 12
+        b.TextXAlignment = Enum.TextXAlignment.Left; b.BackgroundColor3 = Color3.fromRGB(42,42,42); b.TextColor3 = Color3.new(1,1,1); b.BorderSizePixel=0; b.ZIndex=62
+        b.MouseButton1Click:Connect(function()
+            if player.Character and player.Character.PrimaryPart and typeof(cp.pos) == "Vector3" then
+                pcall(function() player.Character:SetPrimaryPartCFrame(CFrame.new(cp.pos)) end)
+                notify("Teleported to CP #"..i..": "..cp.name, Color3.fromRGB(120,160,255))
+                stopAuto()
+            end
+        end)
+        y = y + 30
+    end
+end
+
+-- SETTING tab content (toggles + slider)
+do
+    local y = 8
+    local function makeBtn(text, ypos)
+        local b = Instance.new("TextButton", settingTab)
+        b.Size = UDim2.new(0.48,0,0,36); b.Position = UDim2.new((ypos%2==0) and 0.01 or 0.51, 0, 0, 8 + math.floor(ypos/2)*46)
+        b.Text = text; b.Font = Enum.Font.GothamBold; b.TextSize = 13; b.TextColor3 = Color3.new(1,1,1)
+        b.BackgroundColor3 = Color3.fromRGB(60,60,60); b.BorderSizePixel=0; b.ZIndex=62
+        return b
+    end
+
+    local idx = 0
+    local btnAutoRepeat = makeBtn("Auto Repeat: OFF", idx); idx = idx + 1
+    local btnAutoDeath = makeBtn("Auto Death: OFF", idx); idx = idx + 1
+    local btnServerHop = makeBtn("Server Hop: OFF", idx); idx = idx + 1
+    local btnAntiAFK = makeBtn("Anti-AFK: OFF", idx); idx = idx + 1
+
+    btnAutoRepeat.MouseButton1Click:Connect(function()
+        autoRepeat = not autoRepeat
+        btnAutoRepeat.Text = "Auto Repeat: "..(autoRepeat and "ON" or "OFF")
+        btnAutoRepeat.BackgroundColor3 = autoRepeat and Color3.fromRGB(0,150,200) or Color3.fromRGB(60,60,60)
+    end)
+    btnAutoDeath.MouseButton1Click:Connect(function()
+        autoDeath = not autoDeath
+        btnAutoDeath.Text = "Auto Death: "..(autoDeath and "ON" or "OFF")
+        btnAutoDeath.BackgroundColor3 = autoDeath and Color3.fromRGB(0,150,200) or Color3.fromRGB(60,60,60)
+    end)
+    btnServerHop.MouseButton1Click:Connect(function()
+        serverHop = not serverHop
+        btnServerHop.Text = "Server Hop: "..(serverHop and "ON" or "OFF")
+        btnServerHop.BackgroundColor3 = serverHop and Color3.fromRGB(200,100,0) or Color3.fromRGB(60,60,60)
+    end)
+    btnAntiAFK.MouseButton1Click:Connect(function()
+        toggleAntiAFK(not antiAFK)
+        btnAntiAFK.Text = "Anti-AFK: "..(antiAFK and "ON" or "OFF")
+        btnAntiAFK.BackgroundColor3 = antiAFK and Color3.fromRGB(0,150,100) or Color3.fromRGB(60,60,60)
+    end)
+
+    -- TextBoxes: delay, walkspeed, limit
+    local function makeBox(labelText, xpos, ypos, value)
+        local box = Instance.new("TextBox", settingTab)
+        box.Size = UDim2.new(0.48,0,0,36); box.Position = UDim2.new(xpos,0,0, 8 + ypos)
+        box.Text = labelText..": "..tostring(value); box.Font = Enum.Font.GothamBold; box.TextSize = 13
+        box.BackgroundColor3 = Color3.fromRGB(45,45,45); box.TextColor3 = Color3.new(1,1,1); box.ClearTextOnFocus=false; box.ZIndex=62
+        return box
+    end
+
+    local delayBox = makeBox("Delay (s)", 0.01, 184, delayTime)
+    local speedBox = makeBox("WalkSpeed", 0.51, 184, walkSpeed)
+    local limitBox = makeBox("Hop Limit", 0.01, 230, summitLimit)
+
+    delayBox.FocusLost:Connect(function(enter)
+        if enter then
+            local v = tonumber(delayBox.Text:match("(%d+%.?%d*)") or delayBox.Text)
+            if v and v >= 0.5 then delayTime = v; delayBox.Text = "Delay (s): "..delayTime; notify("Delay set: "..delayTime, Color3.fromRGB(255,165,0))
+            else notify("Delay invalid (min 0.5)", Color3.fromRGB(255,60,60)) end
         end
     end)
-    y = y + 30
-end
+    speedBox.FocusLost:Connect(function(enter)
+        if enter then
+            local v = tonumber(speedBox.Text:match("(%d+%.?%d*)") or speedBox.Text)
+            if v and v >= 1 then walkSpeed = v; speedBox.Text = "WalkSpeed: "..walkSpeed
+                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed end
+                notify("WalkSpeed set: "..walkSpeed, Color3.fromRGB(255,165,0))
+            else notify("Speed invalid", Color3.fromRGB(255,60,60)) end
+        end
+    end)
+    limitBox.FocusLost:Connect(function(enter)
+        if enter then
+            local v = tonumber(limitBox.Text:match("(%d+%.?%d*)") or limitBox.Text)
+            if v and v >= 1 then summitLimit = v; limitBox.Text = "Hop Limit: "..summitLimit; notify("Hop limit set: "..summitLimit, Color3.fromRGB(255,165,0))
+            else notify("Limit invalid", Color3.fromRGB(255,60,60)) end
+        end
+    end)
 
--- SETTING TAB content
-local function makeToggleBtn(parent, text, xpos, ypos, initial)
-    local b = Instance.new("TextButton", parent)
-    b.Size = UDim2.new(0.48,0,0,40); b.Position = UDim2.new(xpos,0,0,ypos)
-    b.Text = text..": "..(initial and "ON" or "OFF"); b.Font = Enum.Font.GothamBold; b.TextScaled = true
-    b.BackgroundColor3 = initial and Color3.fromRGB(0,150,200) or Color3.fromRGB(60,60,60)
-    b.TextColor3 = Color3.new(1,1,1); b.BorderSizePixel = 0; b.ZIndex = 56
-    return b
-end
+    -- TRANSPARENCY SLIDER (track + knob)
+    local sliderLabel = Instance.new("TextLabel", settingTab)
+    sliderLabel.Size = UDim2.new(0.98,0,0,18); sliderLabel.Position = UDim2.new(0.01,0,0,280)
+    sliderLabel.BackgroundTransparency = 1; sliderLabel.Text = "GUI Transparency"; sliderLabel.Font = Enum.Font.GothamBold; sliderLabel.TextSize = 13; sliderLabel.TextColor3 = Color3.new(1,1,1); sliderLabel.TextXAlignment = Enum.TextXAlignment.Left; sliderLabel.ZIndex=62
 
-local settingY = 10
-local autoRepeatBtn = makeToggleBtn(settingTab, "Auto Repeat", 0.01, settingY, autoRepeat)
-local autoDeathBtn = makeToggleBtn(settingTab, "Auto Death", 0.01, settingY+50, autoDeath)
-local serverHopBtn = makeToggleBtn(settingTab, "Server Hop", 0.51, settingY, serverHop)
-local antiAFKBtn = makeToggleBtn(settingTab, "Anti-AFK", 0.51, settingY+50, antiAFK)
+    local track = Instance.new("Frame", settingTab)
+    track.Size = UDim2.new(0.9,0,0,10); track.Position = UDim2.new(0.05,0,0,305); track.BackgroundColor3 = Color3.fromRGB(70,70,70); track.BorderSizePixel=0; track.ZIndex=62
+    local knob = Instance.new("ImageButton", track)
+    knob.Size = UDim2.new(0,18,0,18); knob.Position = UDim2.new(0, -9, 0.5, -9); knob.BackgroundColor3 = Color3.fromRGB(200,200,200); knob.BorderSizePixel=0; knob.ZIndex=63; knob.AutoButtonColor = false
 
-autoRepeatBtn.MouseButton1Click:Connect(function() autoRepeat = not autoRepeat; autoRepeatBtn.BackgroundColor3 = autoRepeat and Color3.fromRGB(0,150,200) or Color3.fromRGB(60,60,60); autoRepeatBtn.Text = "Auto Repeat: "..(autoRepeat and "ON" or "OFF") end)
-autoDeathBtn.MouseButton1Click:Connect(function() autoDeath = not autoDeath; autoDeathBtn.BackgroundColor3 = autoDeath and Color3.fromRGB(0,150,200) or Color3.fromRGB(60,60,60); autoDeathBtn.Text = "Auto Death: "..(autoDeath and "ON" or "OFF") end)
-serverHopBtn.MouseButton1Click:Connect(function() serverHop = not serverHop; serverHopBtn.BackgroundColor3 = serverHop and Color3.fromRGB(200,100,0) or Color3.fromRGB(60,60,60); serverHopBtn.Text = "Server Hop: "..(serverHop and "ON" or "OFF") end)
-antiAFKBtn.MouseButton1Click:Connect(function() toggleAntiAFK(not antiAFK); antiAFKBtn.BackgroundColor3 = antiAFK and Color3.fromRGB(0,150,0) or Color3.fromRGB(60,60,60); antiAFKBtn.Text = "Anti-AFK: "..(antiAFK and "ON" or "OFF") end)
-
--- text boxes for delay/walkspeed/limit
-local function makeBox(parent, text, xpos, ypos, initial)
-    local b = Instance.new("TextBox", parent)
-    b.Size = UDim2.new(0.48,0,0,40); b.Position = UDim2.new(xpos,0,0,ypos)
-    b.Text = text..": "..tostring(initial); b.Font = Enum.Font.GothamBold; b.TextScaled=true
-    b.BackgroundColor3 = Color3.fromRGB(40,40,40); b.TextColor3 = Color3.new(1,1,1); b.ClearTextOnFocus=false; b.ZIndex=56
-    return b
-end
-
-local delayBox = makeBox(settingTab, "Delay (s)", 0.01, settingY+110, delayTime)
-local speedBox = makeBox(settingTab, "WalkSpeed", 0.51, settingY+110, walkSpeed)
-local limitBox = makeBox(settingTab, "Hop Limit (x)", 0.01, settingY+170, summitLimit)
-
-delayBox.FocusLost:Connect(function(enter) if enter then local v = tonumber(delayBox.Text:match("(%d+%.?%d*)") or delayBox.Text); if v and v>=0.5 then delayTime=v; notify("Delay set: "..delayTime, Color3.fromRGB(255,165,0)) else notify("Delay invalid (min 0.5)", Color3.fromRGB(255,50,50)) end end end)
-speedBox.FocusLost:Connect(function(enter) if enter then local v = tonumber(speedBox.Text:match("(%d+%.?%d*)") or speedBox.Text); if v and v>=1 then walkSpeed=v; if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed end notify("WalkSpeed set: "..walkSpeed, Color3.fromRGB(255,165,0)) else notify("Speed invalid", Color3.fromRGB(255,50,50)) end end end)
-limitBox.FocusLost:Connect(function(enter) if enter then local v = tonumber(limitBox.Text:match("(%d+%.?%d*)") or limitBox.Text); if v and v>=1 then summitLimit=v; notify("Hop limit set: "..summitLimit, Color3.fromRGB(255,165,0)) else notify("Limit invalid", Color3.fromRGB(255,50,50)) end end end)
-
--- INFO TAB
-local infoY = 10
-local function addInfo(txt)
-    local l = Instance.new("TextLabel", infoTab)
-    l.Size = UDim2.new(0.98,0,0,24); l.Position = UDim2.new(0.01,0,0,infoY)
-    l.Text = txt; l.BackgroundTransparency = 1; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.GothamBold; l.TextScaled = true; l.TextXAlignment = Enum.TextXAlignment.Left; l.ZIndex = 56
-    infoY = infoY + 26
-    return l
-end
-addInfo("Map Aktif: "..scriptName)
-local cpCountLabel = addInfo("Total CP: "..#checkpoints)
-local currCpLabel = addInfo("Current CP Index: #"..currentCpIndex)
-local summitLabel = addInfo("Summit berhasil: "..summitCount)
-RunService.Heartbeat:Connect(function() cpCountLabel.Text = "Total CP: "..#checkpoints; currCpLabel.Text = "Current CP Index: #"..math.min(currentCpIndex,#checkpoints); summitLabel.Text = "Summit berhasil: "..summitCount end)
-
--- SERVER TAB
-local function serverBtn(text, color, func) local b=Instance.new("TextButton", serverTab); b.Size=UDim2.new(0.98,0,0,44); b.Position=UDim2.new(0.01,0,0, #serverTab:GetChildren()*54); b.Text=text; b.BackgroundColor3=color; b.TextColor3=Color3.new(1,1,1); b.Font=Enum.Font.GothamBold; b.TextScaled=true; b.BorderSizePixel=0; b.ZIndex=56; b.MouseButton1Click:Connect(func); return b end
-serverBtn("Teleport ke Basecamp", Color3.fromRGB(150,50,150), function()
-    local base = checkpoints[1]
-    if base and player.Character and player.Character.PrimaryPart and typeof(base.pos)=="Vector3" then
-        pcall(function() player.Character:SetPrimaryPartCFrame(CFrame.new(base.pos)) end)
-        notify("Teleported to Basecamp", Color3.fromRGB(200,150,255)); stopAuto()
+    local currentTransparency = 0.12 -- default
+    local function applyTransparency(v)
+        -- v in [0,0.9] where 0 = opaque (BgTransparency=0), 0.9 => BgTransparency=0.9
+        local clamped = math.clamp(v, 0, 0.9)
+        currentTransparency = clamped
+        -- apply to main background-type elements
+        local bgList = {main, tabPanel, content, cpFrame, cpList, delayBox, speedBox, limitBox}
+        for _,ui in ipairs(bgList) do
+            if ui and ui:IsA("Instance") and ui.BackgroundColor3 then
+                ui.BackgroundTransparency = clamped
+            end
+        end
+        notify(("Transparency: %.2f"):format(clamped), Color3.fromRGB(200,200,80))
     end
-end)
-serverBtn("Forced Server Hop", Color3.fromRGB(0,100,200), doServerHop)
 
--- HIDE logic (FIX)
+    -- draggable knob
+    local dragging = false
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+    end)
+    knob.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+    track.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local absPos = UserInputService:GetMouseLocation()
+            local trackAbs = track.AbsolutePosition.X
+            local rel = math.clamp((absPos.X - trackAbs) / track.AbsoluteSize.X, 0, 1)
+            knob.Position = UDim2.new(rel, -9, 0.5, -9)
+            local transpar = rel * 0.9
+            applyTransparency(transpar)
+        end
+    end)
+    -- init knob pos
+    do
+        local rel = currentTransparency / 0.9
+        knob.Position = UDim2.new(rel, -9, 0.5, -9)
+        applyTransparency(currentTransparency)
+    end
+end
+
+-- INFO tab
+do
+    local y = 8
+    local function addInfo(txt)
+        local l = Instance.new("TextLabel", infoTab)
+        l.Size = UDim2.new(0.98,0,0,20); l.Position = UDim2.new(0.01,0,0,y)
+        l.BackgroundTransparency = 1; l.Text = txt; l.Font = Enum.Font.GothamBold; l.TextSize = 13; l.TextColor3 = Color3.new(1,1,1); l.TextXAlignment = Enum.TextXAlignment.Left; l.ZIndex=62
+        y = y + 24
+        return l
+    end
+    addInfo("Map Aktif: "..scriptName)
+    local cpCount = addInfo("Total CP: "..#checkpoints)
+    local currCp = addInfo("Current CP Index: #"..currentCpIndex)
+    local summ = addInfo("Summit berhasil: "..summitCount)
+    RunService.Heartbeat:Connect(function()
+        cpCount.Text = "Total CP: "..#checkpoints
+        currCp.Text = "Current CP Index: #"..math.min(currentCpIndex, #checkpoints)
+        summ.Text = "Summit berhasil: "..summitCount
+    end)
+end
+
+-- SERVER tab
+do
+    local y = 8
+    local function serverBtn(text, color, fn)
+        local b = Instance.new("TextButton", serverTab)
+        b.Size = UDim2.new(0.98,0,0,36); b.Position = UDim2.new(0.01,0,0,y)
+        b.Text = text; b.Font = Enum.Font.GothamBold; b.TextSize = 13; b.BackgroundColor3 = color; b.TextColor3 = Color3.new(1,1,1); b.BorderSizePixel=0; b.ZIndex=62
+        b.MouseButton1Click:Connect(fn)
+        y = y + 46
+        return b
+    end
+    serverBtn("Teleport ke Basecamp", Color3.fromRGB(150,60,150), function()
+        local base = checkpoints[1]
+        if base and player.Character and player.Character.PrimaryPart and typeof(base.pos) == "Vector3" then
+            pcall(function() player.Character:SetPrimaryPartCFrame(CFrame.new(base.pos)) end)
+            notify("Teleported to Basecamp", Color3.fromRGB(200,150,255)); stopAuto()
+        end
+    end)
+    serverBtn("Forced Server Hop", Color3.fromRGB(0,110,200), doServerHop)
+end
+
+-- hide/close handlers
 local isHidden = false
-local preservedSize = MAIN_FULL_SIZE
-local preservedPos = MAIN_POS
-
-hideBtn.MouseButton1Click:Connect(function()
+local preservedSize, preservedPos = main.Size, main.Position
+btnHide.MouseButton1Click:Connect(function()
     if not isHidden then
-        -- hide body, keep header visible: shrink main to header size and reposition so header stays where it was
-        preservedSize = main.Size
-        preservedPos = main.Position
-        main.Size = HEADER_SIZE
-        main.Position = UDim2.new(main.Position.X.Scale, main.Position.X.Offset, main.Position.Y.Scale, main.Position.Y.Offset) -- keep pos
-        -- hide children except header (but keep header's hide/close functional)
+        preservedSize = main.Size; preservedPos = main.Position
+        main.Size = UDim2.new(main.Size.X.Scale, main.Size.X.Offset, 0, HEADER_H)
+        -- hide children except header
         for _,c in ipairs(main:GetChildren()) do
             if c ~= header then c.Visible = false end
         end
-        hideBtn.Text = "Show"
+        btnHide.Text = "Show"
         isHidden = true
     else
-        -- restore
-        main.Size = preservedSize or MAIN_FULL_SIZE
-        main.Position = preservedPos or MAIN_POS
+        main.Size = preservedSize or UDim2.new(0,MAIN_W,0,MAIN_H)
+        main.Position = preservedPos or main.Position
         for _,c in ipairs(main:GetChildren()) do c.Visible = true end
-        -- make sure header is visible on top
         header.Visible = true
-        hideBtn.Text = "Hide"
+        btnHide.Text = "Hide"
         isHidden = false
     end
 end)
-
-closeBtn.MouseButton1Click:Connect(function()
-    toggleAntiAFK(false)
-    stopAuto()
-    if gui then pcall(function() gui:Destroy() end) end
+btnClose.MouseButton1Click:Connect(function()
+    toggleAntiAFK(false); stopAuto()
+    pcall(function() gui:Destroy() end)
 end)
 
--- ensure initial character walkspeed
-if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed end
+-- init values / small safety
+if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+    player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
+end
 player.CharacterAdded:Connect(function(c) local h = c:WaitForChild("Humanoid",5); if h then h.WalkSpeed = walkSpeed end end)
 
 notify("UniversalV37 Loaded. Map: "..scriptName, Color3.fromRGB(0,200,100))
