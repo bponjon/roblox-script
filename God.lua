@@ -1,35 +1,50 @@
--- GOD MODE SCRIPT for Delta Executor
--- Dibuat ringan & stabil untuk mobile executor
--- Aktif otomatis, menjaga health agar gak pernah habis
+-- FULL GOD MODE (Anti-Fall + Anti-Dead)
+-- Optimized for Delta Executor (mobile)
+-- Auto aktif begitu dijalankan
 
-local plr = game.Players.LocalPlayer
+local plr = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
 
-function ActivateGodMode(char)
-    local hum = char:FindFirstChildOfClass("Humanoid")
+function fullGod(char)
+    local hum = char:WaitForChild("Humanoid", 5)
     if not hum then return end
 
+    -- Bikin selalu sehat
     hum.Health = hum.MaxHealth
+    hum.MaxHealth = math.max(hum.MaxHealth, 100)
 
-    -- Loop pengaman
-    task.spawn(function()
-        while hum and hum.Parent and hum.Health > 0 do
-            task.wait(0.1)
+    -- Matikan semua state yang bisa bikin mati atau jatuh
+    for _, state in ipairs(Enum.HumanoidStateType:GetEnumItems()) do
+        if state == Enum.HumanoidStateType.Dead or state == Enum.HumanoidStateType.FallingDown or state == Enum.HumanoidStateType.PlatformStanding then
+            pcall(function()
+                hum:SetStateEnabled(state, false)
+            end)
+        end
+    end
+
+    -- Loop restore
+    RunService.Heartbeat:Connect(function()
+        if hum and hum.Parent then
             if hum.Health < hum.MaxHealth then
+                hum.Health = hum.MaxHealth
+            end
+            if hum:GetState() == Enum.HumanoidStateType.Dead then
+                hum:ChangeState(Enum.HumanoidStateType.Running)
                 hum.Health = hum.MaxHealth
             end
         end
     end)
 end
 
--- Saat karakter spawn ulang
+-- Saat respawn
 plr.CharacterAdded:Connect(function(char)
     task.wait(1)
-    ActivateGodMode(char)
+    fullGod(char)
 end)
 
--- Jika karakter sudah ada
+-- Kalau udah spawn
 if plr.Character then
-    ActivateGodMode(plr.Character)
+    fullGod(plr.Character)
 end
 
-print("✅ God Mode Aktif! Health tidak akan berkurang.")
+print("✅ FULL GOD MODE aktif! Tidak bisa mati jatuh atau damage biasa.")
