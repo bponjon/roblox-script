@@ -1,6 +1,6 @@
--- FULL GOD MODE (AGGRESSIVE, final)
--- Untuk executor (Delta/mobile). Auto-aktif saat dijalankan.
--- WARNING: server-side death / anti-cheat masih bisa ngejadiin kematian. Gunakan risiko sendiri.
+-- FULL GOD MODE (ANTI-FALL FIXED VERSION)
+-- Aman lompat tinggi, gak nyangkut di tanah.
+-- Masih auto restore health & anti-dead.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -11,9 +11,11 @@ if not LocalPlayer then
     LocalPlayer = Players.LocalPlayer
 end
 
-local active = true -- set ke false buat matikan sementara
+local active = true
 local conns = {}
 local safePos = nil
+local lastSafeTick = tick()
+local lastTeleport = 0
 
 local function clearConns()
     for _, c in ipairs(conns) do
@@ -36,122 +38,68 @@ local function protectCharacter(char)
     if not char or not char.Parent then return end
     clearConns()
 
-    local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
-    local root = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 5)
+    local hum = char:WaitForChild("Humanoid", 5)
+    local root = char:WaitForChild("HumanoidRootPart", 5)
     if not hum or not root then return end
 
-    -- Naikkan MaxHealth client-side dan isi darah
     pcall(function()
         hum.MaxHealth = math.max(tonumber(hum.MaxHealth) or 0, 100000)
         hum.Health = hum.MaxHealth
     end)
 
-    -- Disable beberapa state berbahaya client-side (best-effort)
-    pcall(function()
-        local unsafe = {
-            Enum.HumanoidStateType.Dead,
-            Enum.HumanoidStateType.FallingDown,
-            Enum.HumanoidStateType.Freefall,
-            Enum.HumanoidStateType.PlatformStanding,
-            Enum.HumanoidStateType.Ragdoll
-        }
-        for _, s in ipairs(unsafe) do
-            pcall(function() hum:SetStateEnabled(s, false) end)
-        end
-    end)
+    for _, s in ipairs({
+        Enum.HumanoidStateType.Dead,
+        Enum.HumanoidStateType.FallingDown,
+        Enum.HumanoidStateType.PlatformStanding,
+        Enum.HumanoidStateType.Ragdoll
+    }) do
+        pcall(function() hum:SetStateEnabled(s, false) end)
+    end
 
-    -- Inisialisasi safePos
     safePos = root.Position
+    lastSafeTick = tick()
 
-    -- Heartbeat: restore health, update safePos, anti-fall
     table.insert(conns, RunService.Heartbeat:Connect(function()
-        if not active then return end
-        if not hum or not root or not root.Parent then return end
+        if not active or not hum or not root or not root.Parent then return end
 
-        -- Restore health tiap frame
-        pcall(function()
-            if hum.Health < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
-        end)
+        -- Restore health
+        if hum.Health < hum.MaxHealth then
+            pcall(function() hum.Health = hum.MaxHealth end)
+        end
 
-        -- Update safePos bila di ground
-        pcall(function()
-            if isOnGround(hum) or hum.FloorMaterial ~= Enum.Material.Air then
-                safePos = root.Position
-            end
-        end)
+        -- Update posisi aman saat di tanah
+        if isOnGround(hum) or hum.FloorMaterial ~= Enum.Material.Air then
+            safePos = root.Position
+            lastSafeTick = tick()
+        end
 
-        -- Deteksi jatuh & koreksi
-        local vel = (root.AssemblyLinearVelocity and root.AssemblyLinearVelocity.Y) or 0
-        local fallSpeedThreshold = -55 -- jika turun lebih cepat dari ini -> koreksi
-        local fallYOffset = 14 -- jika Y lebih rendah dari safePos sebanyak ini -> koreksi
+        -- Anti-fall hanya aktif kalau jatuh lama banget (lebih dari 0.8 detik sejak di tanah)
+        local timeSinceSafe = tick() - lastSafeTick
+        local vel = root.AssemblyLinearVelocity.Y
+        local fallSpeedThreshold = -90
+        local fallYOffset = 25
+        local cooldown = 1.2
 
-        local fellFast = vel < fallSpeedThreshold
-        local fellFar = safePos and (root.Position.Y < (safePos.Y - fallYOffset))
-
-        if fellFast or fellFar then
-            pcall(function()
-                if root and root:IsA("BasePart") then
+        if timeSinceSafe > 0.8 then
+            if (vel < fallSpeedThreshold or root.Position.Y < (safePos.Y - fallYOffset)) and (tick() - lastTeleport > cooldown) then
+                pcall(function()
                     root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                end
-                if safePos then
-                    root.CFrame = CFrame.new(safePos + Vector3.new(0, 6, 0))
-                else
-                    -- fallback: teleport ke respawn location jika ada
-                    local resp = LocalPlayer.RespawnLocation
-                    if resp and resp.Position then
-                        root.CFrame = CFrame.new(resp.Position + Vector3.new(0,6,0))
-                    end
-                end
-            end)
+                    root.CFrame = CFrame.new(safePos + Vector3.new(0, 8, 0))
+                    lastTeleport = tick()
+                end)
+            end
         end
 
-        -- Jika client-side Dead, coba ubah state & restore
-        pcall(function()
-            if hum:GetState() == Enum.HumanoidStateType.Dead then
-                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-                hum.Health = hum.MaxHealth
-            end
-        end)
-    end))
-
-    -- Health change: restore cepat
-    table.insert(conns, hum:GetPropertyChangedSignal("Health"):Connect(function()
-        if not active then return end
-        pcall(function()
-            if hum.Health < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
-        end)
-    end))
-
-    -- State changed: kalau server paksa Dead, coba koreksi cepat
-    table.insert(conns, hum.StateChanged:Connect(function(_, new)
-        if not active then return end
-        if new == Enum.HumanoidStateType.Dead then
+        -- Cegah state mati
+        if hum:GetState() == Enum.HumanoidStateType.Dead then
             pcall(function()
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 hum.Health = hum.MaxHealth
-                if safePos then
-                    for i=1,3 do
-                        root.CFrame = CFrame.new(safePos + Vector3.new(0,6+i,0))
-                        task.wait(0.03)
-                    end
-                else
-                    pcall(function() LocalPlayer:LoadCharacter() end)
-                end
             end)
         end
-    end))
-
-    -- Clear jika char hilang
-    table.insert(conns, char.AncestryChanged:Connect(function(_, parent)
-        if not parent then clearConns() end
     end))
 end
 
--- Auto aktif setelah spawn (tunggu 1 detik)
 LocalPlayer.CharacterAdded:Connect(function(c)
     task.wait(1)
     pcall(function() protectCharacter(c) end)
@@ -161,4 +109,4 @@ if LocalPlayer.Character then
     pcall(function() protectCharacter(LocalPlayer.Character) end)
 end
 
-print("✅ FULL GOD MODE (AGGRESSIVE final) aktif. Matikan dengan mengubah `active = false` di script.")
+print("✅ FULL GOD MODE aktif (versi fix anti-fall, aman buat lompat).")
