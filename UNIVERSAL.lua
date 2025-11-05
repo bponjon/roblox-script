@@ -74,6 +74,23 @@ local MAP_CONFIG = {
 {name="CP4",pos=Vector3.new(-638.603,659.233,3034.486)},{name="CP5",pos=Vector3.new(339.759,820.852,3891.180)},
 {name="Puncak",pos=Vector3.new(878.573,1019.189,4704.508)}
 }},
+["114702582394171"]={name = "MOUNT SANCTUARY (14 CP)",checkpoints = {
+{name="Basecamp", pos=Vector3.new(-1058.330, 482.876, 22.816)},
+{name="Checkpoint 1", pos=Vector3.new(-907.786, 507.505, 432.683)},
+{name="Checkpoint 2", pos=Vector3.new(-645.016, 526.631, 760.042)},
+{name="Checkpoint 3", pos=Vector3.new(-260.155, 514.804, 852.550)},
+{name="Checkpoint 4", pos=Vector3.new(-643.335, 469.523, -769.794)},
+{name="Checkpoint 5", pos=Vector3.new(-231.974, 512.663, -897.238)},
+{name="Checkpoint 6", pos=Vector3.new(-9.306, 534.836, -838.912)},
+{name="Checkpoint 7", pos=Vector3.new(173.864, 496.479, -535.563)},
+{name="Checkpoint 8", pos=Vector3.new(-120.117, 539.087, -655.649)},
+{name="Checkpoint 9", pos=Vector3.new(-278.626, 546.659, -676.250)},
+{name="Checkpoint 10", pos=Vector3.new(-103.049, 544.814, -398.753)},
+{name="Checkpoint 11", pos=Vector3.new(-28.370, 506.116, 573.861)},
+{name="Checkpoint 12", pos=Vector3.new(322.179, 532.353, 300.433)},
+{name="Checkpoint 13", pos=Vector3.new(942.603, 615.702, -588.890)},
+{name="Puncak", pos=Vector3.new(756.920, 934.766, -263.931)}
+}},
 }
 
 local currentMapConfig = MAP_CONFIG[CURRENT_PLACE_ID]
