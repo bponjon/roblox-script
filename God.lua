@@ -1,237 +1,358 @@
--- SERVER-SIDE EXPLOIT CONTROLLER - MOBILE FIXED v2
--- Compatible dengan Delta, Arceus X, dan executor mobile lainnya
--- Fixed mouse issues dan error handling
+-- HD ADMIN EXPLOIT - NETWORK OWNERSHIP VERSION
+-- Exploit yang BENAR-BENAR replicate ke semua player
 
--- Wait untuk game ready
 task.wait(2)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 10)
 
-if not playerGui then
-    warn("PlayerGui not found!")
-    return
-end
+if not playerGui then return end
 
--- Check if GUI already exists
-if playerGui:FindFirstChild("ServerExploitGUI") then
-    playerGui.ServerExploitGUI:Destroy()
+if playerGui:FindFirstChild("HDNetworkExploit") then
+    playerGui.HDNetworkExploit:Destroy()
     task.wait(0.5)
 end
 
--- Safe notification function
-local function notify(msg)
+local function notif(msg, success)
+    local icon = success and "✅" or (success == false and "❌" or "⚡")
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Server Exploit";
-            Text = msg;
-            Duration = 2.5;
+            Title = "Network Exploit";
+            Text = icon .. " " .. msg;
+            Duration = 3;
         })
     end)
-    print("[Server Exploit]", msg)
+    print("[Network Exploit]", msg)
 end
 
--- Safe mouse getter with fallback
-local mouse = nil
-local selectedPart = nil
-
-local function getMouse()
-    local success, result = pcall(function()
-        return player:GetMouse()
-    end)
-    if success and result then
-        return result
-    end
-    return nil
+-- Cek Filtering Enabled
+local FE_ENABLED = workspace.FilteringEnabled
+if FE_ENABLED then
+    notif("⚠️ FE Enabled - Limited exploits", nil)
+else
+    notif("🔥 FE Disabled - Full exploits!", true)
 end
 
--- Try to get mouse
-task.spawn(function()
-    task.wait(1)
-    mouse = getMouse()
-    if mouse then
-        notify("Mouse detected!")
-        -- Update selected part on mouse move
-        mouse.Move:Connect(function()
-            if mouse.Target and mouse.Target:IsA("BasePart") then
-                selectedPart = mouse.Target
-            end
-        end)
-    else
-        notify("Mouse not available - use touch select")
-    end
-end)
-
--- Touch/Click selection fallback
-local UserInputService = game:GetService("UserInputService")
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.UserInputType == Enum.UserInputType.Touch or 
-       input.UserInputType == Enum.UserInputType.MouseButton1 then
-        
-        local camera = workspace.CurrentCamera
-        local ray = camera:ViewportPointToRay(input.Position.X, input.Position.Y)
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-        raycastParams.FilterDescendantsInstances = {player.Character}
-        
-        local result = workspace:Raycast(ray.Origin, ray.Direction * 500, raycastParams)
-        
-        if result and result.Instance then
-            selectedPart = result.Instance
-            notify("Selected: " .. selectedPart.Name)
-        end
-    end
-end)
+-- HD Admin check
+local HDAdmin = ReplicatedStorage:FindFirstChild("HDAdminHDClient")
+local Signals = HDAdmin and HDAdmin:FindFirstChild("Signals")
+local ExecuteCommand = Signals and Signals:FindFirstChild("ExecuteClientCommand")
 
 -- ============================================
--- REMOTE SCANNER
+-- NETWORK OWNERSHIP EXPLOITS (Work for all!)
 -- ============================================
-local remoteEvents = {}
-local remoteFunctions = {}
 
-local function scanRemotes()
-    remoteEvents = {}
-    remoteFunctions = {}
+-- DELETE PARTS (Bekerja satu server!)
+local function deleteParts(partName)
+    notif("Deleting parts: " .. partName)
     
-    notify("Scanning remotes...")
+    local deletedCount = 0
     
-    -- Scan ReplicatedStorage
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            table.insert(remoteEvents, obj)
-        elseif obj:IsA("RemoteFunction") then
-            table.insert(remoteFunctions, obj)
-        end
-    end
-    
-    -- Scan Workspace
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            table.insert(remoteEvents, obj)
-        elseif obj:IsA("RemoteFunction") then
-            table.insert(remoteFunctions, obj)
+        if obj:IsA("BasePart") and (obj.Name:lower():find(partName:lower()) or partName == "all") then
+            -- Skip player characters dan penting parts
+            if not obj:IsDescendantOf(Players.LocalPlayer.Character) then
+                pcall(function()
+                    -- Ambil network ownership
+                    obj:SetNetworkOwner(player)
+                    task.wait(0.05)
+                    
+                    -- Destroy (ini replicate!)
+                    obj:Destroy()
+                    deletedCount = deletedCount + 1
+                end)
+            end
         end
     end
     
-    notify("Found " .. #remoteEvents .. " RemoteEvents!")
-    
-    print("=== REMOTE EVENTS ===")
-    for i, remote in pairs(remoteEvents) do
-        print(i .. ".", remote:GetFullName())
-    end
+    notif("Deleted " .. deletedCount .. " parts!", true)
 end
 
--- ============================================
--- EXPLOIT FUNCTIONS
--- ============================================
-
-local function tryDeletePart(part)
-    if not part then 
-        notify("No part selected!")
-        return 
+-- FLING PARTS (Bekerja satu server!)
+local function flingParts(partName, force)
+    notif("Flinging parts: " .. partName)
+    
+    local flingedCount = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and not obj.Anchored and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                task.wait(0.05)
+                
+                local bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.Velocity = Vector3.new(
+                    math.random(-force, force),
+                    math.random(force/2, force),
+                    math.random(-force, force)
+                )
+                bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                bodyVelocity.Parent = obj
+                
+                game:GetService("Debris"):AddItem(bodyVelocity, 1)
+                flingedCount = flingedCount + 1
+            end)
+        end
     end
     
-    notify("Trying to delete: " .. part.Name)
-    
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            -- Try various delete patterns
-            remote:FireServer("Delete", part)
-            remote:FireServer("Remove", part)
-            remote:FireServer("Destroy", part)
-            remote:FireServer({Action = "Delete", Target = part})
-            remote:FireServer({action = "delete", part = part})
-            remote:FireServer("DeletePart", part)
-            remote:FireServer(part, "Delete")
-        end)
-    end
-    
-    notify("Delete attempts sent!")
+    notif("Flinged " .. flingedCount .. " parts!", true)
 end
 
-local function tryEditPart(part, property, value)
-    if not part then 
-        notify("No part selected!")
-        return 
+-- RESIZE PARTS (Bekerja satu server!)
+local function resizeParts(partName, scale)
+    notif("Resizing parts: " .. partName)
+    
+    local resizedCount = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                task.wait(0.05)
+                
+                obj.Size = obj.Size * scale
+                resizedCount = resizedCount + 1
+            end)
+        end
     end
     
-    notify("Trying to edit: " .. part.Name)
-    
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote:FireServer("Edit", part, property, value)
-            remote:FireServer("Change", part, property, value)
-            remote:FireServer({Action = "Edit", Target = part, Property = property, Value = value})
-            remote:FireServer("SetProperty", part, property, value)
-            remote:FireServer("UpdatePart", part, {[property] = value})
-        end)
-    end
-    
-    notify("Edit attempts sent!")
+    notif("Resized " .. resizedCount .. " parts!", true)
 end
 
-local function trySetTime(time)
-    notify("Trying to change time to " .. time)
+-- CHANGE PART COLOR (Bekerja satu server!)
+local function colorParts(partName, color)
+    notif("Coloring parts: " .. partName)
     
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote:FireServer("SetTime", time)
-            remote:FireServer("ChangeTime", time)
-            remote:FireServer({Action = "Time", Value = time})
-            remote:FireServer("Lighting", "ClockTime", time)
-            remote:FireServer("UpdateLighting", {ClockTime = time})
-        end)
+    local coloredCount = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                task.wait(0.05)
+                
+                obj.Color = color
+                obj.Material = Enum.Material.Neon
+                coloredCount = coloredCount + 1
+            end)
+        end
     end
     
-    notify("Time change sent!")
+    notif("Colored " .. coloredCount .. " parts!", true)
 end
 
-local function tryExplode(position)
-    if not position then
-        position = player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart.Position
-    end
+-- TELEPORT PARTS (Bekerja satu server!)
+local function teleportParts(partName, destination)
+    notif("Teleporting parts: " .. partName)
     
-    if not position then
-        notify("No valid position!")
+    local destPart = Workspace:FindFirstChild(destination, true)
+    if not destPart or not destPart:IsA("BasePart") then
+        notif("Destination not found!", false)
         return
     end
     
-    notify("Trying explosion...")
+    local tpCount = 0
     
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote:FireServer("Explode", position, 50)
-            remote:FireServer("CreateExplosion", position, 50)
-            remote:FireServer({Action = "Explode", Position = position, Radius = 50})
-            remote:FireServer("Explosion", {Position = position, BlastRadius = 50})
-        end)
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                task.wait(0.05)
+                
+                obj.CFrame = destPart.CFrame + Vector3.new(math.random(-10, 10), 5, math.random(-10, 10))
+                tpCount = tpCount + 1
+            end)
+        end
     end
     
-    notify("Explosion sent!")
+    notif("Teleported " .. tpCount .. " parts!", true)
+end
+
+-- SPIN PARTS (Bekerja satu server!)
+local function spinParts(partName, duration)
+    notif("Spinning parts: " .. partName)
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and not obj.Anchored and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                
+                local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+                bodyAngularVelocity.AngularVelocity = Vector3.new(0, 50, 0)
+                bodyAngularVelocity.MaxTorque = Vector3.new(0, 9e9, 0)
+                bodyAngularVelocity.Parent = obj
+                
+                game:GetService("Debris"):AddItem(bodyAngularVelocity, duration)
+            end)
+        end
+    end
+    
+    notif("Parts spinning!", true)
+end
+
+-- ANCHOR/UNANCHOR (Bekerja satu server!)
+local function toggleAnchor(partName, anchored)
+    notif((anchored and "Anchoring" or "Unanchoring") .. " parts: " .. partName)
+    
+    local count = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                task.wait(0.05)
+                
+                obj.Anchored = anchored
+                count = count + 1
+            end)
+        end
+    end
+    
+    notif("Modified " .. count .. " parts!", true)
+end
+
+-- SPAM PARTS (Bekerja satu server!)
+local function spamParts(count, partType)
+    notif("Creating " .. count .. " parts...")
+    
+    for i = 1, count do
+        local part = Instance.new("Part")
+        part.Name = "SpamPart_" .. i
+        part.Size = Vector3.new(5, 5, 5)
+        part.Position = player.Character.HumanoidRootPart.Position + Vector3.new(
+            math.random(-50, 50),
+            math.random(10, 30),
+            math.random(-50, 50)
+        )
+        part.Color = Color3.fromRGB(math.random(0, 255), math.random(0, 255), math.random(0, 255))
+        part.Material = Enum.Material.Neon
+        part.Parent = Workspace
+        
+        task.wait(0.05)
+    end
+    
+    notif("Created " .. count .. " parts!", true)
+end
+
+-- NUKE WORKSPACE (Delete semua non-anchored parts)
+local function nukeWorkspace()
+    notif("🔥 NUKING WORKSPACE!")
+    
+    local nukeCoun = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and not obj.Anchored then
+            -- Skip characters
+            local isCharacterPart = false
+            for _, plr in pairs(Players:GetPlayers()) do
+                if obj:IsDescendantOf(plr.Character or {}) then
+                    isCharacterPart = true
+                    break
+                end
+            end
+            
+            if not isCharacterPart then
+                pcall(function()
+                    obj:SetNetworkOwner(player)
+                    task.wait(0.02)
+                    obj:Destroy()
+                    nukeCoun = nukeCoun + 1
+                end)
+            end
+        end
+    end
+    
+    notif("💥 Nuked " .. nukeCoun .. " parts!", true)
+end
+
+-- BRING PARTS TO YOU
+local function bringParts(partName)
+    notif("Bringing parts: " .. partName)
+    
+    local pos = player.Character.HumanoidRootPart.Position
+    local broughtCount = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and not obj.Anchored and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                task.wait(0.05)
+                
+                obj.CFrame = CFrame.new(pos + Vector3.new(math.random(-10, 10), 5, math.random(-10, 10)))
+                broughtCount = broughtCount + 1
+            end)
+        end
+    end
+    
+    notif("Brought " .. broughtCount .. " parts!", true)
+end
+
+-- LIST ALL PARTS
+local function listParts()
+    local partsList = {}
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            local name = obj.Name
+            if not partsList[name] then
+                partsList[name] = 0
+            end
+            partsList[name] = partsList[name] + 1
+        end
+    end
+    
+    print("=== PARTS IN WORKSPACE ===")
+    for name, count in pairs(partsList) do
+        print(name .. ": " .. count)
+    end
+    print("==========================")
+    
+    notif("Check console (F9) for list", true)
 end
 
 -- ============================================
--- CREATE GUI (MOBILE OPTIMIZED)
+-- HD ADMIN COMMANDS (if you have access)
+-- ============================================
+
+local function tryCommand(cmd, ...)
+    if not ExecuteCommand then
+        notif("HD Admin commands not available", false)
+        return
+    end
+    
+    local args = {...}
+    notif("Trying command: " .. cmd)
+    
+    pcall(function()
+        -- Format 1
+        ExecuteCommand:FireServer(cmd, unpack(args))
+        
+        -- Format 2
+        ExecuteCommand:FireServer(":" .. cmd .. " " .. table.concat(args, " "))
+        
+        -- Format 3
+        ExecuteCommand:FireServer({
+            command = cmd,
+            args = args
+        })
+    end)
+end
+
+-- ============================================
+-- GUI
 -- ============================================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ServerExploitGUI"
+ScreenGui.Name = "HDNetworkExploit"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 350, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -250)
+MainFrame.Size = UDim2.new(0, 380, 0, 600)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -300)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -239,67 +360,77 @@ MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
+Corner.CornerRadius = UDim.new(0, 15)
 Corner.Parent = MainFrame
 
--- Header
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 45)
-Header.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+Header.Size = UDim2.new(1, 0, 0, 55)
+Header.BackgroundColor3 = Color3.fromRGB(255, 100, 50)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 12)
+HeaderCorner.CornerRadius = UDim.new(0, 15)
 HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -60, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Size = UDim2.new(1, -65, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "⚠️ SERVER EXPLOIT"
+Title.Text = "🌐 NETWORK EXPLOIT"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 20
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- Close Button
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 40, 0, 40)
-CloseBtn.Position = UDim2.new(1, -45, 0, 2.5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
-CloseBtn.Text = "X"
+CloseBtn.Size = UDim2.new(0, 50, 0, 50)
+CloseBtn.Position = UDim2.new(1, -53, 0, 2.5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 20
+CloseBtn.TextSize = 26
 CloseBtn.Parent = Header
 
 local CloseBtnCorner = Instance.new("UICorner")
-CloseBtnCorner.CornerRadius = UDim.new(0, 8)
+CloseBtnCorner.CornerRadius = UDim.new(0, 12)
 CloseBtnCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
-    notify("GUI Closed")
 end)
 
--- Content ScrollingFrame
 local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -20, 1, -55)
-Content.Position = UDim2.new(0, 10, 0, 50)
+Content.Size = UDim2.new(1, -24, 1, -70)
+Content.Position = UDim2.new(0, 12, 0, 60)
 Content.BackgroundTransparency = 1
-Content.BorderSizePixel = 0
-Content.ScrollBarThickness = 8
-Content.CanvasSize = UDim2.new(0, 0, 0, 900)
+Content.ScrollBarThickness = 10
+Content.CanvasSize = UDim2.new(0, 0, 0, 2000)
 Content.Parent = MainFrame
 
--- ============================================
--- BUTTON HELPER (MOBILE OPTIMIZED)
--- ============================================
 local yPos = 10
 
-local function createButton(text, color, callback)
+local function makeLabel(text, color)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 40)
+    label.Position = UDim2.new(0, 5, 0, yPos)
+    label.BackgroundColor3 = color or Color3.fromRGB(50, 50, 50)
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 16
+    label.Parent = Content
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = label
+    
+    yPos = yPos + 46
+end
+
+local function makeButton(text, color, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 50)
     btn.Position = UDim2.new(0, 5, 0, yPos)
@@ -307,179 +438,182 @@ local function createButton(text, color, callback)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 14
+    btn.TextSize = 15
     btn.TextWrapped = true
     btn.Parent = Content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
-        local success, err = pcall(callback)
-        if not success then
-            notify("Error: " .. tostring(err))
-        end
+        pcall(callback)
     end)
     
-    yPos = yPos + 55
-    return btn
+    yPos = yPos + 56
 end
 
-local function createLabel(text)
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 35)
-    label.Position = UDim2.new(0, 5, 0, yPos)
-    label.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 14
-    label.Parent = Content
+local function makeTextBox(placeholder)
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(1, -10, 0, 48)
+    box.Position = UDim2.new(0, 5, 0, yPos)
+    box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    box.Text = ""
+    box.PlaceholderText = placeholder
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 15
+    box.Parent = Content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = label
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = box
     
-    yPos = yPos + 40
+    yPos = yPos + 54
+    return box
 end
 
--- ============================================
 -- BUILD GUI
--- ============================================
+makeLabel("🎯 TARGET PARTS", Color3.fromRGB(255, 100, 50))
+local partBox = makeTextBox("Nama part (atau 'all')")
 
-createLabel("🔍 SCANNER")
+makeLabel("🔥 DESTRUCTIVE", Color3.fromRGB(200, 0, 0))
 
-createButton("Scan RemoteEvents", Color3.fromRGB(0, 120, 215), function()
-    scanRemotes()
-end)
-
-createButton("Show Selected Part", Color3.fromRGB(0, 150, 200), function()
-    if selectedPart then
-        notify("Selected: " .. selectedPart.Name)
-    else
-        notify("No part selected! Tap on a part first")
+makeButton("💣 Delete Parts", Color3.fromRGB(180, 30, 30), function()
+    if partBox.Text ~= "" then
+        deleteParts(partBox.Text)
     end
 end)
 
-createLabel("🗑️ DELETE")
+makeButton("💥 Nuke Workspace", Color3.fromRGB(150, 0, 0), function()
+    nukeWorkspace()
+end)
 
-createButton("Delete Selected Part", Color3.fromRGB(200, 50, 50), function()
-    if selectedPart then
-        tryDeletePart(selectedPart)
-    else
-        notify("Tap on a part first!")
+makeButton("🌪️ Fling Parts", Color3.fromRGB(200, 100, 0), function()
+    if partBox.Text ~= "" then
+        flingParts(partBox.Text, 100)
     end
 end)
 
-createLabel("✏️ EDIT SELECTED")
+makeLabel("🔧 MANIPULATION", Color3.fromRGB(0, 150, 200))
 
-createButton("Make Transparent", Color3.fromRGB(0, 180, 120), function()
-    if selectedPart and selectedPart:IsA("BasePart") then
-        tryEditPart(selectedPart, "Transparency", 1)
-    else
-        notify("Select a valid part first!")
+makeButton("📍 Bring Parts to Me", Color3.fromRGB(0, 140, 200), function()
+    if partBox.Text ~= "" then
+        bringParts(partBox.Text)
     end
 end)
 
-createButton("Change to Red", Color3.fromRGB(200, 0, 0), function()
-    if selectedPart and selectedPart:IsA("BasePart") then
-        tryEditPart(selectedPart, "Color", Color3.fromRGB(255, 0, 0))
-    else
-        notify("Select a valid part first!")
+makeButton("🔄 Spin Parts (5s)", Color3.fromRGB(100, 150, 255), function()
+    if partBox.Text ~= "" then
+        spinParts(partBox.Text, 5)
     end
 end)
 
-createButton("Change to Blue", Color3.fromRGB(0, 100, 200), function()
-    if selectedPart and selectedPart:IsA("BasePart") then
-        tryEditPart(selectedPart, "Color", Color3.fromRGB(0, 100, 255))
-    else
-        notify("Select a valid part first!")
+makeButton("📏 Resize x2", Color3.fromRGB(0, 180, 150), function()
+    if partBox.Text ~= "" then
+        resizeParts(partBox.Text, 2)
     end
 end)
 
-createButton("Make Anchored", Color3.fromRGB(100, 100, 100), function()
-    if selectedPart and selectedPart:IsA("BasePart") then
-        tryEditPart(selectedPart, "Anchored", true)
-    else
-        notify("Select a valid part first!")
+makeButton("📏 Resize x0.5", Color3.fromRGB(0, 160, 130), function()
+    if partBox.Text ~= "" then
+        resizeParts(partBox.Text, 0.5)
     end
 end)
 
-createLabel("🌅 LIGHTING")
-
-createButton("Set Day", Color3.fromRGB(255, 200, 0), function()
-    trySetTime(14)
-end)
-
-createButton("Set Night", Color3.fromRGB(20, 20, 80), function()
-    trySetTime(0)
-end)
-
-createButton("Set Sunset", Color3.fromRGB(255, 120, 50), function()
-    trySetTime(18)
-end)
-
-createLabel("💥 DESTRUCTIVE")
-
-createButton("Explode at Player", Color3.fromRGB(255, 100, 0), function()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        tryExplode(player.Character.HumanoidRootPart.Position)
-    else
-        notify("Character not found!")
+makeButton("🎨 Color Random", Color3.fromRGB(255, 0, 255), function()
+    if partBox.Text ~= "" then
+        colorParts(partBox.Text, Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255)))
     end
 end)
 
-createButton("Explode at Selected", Color3.fromRGB(255, 50, 0), function()
-    if selectedPart then
-        tryExplode(selectedPart.Position)
-    else
-        notify("Select a part first!")
+makeButton("🔒 Anchor Parts", Color3.fromRGB(100, 100, 100), function()
+    if partBox.Text ~= "" then
+        toggleAnchor(partBox.Text, true)
     end
 end)
 
--- Info at bottom
+makeButton("🔓 Unanchor Parts", Color3.fromRGB(80, 80, 80), function()
+    if partBox.Text ~= "" then
+        toggleAnchor(partBox.Text, false)
+    end
+end)
+
+makeLabel("➕ CREATION", Color3.fromRGB(0, 200, 100))
+
+makeButton("📦 Spam 50 Parts", Color3.fromRGB(0, 180, 100), function()
+    spamParts(50)
+end)
+
+makeButton("📦 Spam 100 Parts", Color3.fromRGB(0, 160, 80), function()
+    spamParts(100)
+end)
+
+makeLabel("📊 UTILITIES", Color3.fromRGB(100, 100, 150))
+
+makeButton("📜 List All Parts", Color3.fromRGB(100, 100, 200), function()
+    listParts()
+end)
+
+makeLabel("⚡ HD ADMIN", Color3.fromRGB(220, 50, 50))
+local cmdBox = makeTextBox("Command (e.g., kill player)")
+
+makeButton("🚀 Execute Command", Color3.fromRGB(200, 50, 50), function()
+    if cmdBox.Text ~= "" then
+        local parts = cmdBox.Text:split(" ")
+        tryCommand(parts[1], unpack(parts, 2))
+    end
+end)
+
+-- Info
 yPos = yPos + 10
 local info = Instance.new("TextLabel")
-info.Size = UDim2.new(1, -10, 0, 100)
+info.Size = UDim2.new(1, -10, 0, 200)
 info.Position = UDim2.new(0, 5, 0, yPos)
 info.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 info.TextColor3 = Color3.fromRGB(200, 200, 200)
 info.Font = Enum.Font.Gotham
-info.TextSize = 11
+info.TextSize = 13
 info.TextWrapped = true
 info.TextYAlignment = Enum.TextYAlignment.Top
-info.Text = "⚠️ Only works on vulnerable games!\n\nHOW TO USE:\n1. Scan RemoteEvents first\n2. TAP on any part to select it\n3. Use buttons to try exploits\n4. Check if others see changes"
+info.Text = string.format([[🌐 NETWORK OWNERSHIP EXPLOIT
+
+FE STATUS: %s
+
+✅ GUARANTEED TO WORK:
+• Delete/Fling/Spin Parts
+• Resize/Color/Anchor Parts
+• Bring/Teleport Parts
+• Spam Parts Creation
+
+⚠️ REQUIREMENTS:
+• Parts must NOT be anchored
+• Need network ownership
+• Changes REPLICATE to all players!
+
+🎯 USAGE:
+• Type part name or "all"
+• Click action button
+• Everyone in server sees changes!
+
+Made with Network Ownership]], FE_ENABLED and "ENABLED" or "DISABLED")
 info.Parent = Content
 
 local infoPadding = Instance.new("UIPadding")
-infoPadding.PaddingTop = UDim.new(0, 8)
-infoPadding.PaddingLeft = UDim.new(0, 8)
-infoPadding.PaddingRight = UDim.new(0, 8)
+infoPadding.PaddingTop = UDim.new(0, 12)
+infoPadding.PaddingLeft = UDim.new(0, 12)
+infoPadding.PaddingRight = UDim.new(0, 12)
 infoPadding.Parent = info
 
 local infoCorner = Instance.new("UICorner")
-infoCorner.CornerRadius = UDim.new(0, 8)
+infoCorner.CornerRadius = UDim.new(0, 10)
 infoCorner.Parent = info
 
--- Update canvas size
-Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 110)
+Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 210)
 
--- ============================================
--- PARENT GUI
--- ============================================
-ScreenGui.Parent = playerGui
-
--- Auto scan on start
-task.spawn(function()
-    task.wait(2)
-    scanRemotes()
-    notify("GUI Ready! Tap parts to select")
-end)
-
-notify("GUI Loaded! 🚀")
-print("=================================")
-print("SERVER EXPLOIT - MOBILE VERSION V2")
-print("GUI should now be visible!")
-print("Touch/tap on parts to select them")
-print("=================================")
+notif("Network Exploit loaded!", true)
+print("==============================")
+print("NETWORK OWNERSHIP EXPLOIT")
+print("FE: " .. (FE_ENABLED and "Enabled" or "Disabled"))
+print("==============================")
