@@ -45,30 +45,75 @@ local ExecuteCommand = Signals and Signals:FindFirstChild("ExecuteClientCommand"
 -- NETWORK OWNERSHIP EXPLOITS (Work for all!)
 -- ============================================
 
--- DELETE PARTS (Bekerja satu server!)
+-- DELETE PARTS (Bekerja satu server!) - FIXED VERSION
 local function deleteParts(partName)
     notif("Deleting parts: " .. partName)
     
     local deletedCount = 0
+    local skippedCount = 0
+    local partNameLower = partName:lower()
+    
+    print("=== DELETE DEBUG ===")
+    print("Searching for:", partName)
     
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (obj.Name:lower():find(partName:lower()) or partName == "all") then
-            -- Skip player characters dan penting parts
-            if not obj:IsDescendantOf(Players.LocalPlayer.Character) then
-                pcall(function()
-                    -- Ambil network ownership
-                    obj:SetNetworkOwner(player)
-                    task.wait(0.05)
+        if obj:IsA("BasePart") then
+            local objNameLower = obj.Name:lower()
+            local shouldDelete = false
+            
+            -- Check if matches
+            if partNameLower == "all" then
+                shouldDelete = true
+            elseif objNameLower:find(partNameLower) then
+                shouldDelete = true
+            elseif objNameLower == partNameLower then
+                shouldDelete = true
+            end
+            
+            if shouldDelete then
+                -- Skip player characters
+                local isCharPart = false
+                for _, plr in pairs(Players:GetPlayers()) do
+                    if plr.Character and obj:IsDescendantOf(plr.Character) then
+                        isCharPart = true
+                        break
+                    end
+                end
+                
+                if not isCharPart then
+                    print("Found:", obj:GetFullName(), "| Anchored:", obj.Anchored)
                     
-                    -- Destroy (ini replicate!)
-                    obj:Destroy()
-                    deletedCount = deletedCount + 1
-                end)
+                    local success = pcall(function()
+                        -- Try unanchor first if anchored
+                        if obj.Anchored then
+                            obj.Anchored = false
+                            task.wait(0.05)
+                        end
+                        
+                        -- Try to take ownership
+                        obj:SetNetworkOwner(player)
+                        task.wait(0.1)
+                        
+                        -- Destroy
+                        obj:Destroy()
+                        deletedCount = deletedCount + 1
+                        print("✅ Deleted:", obj.Name)
+                    end)
+                    
+                    if not success then
+                        skippedCount = skippedCount + 1
+                        print("❌ Failed:", obj.Name)
+                    end
+                end
             end
         end
     end
     
-    notif("Deleted " .. deletedCount .. " parts!", true)
+    print("===================")
+    print("Deleted:", deletedCount)
+    print("Skipped:", skippedCount)
+    
+    notif("Deleted " .. deletedCount .. " | Skipped " .. skippedCount, deletedCount > 0)
 end
 
 -- FLING PARTS (Bekerja satu server!)
