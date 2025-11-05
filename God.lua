@@ -1,60 +1,131 @@
--- SERVER-SIDE EXPLOIT CONTROLLER
--- Scans and exploits vulnerable RemoteEvents/RemoteFunctions
--- Works ONLY on poorly secured games
+-- SERVER-SIDE EXPLOIT CONTROLLER - MOBILE FIXED v2
+-- Compatible dengan Delta, Arceus X, dan executor mobile lainnya
+-- Fixed mouse issues dan error handling
+
+-- Wait untuk game ready
+task.wait(2)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
-local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
+local playerGui = player:WaitForChild("PlayerGui", 10)
 
--- ============================================
--- NOTIFICATION
--- ============================================
-local function notify(msg, color)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Server Exploit";
-        Text = msg;
-        Duration = 3;
-    })
+if not playerGui then
+    warn("PlayerGui not found!")
+    return
 end
 
+-- Check if GUI already exists
+if playerGui:FindFirstChild("ServerExploitGUI") then
+    playerGui.ServerExploitGUI:Destroy()
+    task.wait(0.5)
+end
+
+-- Safe notification function
+local function notify(msg)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Server Exploit";
+            Text = msg;
+            Duration = 2.5;
+        })
+    end)
+    print("[Server Exploit]", msg)
+end
+
+-- Safe mouse getter with fallback
+local mouse = nil
+local selectedPart = nil
+
+local function getMouse()
+    local success, result = pcall(function()
+        return player:GetMouse()
+    end)
+    if success and result then
+        return result
+    end
+    return nil
+end
+
+-- Try to get mouse
+task.spawn(function()
+    task.wait(1)
+    mouse = getMouse()
+    if mouse then
+        notify("Mouse detected!")
+        -- Update selected part on mouse move
+        mouse.Move:Connect(function()
+            if mouse.Target and mouse.Target:IsA("BasePart") then
+                selectedPart = mouse.Target
+            end
+        end)
+    else
+        notify("Mouse not available - use touch select")
+    end
+end)
+
+-- Touch/Click selection fallback
+local UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.UserInputType == Enum.UserInputType.Touch or 
+       input.UserInputType == Enum.UserInputType.MouseButton1 then
+        
+        local camera = workspace.CurrentCamera
+        local ray = camera:ViewportPointToRay(input.Position.X, input.Position.Y)
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        raycastParams.FilterDescendantsInstances = {player.Character}
+        
+        local result = workspace:Raycast(ray.Origin, ray.Direction * 500, raycastParams)
+        
+        if result and result.Instance then
+            selectedPart = result.Instance
+            notify("Selected: " .. selectedPart.Name)
+        end
+    end
+end)
+
 -- ============================================
--- REMOTE EVENT SCANNER
+-- REMOTE SCANNER
 -- ============================================
 local remoteEvents = {}
 local remoteFunctions = {}
 
 local function scanRemotes()
-    notify("Scanning RemoteEvents...", Color3.new(0,1,1))
+    remoteEvents = {}
+    remoteFunctions = {}
     
-    local function scanContainer(container, path)
-        for _, obj in pairs(container:GetDescendants()) do
-            if obj:IsA("RemoteEvent") then
-                table.insert(remoteEvents, {object = obj, path = path .. "/" .. obj.Name})
-            elseif obj:IsA("RemoteFunction") then
-                table.insert(remoteFunctions, {object = obj, path = path .. "/" .. obj.Name})
-            end
+    notify("Scanning remotes...")
+    
+    -- Scan ReplicatedStorage
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            table.insert(remoteEvents, obj)
+        elseif obj:IsA("RemoteFunction") then
+            table.insert(remoteFunctions, obj)
         end
     end
     
-    scanContainer(ReplicatedStorage, "ReplicatedStorage")
-    scanContainer(Workspace, "Workspace")
-    
-    notify("Found " .. #remoteEvents .. " RemoteEvents", Color3.new(0,1,0))
-    notify("Found " .. #remoteFunctions .. " RemoteFunctions", Color3.new(0,1,0))
-    
-    print("=== REMOTE EVENTS FOUND ===")
-    for i, remote in pairs(remoteEvents) do
-        print(i .. ". " .. remote.path)
+    -- Scan Workspace
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            table.insert(remoteEvents, obj)
+        elseif obj:IsA("RemoteFunction") then
+            table.insert(remoteFunctions, obj)
+        end
     end
     
-    print("=== REMOTE FUNCTIONS FOUND ===")
-    for i, remote in pairs(remoteFunctions) do
-        print(i .. ". " .. remote.path)
+    notify("Found " .. #remoteEvents .. " RemoteEvents!")
+    
+    print("=== REMOTE EVENTS ===")
+    for i, remote in pairs(remoteEvents) do
+        print(i .. ".", remote:GetFullName())
     end
 end
 
@@ -62,66 +133,105 @@ end
 -- EXPLOIT FUNCTIONS
 -- ============================================
 
--- Try to fire RemoteEvent with common exploit patterns
-local function exploitRemote(remote, action, ...)
-    local args = {...}
-    pcall(function()
-        if action == "delete" then
-            -- Common delete patterns
-            remote:FireServer("Delete", args[1])
-            remote:FireServer("Remove", args[1])
-            remote:FireServer("Destroy", args[1])
-            remote:FireServer({Action = "Delete", Target = args[1]})
-            remote:FireServer({action = "delete", object = args[1]})
-        elseif action == "edit" then
-            -- Common edit patterns
-            remote:FireServer("Edit", args[1], args[2], args[3])
-            remote:FireServer("Change", args[1], args[2], args[3])
-            remote:FireServer("Update", args[1], args[2], args[3])
-            remote:FireServer({Action = "Edit", Target = args[1], Property = args[2], Value = args[3]})
-        elseif action == "create" then
-            -- Common create patterns
-            remote:FireServer("Create", args[1], args[2])
-            remote:FireServer("Spawn", args[1], args[2])
-            remote:FireServer({Action = "Create", Type = args[1], Position = args[2]})
-        elseif action == "lighting" then
-            -- Lighting control
-            remote:FireServer("SetTime", args[1])
-            remote:FireServer("ChangeLighting", args[1], args[2])
-            remote:FireServer({Action = "Lighting", Property = args[1], Value = args[2]})
-        end
-    end)
-end
-
--- Brute force all remotes with common patterns
-local function bruteForceRemotes(action, ...)
-    local count = 0
+local function tryDeletePart(part)
+    if not part then 
+        notify("No part selected!")
+        return 
+    end
+    
+    notify("Trying to delete: " .. part.Name)
+    
     for _, remote in pairs(remoteEvents) do
         pcall(function()
-            exploitRemote(remote.object, action, ...)
-            count = count + 1
+            -- Try various delete patterns
+            remote:FireServer("Delete", part)
+            remote:FireServer("Remove", part)
+            remote:FireServer("Destroy", part)
+            remote:FireServer({Action = "Delete", Target = part})
+            remote:FireServer({action = "delete", part = part})
+            remote:FireServer("DeletePart", part)
+            remote:FireServer(part, "Delete")
         end)
     end
-    notify("Sent " .. count .. " exploit attempts", Color3.new(1,0.5,0))
+    
+    notify("Delete attempts sent!")
+end
+
+local function tryEditPart(part, property, value)
+    if not part then 
+        notify("No part selected!")
+        return 
+    end
+    
+    notify("Trying to edit: " .. part.Name)
+    
+    for _, remote in pairs(remoteEvents) do
+        pcall(function()
+            remote:FireServer("Edit", part, property, value)
+            remote:FireServer("Change", part, property, value)
+            remote:FireServer({Action = "Edit", Target = part, Property = property, Value = value})
+            remote:FireServer("SetProperty", part, property, value)
+            remote:FireServer("UpdatePart", part, {[property] = value})
+        end)
+    end
+    
+    notify("Edit attempts sent!")
+end
+
+local function trySetTime(time)
+    notify("Trying to change time to " .. time)
+    
+    for _, remote in pairs(remoteEvents) do
+        pcall(function()
+            remote:FireServer("SetTime", time)
+            remote:FireServer("ChangeTime", time)
+            remote:FireServer({Action = "Time", Value = time})
+            remote:FireServer("Lighting", "ClockTime", time)
+            remote:FireServer("UpdateLighting", {ClockTime = time})
+        end)
+    end
+    
+    notify("Time change sent!")
+end
+
+local function tryExplode(position)
+    if not position then
+        position = player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart.Position
+    end
+    
+    if not position then
+        notify("No valid position!")
+        return
+    end
+    
+    notify("Trying explosion...")
+    
+    for _, remote in pairs(remoteEvents) do
+        pcall(function()
+            remote:FireServer("Explode", position, 50)
+            remote:FireServer("CreateExplosion", position, 50)
+            remote:FireServer({Action = "Explode", Position = position, Radius = 50})
+            remote:FireServer("Explosion", {Position = position, BlastRadius = 50})
+        end)
+    end
+    
+    notify("Explosion sent!")
 end
 
 -- ============================================
--- CREATE GUI
+-- CREATE GUI (MOBILE OPTIMIZED)
 -- ============================================
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ServerExploitGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-if player.PlayerGui:FindFirstChild("ServerExploitGUI") then
-    player.PlayerGui.ServerExploitGUI:Destroy()
-end
-
-ScreenGui.Parent = player.PlayerGui
+ScreenGui.IgnoreGuiInset = true
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 600, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -250)
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 350, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -250)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -129,344 +239,247 @@ MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 10)
+Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = MainFrame
 
 -- Header
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 40)
-Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Header.Size = UDim2.new(1, 0, 0, 45)
+Header.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 10)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -80, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "⚠️ SERVER-SIDE EXPLOIT CONTROLLER"
-Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+Title.Text = "⚠️ SERVER EXPLOIT"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
+-- Close Button
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 35, 0, 35)
-CloseBtn.Position = UDim2.new(1, -40, 0, 2.5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Size = UDim2.new(0, 40, 0, 40)
+CloseBtn.Position = UDim2.new(1, -45, 0, 2.5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 18
+CloseBtn.TextSize = 20
 CloseBtn.Parent = Header
 
 local CloseBtnCorner = Instance.new("UICorner")
-CloseBtnCorner.CornerRadius = UDim.new(0, 6)
+CloseBtnCorner.CornerRadius = UDim.new(0, 8)
 CloseBtnCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
+    notify("GUI Closed")
 end)
 
--- Content
+-- Content ScrollingFrame
 local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -20, 1, -50)
-Content.Position = UDim2.new(0, 10, 0, 45)
+Content.Size = UDim2.new(1, -20, 1, -55)
+Content.Position = UDim2.new(0, 10, 0, 50)
 Content.BackgroundTransparency = 1
 Content.BorderSizePixel = 0
-Content.ScrollBarThickness = 6
-Content.CanvasSize = UDim2.new(0, 0, 0, 1200)
+Content.ScrollBarThickness = 8
+Content.CanvasSize = UDim2.new(0, 0, 0, 900)
 Content.Parent = MainFrame
 
 -- ============================================
--- GUI HELPER FUNCTIONS
+-- BUTTON HELPER (MOBILE OPTIMIZED)
 -- ============================================
 local yPos = 10
 
-local function createSection(name, color)
-    local section = Instance.new("TextLabel")
-    section.Size = UDim2.new(1, -10, 0, 30)
-    section.Position = UDim2.new(0, 5, 0, yPos)
-    section.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
-    section.Text = "  " .. name
-    section.TextColor3 = Color3.fromRGB(255, 255, 255)
-    section.Font = Enum.Font.GothamBold
-    section.TextSize = 14
-    section.TextXAlignment = Enum.TextXAlignment.Left
-    section.Parent = Content
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = section
-    
-    yPos = yPos + 35
-end
-
 local function createButton(text, color, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 35)
+    btn.Size = UDim2.new(1, -10, 0, 50)
     btn.Position = UDim2.new(0, 5, 0, yPos)
     btn.BackgroundColor3 = color
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    btn.TextWrapped = true
     btn.Parent = Content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
     
-    btn.MouseButton1Click:Connect(callback)
+    btn.MouseButton1Click:Connect(function()
+        local success, err = pcall(callback)
+        if not success then
+            notify("Error: " .. tostring(err))
+        end
+    end)
     
-    yPos = yPos + 40
+    yPos = yPos + 55
     return btn
 end
 
-local function createInput(placeholder)
-    local input = Instance.new("TextBox")
-    input.Size = UDim2.new(1, -10, 0, 35)
-    input.Position = UDim2.new(0, 5, 0, yPos)
-    input.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    input.PlaceholderText = placeholder
-    input.Text = ""
-    input.TextColor3 = Color3.fromRGB(255, 255, 255)
-    input.Font = Enum.Font.Gotham
-    input.TextSize = 13
-    input.Parent = Content
+local function createLabel(text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 35)
+    label.Position = UDim2.new(0, 5, 0, yPos)
+    label.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 14
+    label.Parent = Content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = input
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = label
     
     yPos = yPos + 40
-    return input
 end
 
 -- ============================================
 -- BUILD GUI
 -- ============================================
 
-createSection("🔍 SCANNER", Color3.fromRGB(0, 100, 200))
+createLabel("🔍 SCANNER")
 
-createButton("🔎 Scan RemoteEvents", Color3.fromRGB(0, 120, 215), function()
+createButton("Scan RemoteEvents", Color3.fromRGB(0, 120, 215), function()
     scanRemotes()
 end)
 
-createButton("📋 Print All Remotes (F9 Console)", Color3.fromRGB(100, 100, 200), function()
-    print("=== ALL REMOTE EVENTS ===")
-    for i, remote in pairs(remoteEvents) do
-        print(i .. ". " .. remote.path)
-        print("   Object:", remote.object)
-    end
-    notify("Check console (F9)", Color3.new(0,1,1))
-end)
-
-createSection("🗑️ DELETE EXPLOITS", Color3.fromRGB(200, 0, 0))
-
-createButton("Delete Part (Hover Mouse)", Color3.fromRGB(200, 50, 50), function()
-    if mouse.Target then
-        local target = mouse.Target
-        notify("Attempting to delete: " .. target.Name, Color3.new(1,0.5,0))
-        
-        -- Try all remotes
-        for _, remote in pairs(remoteEvents) do
-            pcall(function()
-                -- Multiple delete patterns
-                remote.object:FireServer("Delete", target)
-                remote.object:FireServer("Remove", target)
-                remote.object:FireServer("Destroy", target)
-                remote.object:FireServer({Action = "Delete", Target = target})
-                remote.object:FireServer({action = "delete", part = target})
-                remote.object:FireServer("DeletePart", target)
-                remote.object:FireServer(target, "Delete")
-            end)
-        end
-        
-        notify("Sent delete requests", Color3.new(0,1,0))
+createButton("Show Selected Part", Color3.fromRGB(0, 150, 200), function()
+    if selectedPart then
+        notify("Selected: " .. selectedPart.Name)
     else
-        notify("No target!", Color3.new(1,0,0))
+        notify("No part selected! Tap on a part first")
     end
 end)
 
-createButton("Delete All Parts in Workspace", Color3.fromRGB(150, 0, 0), function()
-    notify("Mass delete attempt...", Color3.new(1,0.5,0))
-    
-    for _, obj in pairs(Workspace:GetChildren()) do
-        if obj:IsA("Part") or obj:IsA("Model") then
-            for _, remote in pairs(remoteEvents) do
-                pcall(function()
-                    remote.object:FireServer("Delete", obj)
-                    remote.object:FireServer("Remove", obj)
-                    remote.object:FireServer({Action = "Delete", Target = obj})
-                end)
-            end
-        end
-    end
-    
-    notify("Mass delete sent", Color3.new(0,1,0))
-end)
+createLabel("🗑️ DELETE")
 
-createSection("✏️ EDIT EXPLOITS", Color3.fromRGB(0, 150, 100))
-
-createButton("Make Part Transparent (Mouse)", Color3.fromRGB(0, 180, 120), function()
-    if mouse.Target and mouse.Target:IsA("BasePart") then
-        local target = mouse.Target
-        notify("Trying to make transparent...", Color3.new(1,0.5,0))
-        
-        for _, remote in pairs(remoteEvents) do
-            pcall(function()
-                remote.object:FireServer("Edit", target, "Transparency", 1)
-                remote.object:FireServer("Change", target, "Transparency", 1)
-                remote.object:FireServer({Action = "Edit", Target = target, Property = "Transparency", Value = 1})
-                remote.object:FireServer("SetProperty", target, "Transparency", 1)
-            end)
-        end
-        
-        notify("Edit requests sent", Color3.new(0,1,0))
+createButton("Delete Selected Part", Color3.fromRGB(200, 50, 50), function()
+    if selectedPart then
+        tryDeletePart(selectedPart)
+    else
+        notify("Tap on a part first!")
     end
 end)
 
-createButton("Change Part Color (Mouse - Red)", Color3.fromRGB(200, 0, 0), function()
-    if mouse.Target and mouse.Target:IsA("BasePart") then
-        local target = mouse.Target
-        local red = Color3.fromRGB(255, 0, 0)
-        
-        for _, remote in pairs(remoteEvents) do
-            pcall(function()
-                remote.object:FireServer("Edit", target, "Color", red)
-                remote.object:FireServer("Change", target, "Color", red)
-                remote.object:FireServer({Action = "Edit", Target = target, Property = "Color", Value = red})
-                remote.object:FireServer("ChangeColor", target, red)
-            end)
-        end
-        
-        notify("Color change sent", Color3.new(0,1,0))
+createLabel("✏️ EDIT SELECTED")
+
+createButton("Make Transparent", Color3.fromRGB(0, 180, 120), function()
+    if selectedPart and selectedPart:IsA("BasePart") then
+        tryEditPart(selectedPart, "Transparency", 1)
+    else
+        notify("Select a valid part first!")
     end
 end)
 
-createSection("🌅 LIGHTING EXPLOITS", Color3.fromRGB(255, 200, 0))
-
-createButton("Set Time to Day", Color3.fromRGB(255, 200, 0), function()
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote.object:FireServer("SetTime", 14)
-            remote.object:FireServer("ChangeTime", 14)
-            remote.object:FireServer({Action = "Time", Value = 14})
-            remote.object:FireServer("Lighting", "ClockTime", 14)
-        end)
-    end
-    notify("Day time request sent", Color3.new(0,1,0))
-end)
-
-createButton("Set Time to Night", Color3.fromRGB(20, 20, 80), function()
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote.object:FireServer("SetTime", 0)
-            remote.object:FireServer("ChangeTime", 0)
-            remote.object:FireServer({Action = "Time", Value = 0})
-            remote.object:FireServer("Lighting", "ClockTime", 0)
-        end)
-    end
-    notify("Night time request sent", Color3.new(0,1,0))
-end)
-
-createButton("Full Bright Attempt", Color3.fromRGB(255, 255, 0), function()
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote.object:FireServer("Lighting", "Brightness", 5)
-            remote.object:FireServer("SetBrightness", 5)
-            remote.object:FireServer({Action = "Lighting", Property = "Brightness", Value = 5})
-        end)
-    end
-    notify("Brightness request sent", Color3.new(0,1,0))
-end)
-
-createSection("💥 DESTRUCTIVE EXPLOITS", Color3.fromRGB(255, 0, 0))
-
-createButton("Explode at Mouse Position", Color3.fromRGB(255, 100, 0), function()
-    local pos = mouse.Hit.Position
-    
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote.object:FireServer("Explode", pos, 50)
-            remote.object:FireServer("CreateExplosion", pos, 50)
-            remote.object:FireServer({Action = "Explode", Position = pos, Radius = 50})
-        end)
-    end
-    
-    notify("Explosion request sent", Color3.new(0,1,0))
-end)
-
-createButton("Clear Workspace Attempt", Color3.fromRGB(150, 0, 0), function()
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote.object:FireServer("ClearWorkspace")
-            remote.object:FireServer("DeleteAll")
-            remote.object:FireServer({Action = "Clear"})
-            remote.object:FireServer("RemoveAll")
-        end)
-    end
-    notify("Clear request sent", Color3.new(0,1,0))
-end)
-
-createSection("🎯 CUSTOM EXPLOIT", Color3.fromRGB(150, 0, 200))
-
-local customInput = createInput("Enter custom command...")
-
-createButton("Fire Custom Command to All Remotes", Color3.fromRGB(150, 0, 200), function()
-    local cmd = customInput.Text
-    if cmd ~= "" then
-        for _, remote in pairs(remoteEvents) do
-            pcall(function()
-                remote.object:FireServer(cmd)
-            end)
-        end
-        notify("Custom command sent: " .. cmd, Color3.new(0,1,0))
+createButton("Change to Red", Color3.fromRGB(200, 0, 0), function()
+    if selectedPart and selectedPart:IsA("BasePart") then
+        tryEditPart(selectedPart, "Color", Color3.fromRGB(255, 0, 0))
+    else
+        notify("Select a valid part first!")
     end
 end)
 
-createSection("ℹ️ INFO", Color3.fromRGB(50, 50, 50))
+createButton("Change to Blue", Color3.fromRGB(0, 100, 200), function()
+    if selectedPart and selectedPart:IsA("BasePart") then
+        tryEditPart(selectedPart, "Color", Color3.fromRGB(0, 100, 255))
+    else
+        notify("Select a valid part first!")
+    end
+end)
 
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Size = UDim2.new(1, -10, 0, 100)
-infoLabel.Position = UDim2.new(0, 5, 0, yPos)
-infoLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-infoLabel.Font = Enum.Font.Gotham
-infoLabel.TextSize = 12
-infoLabel.TextWrapped = true
-infoLabel.TextYAlignment = Enum.TextYAlignment.Top
-infoLabel.Text = [[
-⚠️ WARNING:
-This script attempts to exploit vulnerable RemoteEvents.
-It will ONLY work if the game has poor security.
+createButton("Make Anchored", Color3.fromRGB(100, 100, 100), function()
+    if selectedPart and selectedPart:IsA("BasePart") then
+        tryEditPart(selectedPart, "Anchored", true)
+    else
+        notify("Select a valid part first!")
+    end
+end)
 
-Most modern games have proper validation and this will NOT work.
+createLabel("🌅 LIGHTING")
 
-Use at your own risk. May result in kicks/bans.
+createButton("Set Day", Color3.fromRGB(255, 200, 0), function()
+    trySetTime(14)
+end)
 
-Always scan first, then try exploits one by one.
-]]
-infoLabel.Parent = Content
+createButton("Set Night", Color3.fromRGB(20, 20, 80), function()
+    trySetTime(0)
+end)
+
+createButton("Set Sunset", Color3.fromRGB(255, 120, 50), function()
+    trySetTime(18)
+end)
+
+createLabel("💥 DESTRUCTIVE")
+
+createButton("Explode at Player", Color3.fromRGB(255, 100, 0), function()
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        tryExplode(player.Character.HumanoidRootPart.Position)
+    else
+        notify("Character not found!")
+    end
+end)
+
+createButton("Explode at Selected", Color3.fromRGB(255, 50, 0), function()
+    if selectedPart then
+        tryExplode(selectedPart.Position)
+    else
+        notify("Select a part first!")
+    end
+end)
+
+-- Info at bottom
+yPos = yPos + 10
+local info = Instance.new("TextLabel")
+info.Size = UDim2.new(1, -10, 0, 100)
+info.Position = UDim2.new(0, 5, 0, yPos)
+info.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+info.TextColor3 = Color3.fromRGB(200, 200, 200)
+info.Font = Enum.Font.Gotham
+info.TextSize = 11
+info.TextWrapped = true
+info.TextYAlignment = Enum.TextYAlignment.Top
+info.Text = "⚠️ Only works on vulnerable games!\n\nHOW TO USE:\n1. Scan RemoteEvents first\n2. TAP on any part to select it\n3. Use buttons to try exploits\n4. Check if others see changes"
+info.Parent = Content
+
+local infoPadding = Instance.new("UIPadding")
+infoPadding.PaddingTop = UDim.new(0, 8)
+infoPadding.PaddingLeft = UDim.new(0, 8)
+infoPadding.PaddingRight = UDim.new(0, 8)
+infoPadding.Parent = info
 
 local infoCorner = Instance.new("UICorner")
-infoCorner.CornerRadius = UDim.new(0, 6)
-infoCorner.Parent = infoLabel
+infoCorner.CornerRadius = UDim.new(0, 8)
+infoCorner.Parent = info
+
+-- Update canvas size
+Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 110)
 
 -- ============================================
--- AUTO SCAN ON START
+-- PARENT GUI
 -- ============================================
-task.wait(1)
-scanRemotes()
+ScreenGui.Parent = playerGui
 
-notify("Server Exploit GUI loaded! ⚠️", Color3.new(1,0,0))
+-- Auto scan on start
+task.spawn(function()
+    task.wait(2)
+    scanRemotes()
+    notify("GUI Ready! Tap parts to select")
+end)
+
+notify("GUI Loaded! 🚀")
 print("=================================")
-print("SERVER-SIDE EXPLOIT CONTROLLER")
-print("Check GUI for options")
-print("Press F9 to see console logs")
+print("SERVER EXPLOIT - MOBILE VERSION V2")
+print("GUI should now be visible!")
+print("Touch/tap on parts to select them")
 print("=================================")
