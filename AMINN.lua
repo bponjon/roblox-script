@@ -1,428 +1,316 @@
--- BRUTAL EXPLOIT - FIXED & ENHANCED VERSION
--- Compatible: PC & Mobile (Delta, Arceus X, KRNL, Fluxus)
--- Works: All mountain games + universal
+-- NETWORK OWNERSHIP EXPLOIT - ADVANCED
+-- Mencoba ambil network ownership untuk replicate changes
+-- Works pada UNANCHORED parts di game lemah
 
 task.wait(2)
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 10)
 
-if not playerGui then
-    warn("PlayerGui not found!")
-    return
-end
-
--- Remove old GUI
-if playerGui:FindFirstChild("BrutalExploit") then
-    playerGui.BrutalExploit:Destroy()
+if playerGui:FindFirstChild("NetworkExploit") then
+    playerGui.NetworkExploit:Destroy()
     task.wait(0.5)
 end
 
 -- ============================================
--- NOTIFICATION SYSTEM
+-- NOTIFICATION
 -- ============================================
-local function notif(msg, success)
-    local icon = success and "✅" or (success == false and "❌" or "⚡")
+local function notif(msg, icon)
+    icon = icon or "⚡"
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Brutal Exploit";
+            Title = "Network Exploit";
             Text = icon .. " " .. msg;
-            Duration = 2.5;
+            Duration = 3;
         })
     end)
-    print("[Brutal]", msg)
+    print("[Network]", msg)
 end
 
--- Get mouse safely
-local mouse
-pcall(function()
-    mouse = player:GetMouse()
-end)
+local mouse = player:GetMouse()
 
 -- ============================================
--- REMOTE SCANNER (SERVER-SIDE ATTEMPTS)
--- ============================================
-local remoteEvents = {}
-
-local function scanRemotes()
-    remoteEvents = {}
-    notif("Scanning RemoteEvents...", nil)
-    
-    -- Scan ReplicatedStorage
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            table.insert(remoteEvents, obj)
-        end
-    end
-    
-    -- Scan Workspace
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            table.insert(remoteEvents, obj)
-        end
-    end
-    
-    notif("Found " .. #remoteEvents .. " RemoteEvents!", #remoteEvents > 0)
-    
-    print("=== REMOTE EVENTS FOUND ===")
-    for i, remote in pairs(remoteEvents) do
-        print(i .. ".", remote:GetFullName())
-    end
-    print("===========================")
-end
-
--- ============================================
--- SERVER-SIDE EXPLOIT ATTEMPTS
+-- NETWORK OWNERSHIP METHODS
 -- ============================================
 
-local function tryServerDelete(part)
-    if not part then return end
+-- Method 1: Set Network Owner
+local function trySetNetworkOwner(part)
+    if not part or not part:IsA("BasePart") then return false end
     
-    notif("SERVER: Trying to delete " .. part.Name, nil)
-    
-    local success = false
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            -- Try various delete patterns
-            remote:FireServer("Delete", part)
-            remote:FireServer("Remove", part)
-            remote:FireServer("Destroy", part)
-            remote:FireServer({Action = "Delete", Target = part})
-            remote:FireServer({action = "delete", part = part})
-            remote:FireServer("DeletePart", part)
-            remote:FireServer(part, "Delete")
-            remote:FireServer("RemovePart", part)
-            success = true
-        end)
+    -- Check if anchored (can't set owner for anchored)
+    if part.Anchored then
+        notif("Part is ANCHORED (can't take ownership)", "⚠️")
+        return false
     end
     
-    if success then
-        notif("Delete commands sent to server!", true)
+    local success, result = pcall(function()
+        part:SetNetworkOwner(player)
+        return true
+    end)
+    
+    if success and result then
+        notif("Network ownership taken! ✅", "✅")
+        return true
     else
-        notif("No remotes to exploit", false)
+        notif("Failed to take ownership", "❌")
+        return false
     end
 end
 
-local function tryServerEdit(part, property, value)
-    if not part then return end
+-- Method 2: Force Unanchor + Take Ownership
+local function forceUnanchorAndOwn(part)
+    if not part or not part:IsA("BasePart") then return false end
     
-    notif("SERVER: Trying to edit " .. part.Name, nil)
+    notif("Trying to unanchor and own...", "🔧")
     
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote:FireServer("Edit", part, property, value)
-            remote:FireServer("Change", part, property, value)
-            remote:FireServer("SetProperty", part, property, value)
-            remote:FireServer({Action = "Edit", Target = part, Property = property, Value = value})
-        end)
+    local wasAnchored = part.Anchored
+    
+    pcall(function()
+        -- Try to unanchor
+        part.Anchored = false
+        task.wait(0.1)
+        
+        -- Take ownership
+        part:SetNetworkOwner(player)
+        
+        notif("Unanchored + Owned! ✅", "✅")
+    end)
+    
+    task.wait(0.5)
+    
+    -- Check if still unanchored (server might revert)
+    if part.Anchored then
+        notif("Server reverted anchor state ❌", "❌")
+        return false
+    else
+        notif("Still unanchored! May replicate! ✅", "✅")
+        return true
     end
-    
-    notif("Edit commands sent!", true)
 end
 
-local function tryServerLighting(property, value)
-    notif("SERVER: Trying to change lighting...", nil)
+-- Method 3: Find Unanchored Parts (Easy targets)
+local function findUnanchoredParts()
+    notif("Scanning for unanchored parts...", "🔍")
     
-    for _, remote in pairs(remoteEvents) do
-        pcall(function()
-            remote:FireServer("SetTime", value)
-            remote:FireServer("ChangeTime", value)
-            remote:FireServer("Lighting", property, value)
-            remote:FireServer({Action = "Lighting", Property = property, Value = value})
-        end)
+    local unanchored = {}
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and not obj.Anchored then
+            -- Skip character parts
+            local isChar = false
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and obj:IsDescendantOf(p.Character) then
+                    isChar = true
+                    break
+                end
+            end
+            
+            if not isChar then
+                table.insert(unanchored, obj)
+            end
+        end
     end
     
-    notif("Lighting commands sent!", true)
+    print("=== UNANCHORED PARTS (VULNERABLE) ===")
+    for i, part in pairs(unanchored) do
+        if i <= 30 then
+            print(i .. ".", part:GetFullName(), "| Owner:", part:GetNetworkOwner())
+        end
+    end
+    print("Total:", #unanchored)
+    print("=====================================")
+    
+    notif("Found " .. #unanchored .. " unanchored parts!", "✅")
+    return unanchored
 end
 
--- ============================================
--- CLIENT-SIDE METHODS (100% WORK)
--- ============================================
-
-local function clientDelete(partName)
-    notif("CLIENT: Deleting " .. partName, nil)
+-- Method 4: Mass Take Ownership
+local function massOwnUnanchored()
+    notif("Taking ownership of all unanchored...", "🔥")
     
     local count = 0
+    
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            local match = partName == "all" or obj.Name:lower():find(partName:lower())
-            
-            if match then
-                -- Skip characters
-                local isChar = false
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p.Character and obj:IsDescendantOf(p.Character) then
-                        isChar = true
-                        break
-                    end
-                end
+        if obj:IsA("BasePart") and not obj.Anchored then
+            pcall(function()
+                obj:SetNetworkOwner(player)
+                count = count + 1
+            end)
+        end
+    end
+    
+    notif("Owned " .. count .. " parts!", "✅")
+end
+
+-- Method 5: Fling Part (Physics replication)
+local function flingPart(part, force)
+    if not part or not part:IsA("BasePart") then return end
+    
+    notif("Flinging part...", "💫")
+    
+    pcall(function()
+        -- Unanchor if possible
+        part.Anchored = false
+        
+        -- Take ownership
+        part:SetNetworkOwner(player)
+        
+        task.wait(0.1)
+        
+        -- Apply velocity
+        local bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.Velocity = Vector3.new(0, force or 500, 0)
+        bv.Parent = part
+        
+        task.wait(0.5)
+        bv:Destroy()
+        
+        notif("Flung! Check if others see it!", "✅")
+    end)
+end
+
+-- Method 6: Teleport Part (With ownership)
+local function teleportPartWithOwnership(part, position)
+    if not part or not part:IsA("BasePart") then return end
+    
+    notif("Teleporting with ownership...", "📍")
+    
+    pcall(function()
+        -- Unanchor
+        part.Anchored = false
+        
+        -- Take ownership
+        part:SetNetworkOwner(player)
+        
+        task.wait(0.1)
+        
+        -- Move
+        part.CFrame = CFrame.new(position)
+        
+        notif("Teleported! Check replication!", "✅")
+    end)
+end
+
+-- Method 7: Delete with Physics (Make fall)
+local function deleteWithPhysics(partName)
+    notif("Physics delete: " .. partName, "🕳️")
+    
+    local count = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name:lower():find(partName:lower()) then
+            pcall(function()
+                -- Unanchor
+                obj.Anchored = false
                 
-                if not isChar then
+                -- Take ownership
+                obj:SetNetworkOwner(player)
+                
+                task.wait(0.05)
+                
+                -- Teleport far below (fall to void)
+                obj.CFrame = CFrame.new(0, -999999, 0)
+                
+                count = count + 1
+            end)
+        end
+    end
+    
+    notif("Physics deleted " .. count .. " parts!", "✅")
+end
+
+-- Method 8: Spam Unanchor (Keep trying)
+local spamUnanchor = false
+local spamConnection
+
+local function toggleSpamUnanchor(partName)
+    spamUnanchor = not spamUnanchor
+    
+    if spamUnanchor then
+        notif("Spam unanchor started: " .. partName, "🔥")
+        
+        spamConnection = RunService.Heartbeat:Connect(function()
+            if not spamUnanchor then return end
+            
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and obj.Name:lower():find(partName:lower()) then
                     pcall(function()
-                        obj:Destroy()
+                        obj.Anchored = false
+                        obj:SetNetworkOwner(player)
+                    end)
+                end
+            end
+        end)
+    else
+        notif("Spam unanchor stopped", "⏸️")
+        if spamConnection then
+            spamConnection:Disconnect()
+        end
+    end
+end
+
+-- Method 9: Remote Spy (Find hidden remotes)
+local function deepRemoteScan()
+    notif("Deep scanning remotes...", "🔍")
+    
+    local remotes = {}
+    
+    -- Scan everywhere
+    for _, service in pairs(game:GetChildren()) do
+        pcall(function()
+            for _, obj in pairs(service:GetDescendants()) do
+                if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                    table.insert(remotes, {
+                        Type = obj.ClassName,
+                        Path = obj:GetFullName()
+                    })
+                end
+            end
+        end)
+    end
+    
+    print("=== DEEP REMOTE SCAN ===")
+    for i, remote in pairs(remotes) do
+        print(i .. ".", remote.Type, ":", remote.Path)
+    end
+    print("Total found:", #remotes)
+    print("========================")
+    
+    notif("Found " .. #remotes .. " total remotes!", "✅")
+end
+
+-- Method 10: Brute Force All Remotes
+local function bruteForceRemotes(action, target)
+    notif("Brute forcing all remotes...", "💥")
+    
+    local count = 0
+    
+    for _, service in pairs(game:GetChildren()) do
+        pcall(function()
+            for _, obj in pairs(service:GetDescendants()) do
+                if obj:IsA("RemoteEvent") then
+                    pcall(function()
+                        -- Try many patterns
+                        obj:FireServer(action, target)
+                        obj:FireServer(target, action)
+                        obj:FireServer({action, target})
+                        obj:FireServer({Action = action, Target = target})
+                        obj:FireServer(action, target, true)
+                        obj:FireServer("Execute", action, target)
                         count = count + 1
                     end)
                 end
             end
-        end
-    end
-    
-    notif("CLIENT: Deleted " .. count .. " parts", count > 0)
-end
-
-local function makeInvisible(partName)
-    local count = 0
-    
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (partName == "all" or obj.Name:lower():find(partName:lower())) then
-            pcall(function()
-                obj.Transparency = 1
-                obj.CanCollide = false
-                count = count + 1
-            end)
-        end
-    end
-    
-    notif("Made " .. count .. " invisible (CLIENT)", true)
-end
-
-local function moveToVoid(partName)
-    local count = 0
-    
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (partName == "all" or obj.Name:lower():find(partName:lower())) then
-            pcall(function()
-                obj.CFrame = CFrame.new(0, -999999, 0)
-                count = count + 1
-            end)
-        end
-    end
-    
-    notif("Moved " .. count .. " to void (CLIENT)", true)
-end
-
-local function sizeToZero(partName)
-    local count = 0
-    
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (partName == "all" or obj.Name:lower():find(partName:lower())) then
-            pcall(function()
-                obj.Size = Vector3.new(0.01, 0.01, 0.01)
-                obj.Transparency = 1
-                obj.CanCollide = false
-                count = count + 1
-            end)
-        end
-    end
-    
-    notif("Shrunk " .. count .. " parts (CLIENT)", true)
-end
-
--- ============================================
--- PLAYER POWERS (100% WORK)
--- ============================================
-
-local flying = false
-local flyConnection
-local flyBV, flyBG
-local flySpeed = 50
-
-local function toggleFly()
-    flying = not flying
-    
-    if flying then
-        local char = player.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        
-        if not root then
-            notif("Character not found!", false)
-            flying = false
-            return
-        end
-        
-        flyBV = Instance.new("BodyVelocity")
-        flyBV.Velocity = Vector3.new(0, 0, 0)
-        flyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        flyBV.Parent = root
-        
-        flyBG = Instance.new("BodyGyro")
-        flyBG.P = 9e4
-        flyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        flyBG.CFrame = root.CFrame
-        flyBG.Parent = root
-        
-        notif("Fly enabled! (WASD + Space/Shift)", true)
-        
-        flyConnection = RunService.Heartbeat:Connect(function()
-            if not flying then return end
-            
-            local cam = Workspace.CurrentCamera
-            local moveDir = Vector3.new(0, 0, 0)
-            
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDir = moveDir + cam.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDir = moveDir - cam.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveDir = moveDir - cam.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveDir = moveDir + cam.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                moveDir = moveDir + Vector3.new(0, 1, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                moveDir = moveDir - Vector3.new(0, 1, 0)
-            end
-            
-            if flyBV and flyBV.Parent then
-                flyBV.Velocity = moveDir * flySpeed
-            end
-            if flyBG and flyBG.Parent then
-                flyBG.CFrame = cam.CFrame
-            end
         end)
-    else
-        notif("Fly disabled", nil)
-        
-        if flyConnection then
-            flyConnection:Disconnect()
-        end
-        
-        if flyBV then flyBV:Destroy() end
-        if flyBG then flyBG:Destroy() end
-    end
-end
-
-local noclipping = false
-local noclipConnection
-
-local function toggleNoclip()
-    noclipping = not noclipping
-    
-    if noclipping then
-        notif("Noclip enabled!", true)
-        
-        noclipConnection = RunService.Stepped:Connect(function()
-            if not noclipping then return end
-            
-            local char = player.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
-                end
-            end
-        end)
-    else
-        notif("Noclip disabled", nil)
-        
-        if noclipConnection then
-            noclipConnection:Disconnect()
-        end
-        
-        local char = player.Character
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                    part.CanCollide = true
-                end
-            end
-        end
-    end
-end
-
-local function setSpeed(speed)
-    local char = player.Character
-    local humanoid = char and char:FindFirstChild("Humanoid")
-    
-    if humanoid then
-        humanoid.WalkSpeed = speed
-        notif("Speed set to " .. speed, true)
-    else
-        notif("Character not found!", false)
-    end
-end
-
-local function setJump(power)
-    local char = player.Character
-    local humanoid = char and char:FindFirstChild("Humanoid")
-    
-    if humanoid then
-        humanoid.JumpPower = power
-        notif("Jump power set to " .. power, true)
-    else
-        notif("Character not found!", false)
-    end
-end
-
-local function godMode()
-    local char = player.Character
-    local humanoid = char and char:FindFirstChild("Humanoid")
-    
-    if humanoid then
-        humanoid.Health = math.huge
-        humanoid.MaxHealth = math.huge
-        notif("God mode enabled!", true)
-    else
-        notif("Character not found!", false)
-    end
-end
-
--- ============================================
--- UTILITIES
--- ============================================
-
-local function listAllParts()
-    local parts = {}
-    
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            local name = obj.Name
-            parts[name] = (parts[name] or 0) + 1
-        end
     end
     
-    print("=== ALL PARTS IN WORKSPACE ===")
-    local sorted = {}
-    for name, count in pairs(parts) do
-        table.insert(sorted, {name = name, count = count})
-    end
-    
-    table.sort(sorted, function(a, b) return a.count > b.count end)
-    
-    for i, data in ipairs(sorted) do
-        if i <= 50 then
-            print(string.format("%d. %s (%dx)", i, data.name, data.count))
-        end
-    end
-    print("==============================")
-    
-    notif("Check console (F9) for list!", true)
-end
-
-local function getPlaceInfo()
-    local placeId = game.PlaceId
-    local gameName = game:GetService("MarketplaceService"):GetProductInfo(placeId).Name
-    
-    print("=== GAME INFO ===")
-    print("PlaceId:", placeId)
-    print("Game Name:", gameName)
-    print("Players:", #Players:GetPlayers())
-    print("=================")
-    
-    notif("Check console (F9) for game info!", true)
+    notif("Tried " .. count .. " remote patterns!", "✅")
 end
 
 -- ============================================
@@ -430,14 +318,13 @@ end
 -- ============================================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BrutalExploit"
+ScreenGui.Name = "NetworkExploit"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 380, 0, 680)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -340)
+MainFrame.Size = UDim2.new(0, 400, 0, 700)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -350)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -445,25 +332,25 @@ MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 15)
+Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = MainFrame
 
 -- Header
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 50)
-Header.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+Header.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 15)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -60, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "💀 BRUTAL EXPLOIT V2"
+Title.Text = "🌐 NETWORK EXPLOIT"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -473,22 +360,20 @@ Title.Parent = Header
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 45, 0, 45)
 CloseBtn.Position = UDim2.new(1, -48, 0, 2.5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 22
+CloseBtn.TextSize = 20
 CloseBtn.Parent = Header
 
 local CloseBtnCorner = Instance.new("UICorner")
-CloseBtnCorner.CornerRadius = UDim.new(0, 10)
+CloseBtnCorner.CornerRadius = UDim.new(0, 8)
 CloseBtnCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
-    flying = false
-    noclipping = false
+    spamUnanchor = false
     ScreenGui:Destroy()
-    notif("GUI Closed", nil)
 end)
 
 -- Content
@@ -497,24 +382,21 @@ Content.Size = UDim2.new(1, -20, 1, -60)
 Content.Position = UDim2.new(0, 10, 0, 55)
 Content.BackgroundTransparency = 1
 Content.ScrollBarThickness = 8
-Content.CanvasSize = UDim2.new(0, 0, 0, 2000)
+Content.CanvasSize = UDim2.new(0, 0, 0, 1800)
 Content.Parent = MainFrame
 
--- ============================================
--- GUI BUILDERS
--- ============================================
-
+-- GUI Builders
 local yPos = 10
 
 local function makeLabel(text, color)
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -10, 0, 38)
     label.Position = UDim2.new(0, 5, 0, yPos)
-    label.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
+    label.BackgroundColor3 = color
     label.Text = text
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 15
+    label.TextSize = 14
     label.Parent = Content
     
     local corner = Instance.new("UICorner")
@@ -532,7 +414,7 @@ local function makeButton(text, color, callback)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 14
+    btn.TextSize = 13
     btn.TextWrapped = true
     btn.Parent = Content
     
@@ -569,126 +451,124 @@ local function makeTextBox(placeholder)
     return box
 end
 
--- ============================================
--- BUILD GUI
--- ============================================
+-- Build GUI
+makeLabel("🔍 SCAN & ANALYZE", Color3.fromRGB(0, 120, 200))
 
-makeLabel("🔍 SCAN & INFO", Color3.fromRGB(0, 120, 200))
-
-makeButton("🔎 Scan RemoteEvents", Color3.fromRGB(0, 140, 220), function()
-    scanRemotes()
+makeButton("Find Unanchored Parts (F9)", Color3.fromRGB(0, 140, 220), function()
+    findUnanchoredParts()
 end)
 
-makeButton("📋 List All Parts (F9)", Color3.fromRGB(100, 100, 200), function()
-    listAllParts()
+makeButton("Deep Remote Scan (F9)", Color3.fromRGB(100, 100, 200), function()
+    deepRemoteScan()
 end)
 
-makeButton("ℹ️ Get Game Info", Color3.fromRGB(80, 160, 200), function()
-    getPlaceInfo()
-end)
+makeLabel("🎯 TARGET", Color3.fromRGB(200, 100, 0))
+local partBox = makeTextBox("Part name to target")
 
-makeLabel("🎯 TARGET", Color3.fromRGB(200, 0, 0))
-local partBox = makeTextBox("Part name or 'all'")
+makeLabel("🌐 NETWORK OWNERSHIP", Color3.fromRGB(0, 150, 200))
 
-makeLabel("💀 DELETE (CLIENT + SERVER)", Color3.fromRGB(150, 0, 0))
-
-makeButton("🔥 DELETE (Try Server First)", Color3.fromRGB(200, 40, 40), function()
-    local name = partBox.Text
-    if name == "" then notif("Enter part name!", false) return end
-    
-    if mouse and mouse.Target then
-        tryServerDelete(mouse.Target)
-        task.wait(0.5)
+makeButton("Take Ownership (Hover Mouse)", Color3.fromRGB(0, 180, 220), function()
+    if mouse.Target then
+        trySetNetworkOwner(mouse.Target)
+    else
+        notif("No part under mouse!", "❌")
     end
-    clientDelete(name)
 end)
 
-makeButton("👻 Make Invisible", Color3.fromRGB(100, 0, 100), function()
-    local name = partBox.Text
-    if name == "" then notif("Enter part name!", false) return end
-    makeInvisible(name)
+makeButton("Force Unanchor + Own (Mouse)", Color3.fromRGB(200, 100, 0), function()
+    if mouse.Target then
+        forceUnanchorAndOwn(mouse.Target)
+    else
+        notif("No part under mouse!", "❌")
+    end
 end)
 
-makeButton("🕳️ Move to Void", Color3.fromRGB(50, 0, 50), function()
-    local name = partBox.Text
-    if name == "" then notif("Enter part name!", false) return end
-    moveToVoid(name)
+makeButton("Mass Own All Unanchored", Color3.fromRGB(255, 100, 0), function()
+    massOwnUnanchored()
 end)
 
-makeButton("📏 Size to Zero", Color3.fromRGB(100, 50, 0), function()
-    local name = partBox.Text
-    if name == "" then notif("Enter part name!", false) return end
-    sizeToZero(name)
+makeLabel("🕳️ PHYSICS EXPLOIT", Color3.fromRGB(150, 0, 150))
+
+makeButton("Physics Delete (Void)", Color3.fromRGB(180, 0, 180), function()
+    if partBox.Text ~= "" then
+        deleteWithPhysics(partBox.Text)
+    else
+        notif("Enter part name!", "❌")
+    end
 end)
 
-makeLabel("⚡ PLAYER POWERS", Color3.fromRGB(255, 200, 0))
-
-local flyBtn = makeButton("✈️ Fly (WASD + Space/Shift)", Color3.fromRGB(0, 150, 255), function()
-    toggleFly()
-    flyBtn.Text = flying and "⏸️ Stop Fly" or "✈️ Fly (WASD + Space/Shift)"
+makeButton("Fling Part (Mouse)", Color3.fromRGB(255, 0, 150), function()
+    if mouse.Target then
+        flingPart(mouse.Target, 1000)
+    else
+        notif("No part under mouse!", "❌")
+    end
 end)
 
-local noclipBtn = makeButton("👻 Noclip", Color3.fromRGB(150, 0, 255), function()
-    toggleNoclip()
-    noclipBtn.Text = noclipping and "⏸️ Stop Noclip" or "👻 Noclip"
+makeButton("TP Part to Void (Mouse)", Color3.fromRGB(100, 0, 150), function()
+    if mouse.Target then
+        teleportPartWithOwnership(mouse.Target, Vector3.new(0, -999999, 0))
+    else
+        notif("No part under mouse!", "❌")
+    end
 end)
 
-makeButton("🚀 Speed 100", Color3.fromRGB(255, 150, 0), function()
-    setSpeed(100)
+local spamBtn = makeButton("Spam Unanchor (Toggle)", Color3.fromRGB(200, 50, 0), function()
+    if partBox.Text ~= "" then
+        toggleSpamUnanchor(partBox.Text)
+        spamBtn.Text = spamUnanchor and "⏸️ Stop Spam" or "🔥 Spam Unanchor (Toggle)"
+    else
+        notif("Enter part name!", "❌")
+    end
 end)
 
-makeButton("🚀 Speed 200", Color3.fromRGB(255, 100, 0), function()
-    setSpeed(200)
-end)
+makeLabel("💥 BRUTE FORCE", Color3.fromRGB(200, 0, 0))
 
-makeButton("🦘 Jump 150", Color3.fromRGB(0, 255, 100), function()
-    setJump(150)
-end)
-
-makeButton("🛡️ God Mode", Color3.fromRGB(255, 215, 0), function()
-    godMode()
-end)
-
-makeLabel("🌅 LIGHTING (Try Server)", Color3.fromRGB(255, 180, 0))
-
-makeButton("☀️ Set Day", Color3.fromRGB(255, 200, 0), function()
-    tryServerLighting("ClockTime", 14)
-    Lighting.ClockTime = 14
-end)
-
-makeButton("🌙 Set Night", Color3.fromRGB(20, 20, 80), function()
-    tryServerLighting("ClockTime", 0)
-    Lighting.ClockTime = 0
+makeButton("Brute Force Remotes (Delete)", Color3.fromRGB(220, 40, 40), function()
+    if mouse.Target then
+        bruteForceRemotes("Delete", mouse.Target)
+    else
+        notif("Hover mouse on part first!", "❌")
+    end
 end)
 
 -- Info
 yPos = yPos + 10
 local info = Instance.new("TextLabel")
-info.Size = UDim2.new(1, -10, 0, 180)
+info.Size = UDim2.new(1, -10, 0, 260)
 info.Position = UDim2.new(0, 5, 0, yPos)
 info.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 info.TextColor3 = Color3.fromRGB(220, 220, 220)
 info.Font = Enum.Font.Gotham
-info.TextSize = 12
+info.TextSize = 11
 info.TextWrapped = true
 info.TextYAlignment = Enum.TextYAlignment.Top
-info.Text = [[💀 BRUTAL EXPLOIT V2 - FIXED
+info.Text = [[🌐 NETWORK OWNERSHIP EXPLOIT
 
-✅ IMPROVEMENTS:
-• Auto scan RemoteEvents
-• Try server-side first, fallback to client
-• Better error handling
-• Mobile compatible
+Metode ini mencoba ambil "network ownership" 
+dari parts untuk replicate perubahan.
 
-🎮 HOW TO USE:
-1. Scan RemoteEvents first
-2. Enter part name in textbox
-3. Try DELETE (tries server first)
-4. Use Fly/Noclip for easy movement
+✅ CARA KERJA:
+1. Scan unanchored parts
+2. Ambil network ownership
+3. Manipulate parts
+4. Server MIGHT replicate changes
 
-⚠️ NOTE:
-Delete = Tries server, then client
-Other features = 100% work (client-side)
+⚠️ SYARAT BERHASIL:
+• Part harus UNANCHORED
+• Game tidak protect ownership
+• Network conditions baik
+
+🎯 BEST TARGETS:
+• Unanchored obstacles
+• Physics-based objects
+• Loose parts
+
+📋 TESTING:
+1. Find Unanchored Parts (F9)
+2. Try Take Ownership on easy targets
+3. Physics Delete or Fling
+4. Ask other player if they see changes!
 
 PlaceId: ]] .. game.PlaceId
 info.Parent = Content
@@ -703,17 +583,18 @@ local infoCorner = Instance.new("UICorner")
 infoCorner.CornerRadius = UDim.new(0, 8)
 infoCorner.Parent = info
 
-Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 200)
+Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 280)
 
--- Auto scan on load
+-- Auto scan
 task.spawn(function()
     task.wait(1)
-    scanRemotes()
+    findUnanchoredParts()
+    deepRemoteScan()
 end)
 
-notif("Brutal Exploit V2 loaded!", true)
+notif("Network Exploit loaded!", "✅")
 print("================================")
-print("BRUTAL EXPLOIT V2 - FIXED")
+print("NETWORK OWNERSHIP EXPLOIT")
 print("PlaceId:", game.PlaceId)
-print("Remotes will auto-scan in 1s...")
+print("Auto-scanning in 1s...")
 print("================================")
