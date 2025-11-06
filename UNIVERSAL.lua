@@ -106,7 +106,7 @@ local MAP_CONFIG = {
 {name="Checkpoint 11", pos=Vector3.new(2000.967, 607.374, -572.241)},
 {name="Checkpoint 12", pos=Vector3.new(2204.248, 626.374, -600.346)},
 {name="Checkpoint 13", pos=Vector3.new(2390.289, 682.374, -640.156)},
-{name="Checkpoint 14", pos=Vector3.new(2718.185, 670.344, -681.798)}
+{name="Checkpoint 14", pos=Vector3.new(2718.185, 670.344, -681.798)}, 
 {name="Checkpoint 15", pos=Vector3.new(2664.468, 677.548, -947.261)},
 {name="Checkpoint 16", pos=Vector3.new(2901.424, 683.443, -774.791)},
 {name="Puncak", pos=Vector3.new(2901.424, 683.443, -774.791)}, 
