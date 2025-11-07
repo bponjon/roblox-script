@@ -1,5 +1,5 @@
--- STEALTH EXPLOIT - FIXED VERSION
--- Anti-Kick dengan Safe Mode
+-- ULTIMATE EXPLOIT - STEALTH MODE (FIXED)
+-- All bugs fixed
 
 task.wait(2)
 
@@ -25,8 +25,8 @@ local Settings = {
 }
 
 -- Notifikasi
-local function notif(msg, tipe)
-    local icon = tipe == "success" and "✅" or (tipe == "error" and "❌" or "⚡")
+local function notif(msg, warna)
+    local icon = warna == "hijau" and "✅" or (warna == "merah" and "❌" or "⚡")
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Stealth Exploit";
@@ -37,23 +37,20 @@ local function notif(msg, tipe)
     print("[Stealth]", msg)
 end
 
-notif("Loading...", nil)
-
-local selectedPart = nil
-local importantRemotes = {}
-local allRemotes = {}
-local lastFireTime = 0
-
--- Mouse selection
 local mouse = player:GetMouse()
+local selectedPart = nil
+
 mouse.Button1Down:Connect(function()
     if mouse.Target and mouse.Target:IsA("BasePart") then
         selectedPart = mouse.Target
-        notif("Selected: " .. selectedPart.Name, "success")
+        notif("Dipilih: " .. selectedPart.Name, "hijau")
     end
 end)
 
--- Scan remotes
+-- Smart Remote Scanner
+local importantRemotes = {}
+local allRemotes = {}
+
 local function scanSmartRemotes()
     importantRemotes = {}
     allRemotes = {}
@@ -68,7 +65,8 @@ local function scanSmartRemotes()
             if name:find("delete") or name:find("remove") or name:find("destroy")
                 or name:find("teleport") or name:find("tp") or name:find("move")
                 or name:find("kill") or name:find("damage") or name:find("health")
-                or name:find("checkpoint") or name:find("equip") then
+                or name:find("checkpoint") or name:find("cp") 
+                or name:find("equip") or name:find("donate") or name:find("shop") then
                 table.insert(importantRemotes, obj)
             end
         end
@@ -82,20 +80,22 @@ local function scanSmartRemotes()
     
     print("=== SCAN RESULT ===")
     print("Total remotes:", #allRemotes)
-    print("Important:", #importantRemotes)
+    print("Important remotes:", #importantRemotes)
     print("===================")
     
-    notif("Found " .. #allRemotes .. " remotes", "success")
+    notif("Found " .. #allRemotes .. " remotes", "hijau")
     return #importantRemotes
 end
 
--- Safe fire
+-- Safe Fire Server
+local lastFireTime = 0
+
 local function safeFireServer(remote, ...)
     local now = tick()
-    local timeSince = now - lastFireTime
+    local timeSinceLastFire = now - lastFireTime
     
-    if Settings.SafeMode and timeSince < Settings.DelayPerRemote then
-        task.wait(Settings.DelayPerRemote - timeSince)
+    if Settings.SafeMode and timeSinceLastFire < Settings.DelayPerRemote then
+        task.wait(Settings.DelayPerRemote - timeSinceLastFire)
     end
     
     pcall(function()
@@ -105,24 +105,24 @@ local function safeFireServer(remote, ...)
     lastFireTime = tick()
 end
 
--- Delete selected
-local function deleteSelected()
+-- Delete Selected Part
+local function deleteSelectedPart()
     if not selectedPart then
-        notif("Click a part first!", "error")
+        notif("Belum pilih part!", "merah")
         return
     end
     
-    notif("Deleting: " .. selectedPart.Name, nil)
+    notif("Menghapus: " .. selectedPart.Name, nil)
     
     if #importantRemotes == 0 then
         scanSmartRemotes()
         task.wait(0.5)
     end
     
-    local remotes = #importantRemotes > 0 and importantRemotes or allRemotes
+    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
     local count = 0
     
-    for i, remote in ipairs(remotes) do
+    for i, remote in ipairs(remotesToUse) do
         if i > Settings.MaxRemotesPerBatch then break end
         
         safeFireServer(remote, "Delete", selectedPart)
@@ -133,17 +133,17 @@ local function deleteSelected()
         task.wait(0.1)
     end
     
-    notif("Sent " .. count .. " commands", "success")
+    notif("Sent " .. count .. " commands", "hijau")
 end
 
--- Delete by name
+-- Delete By Name
 local function deleteByName(partName)
     if partName == "" then
-        notif("Enter part name!", "error")
+        notif("Masukkan nama part!", "merah")
         return
     end
     
-    notif("Searching: " .. partName, nil)
+    notif("Mencari: " .. partName, nil)
     
     local targets = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -154,22 +154,22 @@ local function deleteByName(partName)
     end
     
     if #targets == 0 then
-        notif("Part not found!", "error")
+        notif("Part tidak ditemukan!", "merah")
         return
     end
     
-    notif("Found " .. #targets .. " parts", nil)
+    notif("Ditemukan " .. #targets .. " parts", nil)
     
     if #importantRemotes == 0 then
         scanSmartRemotes()
         task.wait(0.5)
     end
     
-    local remotes = #importantRemotes > 0 and importantRemotes or allRemotes
+    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
     local count = 0
     
     for _, target in ipairs(targets) do
-        for i, remote in ipairs(remotes) do
+        for i, remote in ipairs(remotesToUse) do
             if i > Settings.MaxRemotesPerBatch then break end
             
             safeFireServer(remote, "Delete", target)
@@ -179,13 +179,13 @@ local function deleteByName(partName)
         task.wait(0.2)
     end
     
-    notif("Sent " .. count .. " commands!", "success")
+    notif("Sent " .. count .. " commands!", "hijau")
 end
 
--- Teleport to void
-local function tpToVoid(target)
+-- Teleport To Void
+local function teleportToVoid(target)
     if not target then
-        notif("No target!", "error")
+        notif("Tidak ada target!", "merah")
         return
     end
     
@@ -196,11 +196,11 @@ local function tpToVoid(target)
         task.wait(0.5)
     end
     
-    local remotes = #importantRemotes > 0 and importantRemotes or allRemotes
+    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
     local voidPos = Vector3.new(0, -999999, 0)
     local count = 0
     
-    for i, remote in ipairs(remotes) do
+    for i, remote in ipairs(remotesToUse) do
         if i > Settings.MaxRemotesPerBatch then break end
         
         safeFireServer(remote, "Teleport", target, voidPos)
@@ -211,65 +211,65 @@ local function tpToVoid(target)
         task.wait(0.1)
     end
     
-    notif("Sent " .. count .. " TP commands!", "success")
+    notif("Sent " .. count .. " TP commands!", "hijau")
 end
 
--- Target player
+-- Target Player
 local function targetPlayer(playerName)
     if playerName == "" then
-        notif("Enter player name!", "error")
+        notif("Masukkan nama player!", "merah")
         return
     end
     
-    local targetPlr = Players:FindFirstChild(playerName)
+    local targetPlayer = Players:FindFirstChild(playerName)
     
-    if not targetPlr then
+    if not targetPlayer then
         for _, plr in pairs(Players:GetPlayers()) do
             if plr.Name:lower():find(playerName:lower()) then
-                targetPlr = plr
+                targetPlayer = plr
                 break
             end
         end
     end
     
-    if not targetPlr then
-        notif("Player not found!", "error")
+    if not targetPlayer then
+        notif("Player tidak ditemukan!", "merah")
         return
     end
     
-    if not targetPlr.Character or not targetPlr.Character:FindFirstChild("HumanoidRootPart") then
-        notif("Player not spawned!", "error")
+    if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        notif("Player belum spawn!", "merah")
         return
     end
     
-    notif("Target: " .. targetPlr.Name, nil)
+    notif("Target: " .. targetPlayer.Name, nil)
     
     if #importantRemotes == 0 then
         scanSmartRemotes()
         task.wait(0.5)
     end
     
-    local remotes = #importantRemotes > 0 and importantRemotes or allRemotes
+    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
     local voidPos = Vector3.new(0, -999999, 0)
     local count = 0
     
-    for i, remote in ipairs(remotes) do
+    for i, remote in ipairs(remotesToUse) do
         if i > Settings.MaxRemotesPerBatch then break end
         
-        safeFireServer(remote, "Teleport", targetPlr, voidPos)
-        safeFireServer(remote, "Kill", targetPlr)
-        safeFireServer(remote, {Action = "Kill", Player = targetPlr})
+        safeFireServer(remote, "Teleport", targetPlayer, voidPos)
+        safeFireServer(remote, "Kill", targetPlayer)
+        safeFireServer(remote, {Action = "Kill", Player = targetPlayer})
         count = count + 3
         
         task.wait(0.15)
     end
     
-    notif("Sent " .. count .. " commands to " .. targetPlr.Name, "success")
+    notif("Sent " .. count .. " commands", "hijau")
 end
 
--- Search checkpoints
+-- Search Checkpoints
 local function searchCheckpoints()
-    notif("Searching checkpoints...", nil)
+    notif("Mencari checkpoints...", nil)
     
     local found = {}
     
@@ -278,29 +278,26 @@ local function searchCheckpoints()
             local name = obj.Name:lower()
             if name:find("checkpoint") or name:find("cp") or name:find("check") 
                 or name:find("stage") or name:find("level") then
-                table.insert(found, {
-                    name = obj.Name,
-                    path = obj:GetFullName()
-                })
+                table.insert(found, obj.Name)
             end
         end
     end
     
     print("=== CHECKPOINTS ===")
     if #found > 0 then
-        for i, data in ipairs(found) do
+        for i, name in ipairs(found) do
             if i <= 30 then
-                print(i .. ".", data.name)
+                print(i .. ".", name)
             end
         end
-        notif("Found " .. #found .. " checkpoints (F9)", "success")
+        notif("Found " .. #found .. " checkpoints", "hijau")
     else
-        notif("No checkpoints found!", "error")
+        notif("No checkpoints found!", "merah")
     end
     print("===================")
 end
 
--- List players
+-- List Players
 local function listPlayers()
     print("=== PLAYERS ===")
     for i, plr in pairs(Players:GetPlayers()) do
@@ -308,28 +305,31 @@ local function listPlayers()
     end
     print("Total:", #Players:GetPlayers())
     print("===============")
-    notif("Check console (F9)", "success")
+    notif("Player list in console (F9)", "hijau")
 end
 
--- Toggle safe mode
+-- Toggle Safe Mode
+local safeModeBtn
+
 local function toggleSafeMode()
     Settings.SafeMode = not Settings.SafeMode
-    notif("Safe Mode: " .. (Settings.SafeMode and "ON" or "OFF"), "success")
+    local status = Settings.SafeMode and "ON" or "OFF"
+    notif("Safe Mode: " .. status, "hijau")
+    if safeModeBtn then
+        safeModeBtn.Text = "🛡️ Safe Mode: " .. status
+    end
 end
 
--- ============================================
--- GUI
--- ============================================
-
+-- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "StealthExploit"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 680)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -340)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Size = UDim2.new(0, 400, 0, 700)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -350)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -341,7 +341,7 @@ Corner.Parent = MainFrame
 
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 55)
-Header.BackgroundColor3 = Color3.fromRGB(0, 140, 100)
+Header.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
@@ -383,7 +383,7 @@ Content.Size = UDim2.new(1, -24, 1, -70)
 Content.Position = UDim2.new(0, 12, 0, 60)
 Content.BackgroundTransparency = 1
 Content.ScrollBarThickness = 10
-Content.CanvasSize = UDim2.new(0, 0, 0, 1400)
+Content.CanvasSize = UDim2.new(0, 0, 0, 1600)
 Content.Parent = MainFrame
 
 local yPos = 10
@@ -452,11 +452,10 @@ local function makeTextBox(placeholder)
 end
 
 -- Build GUI
-makeLabel("⚙️ SETTINGS", Color3.fromRGB(80, 80, 80))
+makeLabel("⚙️ SETTINGS", Color3.fromRGB(100, 100, 100))
 
-local safeModeBtn = makeButton("🛡️ Safe Mode: ON", Color3.fromRGB(100, 100, 100), function()
+safeModeBtn = makeButton("🛡️ Safe Mode: ON", Color3.fromRGB(120, 120, 120), function()
     toggleSafeMode()
-    safeModeBtn.Text = "🛡️ Safe Mode: " .. (Settings.SafeMode and "ON" or "OFF")
 end)
 
 makeLabel("🔍 SCAN", Color3.fromRGB(0, 120, 200))
@@ -473,23 +472,23 @@ makeButton("📋 List Players", Color3.fromRGB(100, 100, 200), function()
     listPlayers()
 end)
 
-makeLabel("🖱️ CLICK & DELETE", Color3.fromRGB(255, 140, 0))
+makeLabel("🎯 CLICK & DELETE", Color3.fromRGB(255, 140, 0))
 
-makeButton("🗑️ Delete Clicked Part", Color3.fromRGB(255, 120, 0), function()
-    deleteSelected()
+makeButton("🖱️ Delete Clicked Part", Color3.fromRGB(255, 120, 0), function()
+    deleteSelectedPart()
 end)
 
-makeButton("📍 TP Clicked to Void", Color3.fromRGB(255, 100, 50), function()
+makeButton("📍 TP to Void", Color3.fromRGB(255, 100, 50), function()
     if selectedPart then
-        tpToVoid(selectedPart)
+        teleportToVoid(selectedPart)
     else
-        notif("Click part first!", "error")
+        notif("Klik part dulu!", "merah")
     end
 end)
 
 makeLabel("🔎 DELETE BY NAME", Color3.fromRGB(0, 180, 120))
 
-local partBox = makeTextBox("Part name (e.g. Checkpoint)")
+local partBox = makeTextBox("Part name (Checkpoint, CP1)")
 
 makeButton("🗑️ Delete by Name", Color3.fromRGB(200, 80, 80), function()
     deleteByName(partBox.Text)
@@ -506,42 +505,41 @@ end)
 -- Info
 yPos = yPos + 10
 local info = Instance.new("TextLabel")
-info.Size = UDim2.new(1, -10, 0, 240)
+info.Size = UDim2.new(1, -10, 0, 260)
 info.Position = UDim2.new(0, 5, 0, yPos)
-info.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-info.TextColor3 = Color3.fromRGB(220, 220, 220)
+info.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+info.TextColor3 = Color3.fromRGB(230, 230, 230)
 info.Font = Enum.Font.Gotham
 info.TextSize = 13
 info.TextWrapped = true
 info.TextYAlignment = Enum.TextYAlignment.Top
-info.Text = [[🥷 STEALTH MODE - ANTI KICK
+info.Text = [[🥷 STEALTH MODE
 
 ✅ FEATURES:
 • Delete parts (click/name)
-• TP parts to void
+• TP to void
 • Target players
-• Safe mode (anti-kick)
+• Safe mode
 
 ⚡ STEALTH:
-• Delay between requests
-• Max 5 remotes per batch
-• Smart remote filtering
+• Delay 0.05s per remote
+• Max 5 remotes/batch
+• Smart filtering
 
 📋 HOW TO USE:
-1. Click "Scan Remotes"
-2. CLICK part to delete OR
-3. Type part name
-4. Click delete button
+1. Scan Remotes
+2. Click part OR type name
+3. Choose action
+4. Wait completion
 
-🎯 TARGET PLAYER:
+🎯 TARGET:
 • Type player name
-• TP to void = Send to void
-• Works on ANY player!
+• TP/Kill player
 
-⚠️ ANTI-KICK:
-• Don't spam buttons!
-• Wait for completion
+⚠️ TIPS:
+• Don't spam!
 • Use safe mode
+• Wait for finish
 
 Status: Ready 🛡️]]
 info.Parent = Content
@@ -550,16 +548,24 @@ local infoPadding = Instance.new("UIPadding")
 infoPadding.PaddingTop = UDim.new(0, 12)
 infoPadding.PaddingLeft = UDim.new(0, 12)
 infoPadding.PaddingRight = UDim.new(0, 12)
+infoPadding.PaddingBottom = UDim.new(0, 12)
 infoPadding.Parent = info
 
 local infoCorner = Instance.new("UICorner")
 infoCorner.CornerRadius = UDim.new(0, 10)
 infoCorner.Parent = info
 
-Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 250)
+Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 280)
 
 -- Auto scan
 task.spawn(function()
     task.wait(1.5)
-    local count = scanSmartRemotes()
-    notif("Ready
+    scanSmartRemotes()
+    notif("Stealth mode ready!", "hijau")
+end)
+
+notif("Loading complete! 🥷", "hijau")
+print("=== STEALTH EXPLOIT ===")
+print("Safe Mode: ON")
+print("Ready to use!")
+print("=======================")
