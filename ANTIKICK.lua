@@ -1,7 +1,8 @@
--- ULTIMATE EXPLOIT - STEALTH MODE (FIXED)
--- All bugs fixed
+-- ULTIMATE EXPLOIT - STEALTH MODE (ANTI-KICK)
+-- Low profile, slow scan, anti-detection
+-- Bahasa Indonesia
 
-task.wait(2)
+task.wait(3) -- Delay lebih lama untuk avoid detection
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -12,144 +13,146 @@ local playerGui = player:WaitForChild("PlayerGui", 10)
 
 if not playerGui then return end
 
-if playerGui:FindFirstChild("StealthExploit") then
-    playerGui.StealthExploit:Destroy()
-    task.wait(0.5)
-end
+-- Hapus GUI lama
+pcall(function()
+    if playerGui:FindFirstChild("StealthExploit") then
+        playerGui.StealthExploit:Destroy()
+        task.wait(1)
+    end
+end)
 
--- Settings
-local Settings = {
-    DelayPerRemote = 0.05,
-    MaxRemotesPerBatch = 5,
-    SafeMode = true,
-}
+-- ============================================
+-- STEALTH NOTIFICATION (Silent mode)
+-- ============================================
+local silentMode = false -- Set true untuk hide notif
 
--- Notifikasi
 local function notif(msg, warna)
+    if silentMode then return end
+    
     local icon = warna == "hijau" and "✅" or (warna == "merah" and "❌" or "⚡")
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Stealth Exploit";
+            Title = "Stealth";
             Text = icon .. " " .. msg;
-            Duration = 3;
+            Duration = 2;
         })
     end)
     print("[Stealth]", msg)
 end
 
 local mouse = player:GetMouse()
-local selectedPart = nil
 
-mouse.Button1Down:Connect(function()
-    if mouse.Target and mouse.Target:IsA("BasePart") then
-        selectedPart = mouse.Target
-        notif("Dipilih: " .. selectedPart.Name, "hijau")
-    end
-end)
+-- ============================================
+-- STEALTH REMOTE SCAN (Slow & Safe)
+-- ============================================
+local remotes = {}
 
--- Smart Remote Scanner
-local importantRemotes = {}
-local allRemotes = {}
-
-local function scanSmartRemotes()
-    importantRemotes = {}
-    allRemotes = {}
+local function stealthScan()
+    remotes = {}
+    notif("Scan pelan-pelan...", nil)
     
-    notif("Scanning remotes...", nil)
+    -- Only scan safe locations
+    local safePlaces = {
+        ReplicatedStorage,
+        Workspace
+    }
     
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            table.insert(allRemotes, obj)
-            
-            local name = obj.Name:lower()
-            if name:find("delete") or name:find("remove") or name:find("destroy")
-                or name:find("teleport") or name:find("tp") or name:find("move")
-                or name:find("kill") or name:find("damage") or name:find("health")
-                or name:find("checkpoint") or name:find("cp") 
-                or name:find("equip") or name:find("donate") or name:find("shop") then
-                table.insert(importantRemotes, obj)
+    for _, place in pairs(safePlaces) do
+        pcall(function()
+            for _, obj in pairs(place:GetDescendants()) do
+                if obj:IsA("RemoteEvent") then
+                    table.insert(remotes, obj)
+                    task.wait(0.01) -- Slow down to avoid detection
+                end
             end
-        end
+        end)
     end
     
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            table.insert(allRemotes, obj)
-        end
-    end
+    print("=== SCAN SELESAI ===")
+    print("Total remotes:", #remotes)
+    print("====================")
     
-    print("=== SCAN RESULT ===")
-    print("Total remotes:", #allRemotes)
-    print("Important remotes:", #importantRemotes)
-    print("===================")
-    
-    notif("Found " .. #allRemotes .. " remotes", "hijau")
-    return #importantRemotes
+    notif("Ditemukan " .. #remotes .. " remotes", "hijau")
+    return #remotes
 end
 
--- Safe Fire Server
-local lastFireTime = 0
+-- ============================================
+-- STEALTH EXPLOIT (Rate Limited)
+-- ============================================
 
-local function safeFireServer(remote, ...)
+-- Rate limiter
+local lastExploit = 0
+local RATE_LIMIT = 0.5 -- 0.5 detik antara exploit
+
+local function canExploit()
     local now = tick()
-    local timeSinceLastFire = now - lastFireTime
-    
-    if Settings.SafeMode and timeSinceLastFire < Settings.DelayPerRemote then
-        task.wait(Settings.DelayPerRemote - timeSinceLastFire)
+    if now - lastExploit < RATE_LIMIT then
+        return false
     end
-    
-    pcall(function()
-        remote:FireServer(...)
-    end)
-    
-    lastFireTime = tick()
+    lastExploit = now
+    return true
 end
 
--- Delete Selected Part
-local function deleteSelectedPart()
-    if not selectedPart then
-        notif("Belum pilih part!", "merah")
+-- Method 1: Target Hover (Stealth)
+local function stealthHover()
+    if not canExploit() then
+        notif("Tunggu cooldown...", "merah")
         return
     end
     
-    notif("Menghapus: " .. selectedPart.Name, nil)
-    
-    if #importantRemotes == 0 then
-        scanSmartRemotes()
-        task.wait(0.5)
+    if not mouse.Target then
+        notif("Tidak ada target!", "merah")
+        return
     end
     
-    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
+    local target = mouse.Target
+    notif("Target: " .. target.Name, nil)
+    
+    if #remotes == 0 then
+        stealthScan()
+        task.wait(1)
+    end
+    
+    -- Only use top 5 remotes (most likely to work)
     local count = 0
-    
-    for i, remote in ipairs(remotesToUse) do
-        if i > Settings.MaxRemotesPerBatch then break end
-        
-        safeFireServer(remote, "Delete", selectedPart)
-        safeFireServer(remote, "Remove", selectedPart)
-        safeFireServer(remote, {Action = "Delete", Target = selectedPart})
-        count = count + 3
-        
-        task.wait(0.1)
+    for i = 1, math.min(5, #remotes) do
+        local remote = remotes[i]
+        pcall(function()
+            remote:FireServer("Delete", target)
+            remote:FireServer({Action = "Delete", Target = target})
+            task.wait(0.1) -- Delay between attempts
+        end)
+        count = count + 1
     end
     
-    notif("Sent " .. count .. " commands", "hijau")
+    notif("Sent " .. count .. " commands (stealth)", "hijau")
 end
 
--- Delete By Name
-local function deleteByName(partName)
+-- Method 2: Manual Input (Safe)
+local function stealthDelete(partName)
+    if not canExploit() then
+        notif("Tunggu cooldown...", "merah")
+        return
+    end
+    
     if partName == "" then
-        notif("Masukkan nama part!", "merah")
+        notif("Masukkan nama!", "merah")
         return
     end
     
     notif("Mencari: " .. partName, nil)
     
+    if #remotes == 0 then
+        stealthScan()
+        task.wait(1)
+    end
+    
+    -- Find only first 3 matches
     local targets = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Name:lower():find(partName:lower()) then
             table.insert(targets, obj)
-            if #targets >= 10 then break end
+            if #targets >= 3 then break end
         end
     end
     
@@ -158,146 +161,59 @@ local function deleteByName(partName)
         return
     end
     
-    notif("Ditemukan " .. #targets .. " parts", nil)
+    notif("Ditemukan " .. #targets .. " targets", nil)
     
-    if #importantRemotes == 0 then
-        scanSmartRemotes()
-        task.wait(0.5)
-    end
-    
-    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
-    local count = 0
-    
+    -- Slow exploit
     for _, target in ipairs(targets) do
-        for i, remote in ipairs(remotesToUse) do
-            if i > Settings.MaxRemotesPerBatch then break end
-            
-            safeFireServer(remote, "Delete", target)
-            safeFireServer(remote, {Action = "Delete", Target = target})
-            count = count + 2
-        end
-        task.wait(0.2)
-    end
-    
-    notif("Sent " .. count .. " commands!", "hijau")
-end
-
--- Teleport To Void
-local function teleportToVoid(target)
-    if not target then
-        notif("Tidak ada target!", "merah")
-        return
-    end
-    
-    notif("TP to void: " .. target.Name, nil)
-    
-    if #importantRemotes == 0 then
-        scanSmartRemotes()
-        task.wait(0.5)
-    end
-    
-    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
-    local voidPos = Vector3.new(0, -999999, 0)
-    local count = 0
-    
-    for i, remote in ipairs(remotesToUse) do
-        if i > Settings.MaxRemotesPerBatch then break end
-        
-        safeFireServer(remote, "Teleport", target, voidPos)
-        safeFireServer(remote, "MoveTo", target, voidPos)
-        safeFireServer(remote, {Action = "TP", Target = target, Position = voidPos})
-        count = count + 3
-        
-        task.wait(0.1)
-    end
-    
-    notif("Sent " .. count .. " TP commands!", "hijau")
-end
-
--- Target Player
-local function targetPlayer(playerName)
-    if playerName == "" then
-        notif("Masukkan nama player!", "merah")
-        return
-    end
-    
-    local targetPlayer = Players:FindFirstChild(playerName)
-    
-    if not targetPlayer then
-        for _, plr in pairs(Players:GetPlayers()) do
-            if plr.Name:lower():find(playerName:lower()) then
-                targetPlayer = plr
-                break
-            end
+        for i = 1, math.min(3, #remotes) do
+            pcall(function()
+                remotes[i]:FireServer("Delete", target)
+                remotes[i]:FireServer({Action = "Delete", Target = target})
+            end)
+            task.wait(0.2) -- Slow down
         end
     end
     
-    if not targetPlayer then
-        notif("Player tidak ditemukan!", "merah")
-        return
-    end
-    
-    if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        notif("Player belum spawn!", "merah")
-        return
-    end
-    
-    notif("Target: " .. targetPlayer.Name, nil)
-    
-    if #importantRemotes == 0 then
-        scanSmartRemotes()
-        task.wait(0.5)
-    end
-    
-    local remotesToUse = #importantRemotes > 0 and importantRemotes or allRemotes
-    local voidPos = Vector3.new(0, -999999, 0)
-    local count = 0
-    
-    for i, remote in ipairs(remotesToUse) do
-        if i > Settings.MaxRemotesPerBatch then break end
-        
-        safeFireServer(remote, "Teleport", targetPlayer, voidPos)
-        safeFireServer(remote, "Kill", targetPlayer)
-        safeFireServer(remote, {Action = "Kill", Player = targetPlayer})
-        count = count + 3
-        
-        task.wait(0.15)
-    end
-    
-    notif("Sent " .. count .. " commands", "hijau")
+    notif("Selesai! Cek hasil", "hijau")
 end
 
--- Search Checkpoints
-local function searchCheckpoints()
-    notif("Mencari checkpoints...", nil)
+-- Method 3: Find Checkpoints (Safe scan)
+local function findCheckpoints()
+    notif("Mencari checkpoint...", nil)
     
     local found = {}
+    local count = 0
     
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
             local name = obj.Name:lower()
-            if name:find("checkpoint") or name:find("cp") or name:find("check") 
-                or name:find("stage") or name:find("level") then
+            if name:find("checkpoint") or name:find("cp") then
                 table.insert(found, obj.Name)
+                count = count + 1
+                if count >= 10 then break end -- Limit scan
             end
+        end
+        
+        -- Slow scan to avoid detection
+        if count % 100 == 0 then
+            task.wait(0.01)
         end
     end
     
-    print("=== CHECKPOINTS ===")
+    print("=== CHECKPOINT ===")
     if #found > 0 then
         for i, name in ipairs(found) do
-            if i <= 30 then
-                print(i .. ".", name)
-            end
+            print(i .. ".", name)
         end
-        notif("Found " .. #found .. " checkpoints", "hijau")
     else
-        notif("No checkpoints found!", "merah")
+        print("Tidak ada checkpoint!")
     end
-    print("===================")
+    print("==================")
+    
+    notif("Ditemukan " .. #found .. " CP (F9)", "hijau")
 end
 
--- List Players
+-- Method 4: List Players (Safe)
 local function listPlayers()
     print("=== PLAYERS ===")
     for i, plr in pairs(Players:GetPlayers()) do
@@ -305,267 +221,242 @@ local function listPlayers()
     end
     print("Total:", #Players:GetPlayers())
     print("===============")
-    notif("Player list in console (F9)", "hijau")
+    
+    notif("List player (F9)", "hijau")
 end
 
--- Toggle Safe Mode
-local safeModeBtn
+-- ============================================
+-- CREATE STEALTH GUI (Smaller, less obvious)
+-- ============================================
 
-local function toggleSafeMode()
-    Settings.SafeMode = not Settings.SafeMode
-    local status = Settings.SafeMode and "ON" or "OFF"
-    notif("Safe Mode: " .. status, "hijau")
-    if safeModeBtn then
-        safeModeBtn.Text = "🛡️ Safe Mode: " .. status
-    end
-end
-
--- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "StealthExploit"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
+-- Smaller frame
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 700)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -350)
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+MainFrame.Size = UDim2.new(0, 360, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -180, 0.5, -250)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.BackgroundTransparency = 0.1 -- Slightly transparent
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 15)
+Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = MainFrame
 
+-- Simple header
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 55)
-Header.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+Header.Size = UDim2.new(1, 0, 0, 45)
+Header.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 15)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -70, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🥷 STEALTH EXPLOIT"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
+Title.Text = "🔇 Stealth Mode"
+Title.TextColor3 = Color3.fromRGB(200, 200, 200)
+Title.Font = Enum.Font.Gotham
+Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 50, 0, 50)
-CloseBtn.Position = UDim2.new(1, -53, 0, 2.5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.Size = UDim2.new(0, 40, 0, 40)
+CloseBtn.Position = UDim2.new(1, -43, 0, 2.5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 24
+CloseBtn.TextSize = 18
 CloseBtn.Parent = Header
 
 local CloseBtnCorner = Instance.new("UICorner")
-CloseBtnCorner.CornerRadius = UDim.new(0, 12)
+CloseBtnCorner.CornerRadius = UDim.new(0, 8)
 CloseBtnCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+-- Content
 local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -24, 1, -70)
-Content.Position = UDim2.new(0, 12, 0, 60)
+Content.Size = UDim2.new(1, -20, 1, -55)
+Content.Position = UDim2.new(0, 10, 0, 50)
 Content.BackgroundTransparency = 1
-Content.ScrollBarThickness = 10
-Content.CanvasSize = UDim2.new(0, 0, 0, 1600)
+Content.ScrollBarThickness = 6
+Content.CanvasSize = UDim2.new(0, 0, 0, 800)
 Content.Parent = MainFrame
 
+-- GUI Builders (Simpler)
 local yPos = 10
 
-local function makeLabel(text, color)
+local function makeLabel(text)
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 40)
+    label.Size = UDim2.new(1, -10, 0, 32)
     label.Position = UDim2.new(0, 5, 0, yPos)
-    label.BackgroundColor3 = color
+    label.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     label.Text = text
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 16
+    label.TextSize = 14
     label.Parent = Content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = label
     
-    yPos = yPos + 46
+    yPos = yPos + 38
 end
 
-local function makeButton(text, color, callback)
+local function makeButton(text, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 52)
+    btn.Size = UDim2.new(1, -10, 0, 44)
     btn.Position = UDim2.new(0, 5, 0, yPos)
-    btn.BackgroundColor3 = color
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 15
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 13
     btn.TextWrapped = true
     btn.Parent = Content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
         pcall(callback)
     end)
     
-    yPos = yPos + 58
+    yPos = yPos + 50
     return btn
 end
 
 local function makeTextBox(placeholder)
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, -10, 0, 48)
+    box.Size = UDim2.new(1, -10, 0, 40)
     box.Position = UDim2.new(0, 5, 0, yPos)
-    box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     box.Text = ""
     box.PlaceholderText = placeholder
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
-    box.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+    box.TextColor3 = Color3.fromRGB(220, 220, 220)
+    box.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
     box.Font = Enum.Font.Gotham
-    box.TextSize = 15
+    box.TextSize = 13
     box.Parent = Content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = box
     
-    yPos = yPos + 54
+    yPos = yPos + 46
     return box
 end
 
--- Build GUI
-makeLabel("⚙️ SETTINGS", Color3.fromRGB(100, 100, 100))
+-- Build Simple GUI
+makeLabel("📡 Info")
 
-safeModeBtn = makeButton("🛡️ Safe Mode: ON", Color3.fromRGB(120, 120, 120), function()
-    toggleSafeMode()
+makeButton("Scan Remotes (Pelan)", function()
+    stealthScan()
 end)
 
-makeLabel("🔍 SCAN", Color3.fromRGB(0, 120, 200))
-
-makeButton("📡 Scan Remotes", Color3.fromRGB(0, 140, 220), function()
-    scanSmartRemotes()
-end)
-
-makeButton("🔎 Search Checkpoints", Color3.fromRGB(0, 160, 200), function()
-    searchCheckpoints()
-end)
-
-makeButton("📋 List Players", Color3.fromRGB(100, 100, 200), function()
+makeButton("List Players (F9)", function()
     listPlayers()
 end)
 
-makeLabel("🎯 CLICK & DELETE", Color3.fromRGB(255, 140, 0))
+makeLabel("🎯 Hover Target")
 
-makeButton("🖱️ Delete Clicked Part", Color3.fromRGB(255, 120, 0), function()
-    deleteSelectedPart()
+makeButton("Delete Part (Hover Mouse)", function()
+    stealthHover()
 end)
 
-makeButton("📍 TP to Void", Color3.fromRGB(255, 100, 50), function()
-    if selectedPart then
-        teleportToVoid(selectedPart)
-    else
-        notif("Klik part dulu!", "merah")
-    end
+makeLabel("🔎 Manual Delete")
+
+makeButton("Cari Checkpoint (F9)", function()
+    findCheckpoints()
 end)
 
-makeLabel("🔎 DELETE BY NAME", Color3.fromRGB(0, 180, 120))
+local inputBox = makeTextBox("Nama part...")
 
-local partBox = makeTextBox("Part name (Checkpoint, CP1)")
-
-makeButton("🗑️ Delete by Name", Color3.fromRGB(200, 80, 80), function()
-    deleteByName(partBox.Text)
+makeButton("Delete by Name", function()
+    stealthDelete(inputBox.Text)
 end)
 
-makeLabel("😈 TARGET PLAYER", Color3.fromRGB(150, 0, 200))
-
-local playerBox = makeTextBox("Player name")
-
-makeButton("🎯 TP Player to Void", Color3.fromRGB(180, 0, 180), function()
-    targetPlayer(playerBox.Text)
+-- Toggle Silent Mode
+yPos = yPos + 10
+local silentBtn = makeButton("Silent Mode: OFF", function()
+    silentMode = not silentMode
+    silentBtn.Text = silentMode and "Silent Mode: ON" or "Silent Mode: OFF"
+    notif("Silent mode " .. (silentMode and "ON" or "OFF"), "hijau")
 end)
 
 -- Info
 yPos = yPos + 10
 local info = Instance.new("TextLabel")
-info.Size = UDim2.new(1, -10, 0, 260)
+info.Size = UDim2.new(1, -10, 0, 180)
 info.Position = UDim2.new(0, 5, 0, yPos)
-info.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-info.TextColor3 = Color3.fromRGB(230, 230, 230)
+info.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+info.TextColor3 = Color3.fromRGB(200, 200, 200)
 info.Font = Enum.Font.Gotham
-info.TextSize = 13
+info.TextSize = 11
 info.TextWrapped = true
 info.TextYAlignment = Enum.TextYAlignment.Top
-info.Text = [[🥷 STEALTH MODE
+info.Text = [[🔇 STEALTH MODE - ANTI-KICK
 
-✅ FEATURES:
-• Delete parts (click/name)
-• TP to void
-• Target players
-• Safe mode
+FITUR:
+• Slow scan (avoid detection)
+• Rate limited (cooldown 0.5s)
+• Only top remotes (safe)
+• Limited targets (max 3)
+• Silent mode (hide notif)
 
-⚡ STEALTH:
-• Delay 0.05s per remote
-• Max 5 remotes/batch
-• Smart filtering
-
-📋 HOW TO USE:
-1. Scan Remotes
-2. Click part OR type name
-3. Choose action
-4. Wait completion
-
-🎯 TARGET:
-• Type player name
-• TP/Kill player
+CARA PAKAI:
+1. Scan remotes dulu
+2. Hover part → Delete
+3. Atau manual input nama
+4. Tunggu cooldown!
 
 ⚠️ TIPS:
-• Don't spam!
-• Use safe mode
-• Wait for finish
+• Jangan spam!
+• Tunggu cooldown!
+• Pakai silent mode kalau perlu
 
-Status: Ready 🛡️]]
+PlaceId: ]] .. game.PlaceId
 info.Parent = Content
 
 local infoPadding = Instance.new("UIPadding")
-infoPadding.PaddingTop = UDim.new(0, 12)
-infoPadding.PaddingLeft = UDim.new(0, 12)
-infoPadding.PaddingRight = UDim.new(0, 12)
-infoPadding.PaddingBottom = UDim.new(0, 12)
+infoPadding.PaddingTop = UDim.new(0, 10)
+infoPadding.PaddingLeft = UDim.new(0, 10)
+infoPadding.PaddingRight = UDim.new(0, 10)
 infoPadding.Parent = info
 
 local infoCorner = Instance.new("UICorner")
-infoCorner.CornerRadius = UDim.new(0, 10)
+infoCorner.CornerRadius = UDim.new(0, 8)
 infoCorner.Parent = info
 
-Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 280)
+Content.CanvasSize = UDim2.new(0, 0, 0, yPos + 200)
 
--- Auto scan
+-- Slow start (avoid instant detection)
 task.spawn(function()
-    task.wait(1.5)
-    scanSmartRemotes()
-    notif("Stealth mode ready!", "hijau")
+    task.wait(2)
+    notif("Stealth mode ready", "hijau")
+    task.wait(1)
+    stealthScan()
 end)
 
-notif("Loading complete! 🥷", "hijau")
-print("=== STEALTH EXPLOIT ===")
-print("Safe Mode: ON")
-print("Ready to use!")
-print("=======================")
+print("================================")
+print("STEALTH MODE ACTIVE")
+print("Low profile, anti-detection")
+print("PlaceId:", game.PlaceId)
+print("================================")
