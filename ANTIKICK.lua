@@ -534,10 +534,40 @@ end)
 
 makeLabel("😈 METHOD C: TARGET PLAYER", Color3.fromRGB(150, 0, 200))
 
-local playerBox = makeTextBox("Nama player")
+local playerBox = makeTextBox("Nama player (siapa aja bisa!)")
 
-makeButton("🎯 Target Player (Stealth)", Color3.fromRGB(180, 0, 180), function()
+makeButton("🎯 Target Player ke Void", Color3.fromRGB(180, 0, 180), function()
     targetPlayer(playerBox.Text)
+end)
+
+makeButton("💀 Kill Target Player", Color3.fromRGB(200, 0, 100), function()
+    if playerBox.Text ~= "" then
+        local targetPlayer = nil
+        targetPlayer = Players:FindFirstChild(playerBox.Text)
+        if not targetPlayer then
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr.Name:lower():find(playerBox.Text:lower()) then
+                    targetPlayer = plr
+                    break
+                end
+            end
+        end
+        
+        if targetPlayer and targetPlayer.Character then
+            notif("Kill: " .. targetPlayer.Name, nil)
+            for i, remote in ipairs(importantRemotes) do
+                if i > Settings.MaxRemotesPerBatch then break end
+                safeFireServer(remote, "Kill", targetPlayer)
+                safeFireServer(remote, "Damage", targetPlayer, 999999)
+                task.wait(0.1)
+            end
+            notif("Kill commands sent!", "hijau")
+        else
+            notif("Player tidak ditemukan!", "merah")
+        end
+    else
+        notif("Masukkan nama player!", "merah")
+    end
 end)
 
 -- Info
@@ -575,6 +605,12 @@ info.Text = [[🥷 STEALTH MODE - ANTI KICK
 2. KLIK part yang mau dihapus
 3. Pilih method (delete/tp)
 4. Tunggu proses selesai
+
+🎯 TARGET PLAYER:
+• Ketik nama player (exact/sebagian)
+• Target Player = TP ke void
+• Kill Player = Bunuh langsung
+• Bisa target SIAPA AJA!
 
 ⚠️ Tips anti-kick:
 • Jangan spam tombol!
