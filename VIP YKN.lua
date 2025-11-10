@@ -1,5 +1,5 @@
--- ALL-IN-ONE EXPLOIT - FIXED VERSION
--- Mount Yayakin - Simple & Clean
+-- ALL-IN-ONE EXPLOIT - ULTRA SAFE VERSION
+-- Mount Yayakin - No String Errors
 -- BAHASA INDONESIA
 
 task.wait(2)
@@ -11,11 +11,9 @@ local player = Players.LocalPlayer
 local gui = player:WaitForChild("PlayerGui", 10)
 
 if not gui then 
-    warn("PlayerGui not found!")
     return 
 end
 
--- Remove old
 pcall(function()
     if gui:FindFirstChild("ExploitGUI") then
         gui.ExploitGUI:Destroy()
@@ -23,75 +21,59 @@ pcall(function()
     end
 end)
 
--- ============================================
--- NOTIFICATION
--- ============================================
 local function notif(msg)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Exploit";
-            Text = msg;
+            Text = tostring(msg);
             Duration = 2.5;
         })
     end)
-    print("[Exploit]", msg)
+    print("[Exploit]", tostring(msg))
 end
 
--- ============================================
--- FIND REMOTES
--- ============================================
-local function findRemote(path)
-    local current = RS
-    for part in string.gmatch(path, "[^.]+") do
-        current = current:FindFirstChild(part)
-        if not current then return nil end
+-- Find Kohl Admin safely
+local KA = nil
+pcall(function()
+    local kohlAdmin = RS:FindFirstChild("Kohl's Admin Source")
+    if kohlAdmin then
+        KA = kohlAdmin:FindFirstChild("Remote")
     end
-    return current
-end
+end)
 
--- Kohl's Admin
-local KA = findRemote("Kohl's Admin Source.Remote")
+-- Find all remotes safely
+local R = {}
 
-local R = {
-    -- VIP
-    vip = KA and KA:FindFirstChild("VIPUGCMethod"),
-    
-    -- Admin
-    cmd = KA and KA:FindFirstChild("Command"),
-    ctrl = KA and KA:FindFirstChild("ControlCommand"),
-    tpAdmin = RS:FindFirstChild("TeleportAdmin"),
-    adminExec = RS:FindFirstChild("AdminSummit_Exec"),
-    
-    -- Checkpoint
-    cpMark = RS:FindFirstChild("CP_MarkVisited"),
-    cpDrop = RS:FindFirstChild("CP_DropToStart"),
-    cpSkip = RS:FindFirstChild("CP_SkipDenied"),
-    cpReset = RS:FindFirstChild("CP_ResetVisited"),
-    
-    -- Aura
-    aura = RS:FindFirstChild("AuraUpdate"),
-    auraAll = RS:FindFirstChild("AuraUpdateAll"),
-    auraReq = RS:FindFirstChild("AuraToggleRequest"),
-    auraTgl = RS:FindFirstChild("AuraToggle"),
-    
-    -- Title
-    title = RS:FindFirstChild("TitleRemote"),
-    titleKA = KA and KA:FindFirstChild("Title"),
-    
-    -- Avatar
-    addAcc = RS:FindFirstChild("AddAccessoryEvent"),
-}
+pcall(function()
+    if KA then
+        R.vip = KA:FindFirstChild("VIPUGCMethod")
+        R.cmd = KA:FindFirstChild("Command")
+        R.ctrl = KA:FindFirstChild("ControlCommand")
+        R.titleKA = KA:FindFirstChild("Title")
+    end
+end)
 
-notif("✅ Script loaded!")
+pcall(function()
+    R.tpAdmin = RS:FindFirstChild("TeleportAdmin")
+    R.adminExec = RS:FindFirstChild("AdminSummit_Exec")
+    R.cpMark = RS:FindFirstChild("CP_MarkVisited")
+    R.cpDrop = RS:FindFirstChild("CP_DropToStart")
+    R.cpSkip = RS:FindFirstChild("CP_SkipDenied")
+    R.cpReset = RS:FindFirstChild("CP_ResetVisited")
+    R.aura = RS:FindFirstChild("AuraUpdate")
+    R.auraAll = RS:FindFirstChild("AuraUpdateAll")
+    R.auraReq = RS:FindFirstChild("AuraToggleRequest")
+    R.auraTgl = RS:FindFirstChild("AuraToggle")
+    R.title = RS:FindFirstChild("TitleRemote")
+    R.addAcc = RS:FindFirstChild("AddAccessoryEvent")
+end)
 
--- ============================================
--- FUNCTIONS
--- ============================================
+notif("Script loaded!")
 
 local function vipBypass()
-    notif("👑 VIP bypass...")
+    notif("VIP bypass...")
     if not R.vip then 
-        notif("❌ VIP remote not found")
+        notif("VIP remote missing")
         return 
     end
     
@@ -104,39 +86,45 @@ local function vipBypass()
         end)
         task.wait(0.1)
     end
-    notif("✅ VIP sent!")
+    notif("VIP sent!")
 end
 
 local function adminCmd(cmd)
-    if cmd == "" then 
-        notif("❌ Empty command")
+    if not cmd or cmd == "" then 
+        notif("Empty command")
         return 
     end
     
-    notif("⚡ Running: " .. cmd)
+    notif("Running command")
     
     pcall(function()
-        if R.cmd then R.cmd:FireServer(cmd) end
-        if R.cmd then R.cmd:FireServer(":" .. cmd) end
-        if R.ctrl then R.ctrl:FireServer(cmd) end
-        if R.adminExec then R.adminExec:FireServer(cmd) end
+        if R.cmd then 
+            R.cmd:FireServer(cmd) 
+            R.cmd:FireServer(":" .. cmd)
+        end
+        if R.ctrl then 
+            R.ctrl:FireServer(cmd) 
+        end
+        if R.adminExec then 
+            R.adminExec:FireServer(cmd) 
+        end
     end)
     
-    notif("✅ Command sent!")
+    notif("Command sent!")
 end
 
 local function autoAdmin()
-    notif("🔑 Auto admin...")
+    notif("Auto admin...")
     local cmds = {"god", "fly", "speed 100", "givetools", "admin"}
     for _, c in ipairs(cmds) do
         adminCmd(c)
         task.wait(0.2)
     end
-    notif("✅ Done!")
+    notif("Done!")
 end
 
 local function skipCP()
-    notif("🏁 Skip checkpoint...")
+    notif("Skip checkpoint...")
     
     pcall(function()
         if R.cpMark then
@@ -149,11 +137,11 @@ local function skipCP()
         end
     end)
     
-    notif("✅ CP skip sent!")
+    notif("CP skip sent!")
 end
 
 local function tpSummit()
-    notif("🚀 TP summit...")
+    notif("TP summit...")
     
     pcall(function()
         if R.tpAdmin then
@@ -165,11 +153,11 @@ local function tpSummit()
         end
     end)
     
-    notif("✅ TP sent!")
+    notif("TP sent!")
 end
 
 local function unlockAura()
-    notif("✨ Unlock auras...")
+    notif("Unlock auras...")
     
     local auras = {"Rainbow", "Galaxy", "Fire", "Ice", "VIP", "All", 1, 2, 3, 4, 5, 10, 99}
     
@@ -182,11 +170,11 @@ local function unlockAura()
         end
     end)
     
-    notif("✅ Aura unlock sent!")
+    notif("Aura unlock sent!")
 end
 
 local function unlockTitle()
-    notif("👑 Unlock titles...")
+    notif("Unlock titles...")
     
     local titles = {"VIP", "Legend", "Pro", "Master", "God", "All"}
     
@@ -198,11 +186,11 @@ local function unlockTitle()
         end
     end)
     
-    notif("✅ Title unlock sent!")
+    notif("Title unlock sent!")
 end
 
 local function unlockAcc()
-    notif("🎨 Unlock accessories...")
+    notif("Unlock accessories...")
     
     pcall(function()
         if R.addAcc then
@@ -212,23 +200,20 @@ local function unlockAcc()
         end
     end)
     
-    notif("✅ Accessory sent!")
+    notif("Accessory sent!")
 end
 
 local function crashPlayer(name)
-    if name == "" then 
-        notif("❌ Empty name")
+    if not name or name == "" then 
+        notif("Empty name")
         return 
     end
     
-    notif("💥 Crash: " .. name)
+    notif("Crash player")
     adminCmd("crash " .. name)
 end
 
--- ============================================
 -- GUI
--- ============================================
-
 local sg = Instance.new("ScreenGui")
 sg.Name = "ExploitGUI"
 sg.ResetOnSpawn = false
@@ -247,7 +232,6 @@ local c1 = Instance.new("UICorner")
 c1.CornerRadius = UDim.new(0, 12)
 c1.Parent = main
 
--- Header
 local hdr = Instance.new("Frame")
 hdr.Size = UDim2.new(1, 0, 0, 50)
 hdr.BackgroundColor3 = Color3.fromRGB(255, 50, 100)
@@ -262,7 +246,7 @@ local ttl = Instance.new("TextLabel")
 ttl.Size = UDim2.new(1, -60, 1, 0)
 ttl.Position = UDim2.new(0, 10, 0, 0)
 ttl.BackgroundTransparency = 1
-ttl.Text = "🔥 ALL-IN-ONE"
+ttl.Text = "ALL-IN-ONE"
 ttl.TextColor3 = Color3.fromRGB(255, 255, 255)
 ttl.Font = Enum.Font.GothamBold
 ttl.TextSize = 20
@@ -287,7 +271,6 @@ cls.MouseButton1Click:Connect(function()
     sg:Destroy()
 end)
 
--- Content
 local cont = Instance.new("ScrollingFrame")
 cont.Size = UDim2.new(1, -20, 1, -60)
 cont.Position = UDim2.new(0, 10, 0, 55)
@@ -360,35 +343,32 @@ local function lbl(txt, col)
     y = y + 40
 end
 
--- Build
-lbl("👑 VIP", Color3.fromRGB(255, 215, 0))
-btn("👑 Get VIP", Color3.fromRGB(255, 180, 0), vipBypass)
+lbl("VIP", Color3.fromRGB(255, 215, 0))
+btn("Get VIP", Color3.fromRGB(255, 180, 0), vipBypass)
 
-lbl("⚡ ADMIN", Color3.fromRGB(200, 0, 0))
-local cmdBox = box("Command (god, fly, speed 100)")
-btn("⚡ Run Command", Color3.fromRGB(200, 50, 0), function()
+lbl("ADMIN", Color3.fromRGB(200, 0, 0))
+local cmdBox = box("Command: god, fly, speed 100")
+btn("Run Command", Color3.fromRGB(200, 50, 0), function()
     adminCmd(cmdBox.Text)
 end)
-btn("🔑 Auto Admin", Color3.fromRGB(180, 0, 0), autoAdmin)
+btn("Auto Admin", Color3.fromRGB(180, 0, 0), autoAdmin)
 
-lbl("🏁 CHECKPOINT", Color3.fromRGB(0, 150, 255))
-btn("🏁 Skip CP", Color3.fromRGB(0, 180, 255), skipCP)
-btn("🚀 TP Summit", Color3.fromRGB(0, 150, 200), tpSummit)
+lbl("CHECKPOINT", Color3.fromRGB(0, 150, 255))
+btn("Skip CP", Color3.fromRGB(0, 180, 255), skipCP)
+btn("TP Summit", Color3.fromRGB(0, 150, 200), tpSummit)
 
-lbl("✨ COSMETICS", Color3.fromRGB(150, 0, 255))
-btn("✨ Unlock Auras", Color3.fromRGB(150, 100, 255), unlockAura)
-btn("👑 Unlock Titles", Color3.fromRGB(255, 150, 0), unlockTitle)
-btn("🎨 Unlock Accessories", Color3.fromRGB(200, 100, 255), unlockAcc)
+lbl("COSMETICS", Color3.fromRGB(150, 0, 255))
+btn("Unlock Auras", Color3.fromRGB(150, 100, 255), unlockAura)
+btn("Unlock Titles", Color3.fromRGB(255, 150, 0), unlockTitle)
+btn("Unlock Accessories", Color3.fromRGB(200, 100, 255), unlockAcc)
 
-lbl("😈 TROLL", Color3.fromRGB(150, 0, 0))
+lbl("TROLL", Color3.fromRGB(150, 0, 0))
 local plrBox = box("Player name")
-btn("💥 Crash Player", Color3.fromRGB(200, 0, 0), function()
+btn("Crash Player", Color3.fromRGB(200, 0, 0), function()
     crashPlayer(plrBox.Text)
 end)
 
 cont.CanvasSize = UDim2.new(0, 0, 0, y + 20)
 
-notif("🔥 Ready!")
+notif("Ready!")
 print("=== EXPLOIT LOADED ===")
-print("Game: Mount Yayakin")
-print("======================")
